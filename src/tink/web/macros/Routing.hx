@@ -141,16 +141,11 @@ class Routing {
         guard: c.guard,
         expr: c.response,
       }],
-      macro (new tink.core.Error(NotFound, 'Not Found') : tink.web.Response)
+    macro fallback(this)
     ).at();  
     
     var f = (macro class {
-      public function route(__target:$ct, request:tink.web.Request, depth:Int = 0):tink.web.Response {
-        
-        var __parts = request.header.uri.path.parts(),
-            query = request.header.uri.query,
-            prefix = __parts.splice(0, depth);
-         
+      public function route():Response {
         return $body;
       }
     }).fields;
@@ -180,7 +175,7 @@ class Routing {
     }
     
     decl.fields = decl.fields.concat(new Routing(type).fields);
-    trace(TAnonymous(decl.fields).toString());
+    
     return declare(decl);
   }
   
@@ -200,10 +195,15 @@ class Routing {
         
     var ctx = buildContext(type).toString().asTypePath();
     return declare(macro class $router {
-      public function new() {}
-      public function route(target:$ct, request:Request) {
-        new $ctx(target, request);
-      }
+      
+      public function new() { }
+      
+      public function route(target:$ct, request:Request, ?fallback) 
+        return 
+          if (fallback == null) 
+            route(target, request, function (_):Response return new tink.core.Error(NotFound, 'Not Found'));
+          else 
+            new $ctx(target, request, fallback).route();
     });
     
   }

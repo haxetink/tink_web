@@ -7,17 +7,20 @@ class Router<T> {
 }
 
 class RoutingContext<T> {
-  var __parts:Array<String>;
-  var query:Query;
-  var prefix:Array<String>;
-  var __target:T;
-  var request:Request;
+  public var path(default, null):Array<String>;
+  public var query(default, null):Query;
+  public var prefix(default, null):Array<String>;
+  public var target(default, null):T;
+  public var request(default, null):Request;
   
-  public function new(target, request, depth:Int = 0) {
-    this.__target = target;
+  var fallback:RoutingContext<T>->Response;
+  
+  public function new(target, request, fallback, depth:Int = 0) {
+    this.target = target;
     this.request = request;
     this.query = request.header.uri.query;
-    this.__parts = request.header.uri.path.parts();
-    this.prefix = this.__parts.splice(0, depth);
+    this.path = request.header.uri.path.parts();
+    this.prefix = this.path.splice(0, depth);
+    this.fallback = fallback;
   }  
 }
