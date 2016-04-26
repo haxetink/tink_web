@@ -322,7 +322,7 @@ class Routing {
       }  
       
   
-  static public function buildContext(type:Type) {
+  static public function buildContext(type:Type):{ type:Type, path:TypePath } {
     //TODO: add cache
     var counter = counter++;
     var name = 'RoutingContext$counter',
@@ -352,7 +352,9 @@ class Routing {
   static var counter = 0;
   
   static function buildRouter():Type {
+    
     var counter = counter++;
+    
     var type = getType('tink.web.Router'),
         ct = type.toComplex(),
         router = 'Router$counter';
