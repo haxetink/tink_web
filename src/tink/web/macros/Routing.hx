@@ -22,6 +22,7 @@ class Routing {
   var max:Int = 0;
   
   function new(type) {
+    
     this.type = type;
     this.ct = type.toComplex();
     this.fields = [];
@@ -49,7 +50,7 @@ class Routing {
   
   static function isSpecial(name:String) 
     return switch name {
-      case 'request', 'body', 'query': true;
+      case 'context', 'body', 'query', 'path': true;
       default: false;
     }  
     
@@ -65,32 +66,53 @@ class Routing {
     
     function ret(e:Expr, t)
       return macro @:pos(e.pos) return ${mkResponse(wrap(e, t))};
+    
+    var funcArgs:Array<FunctionArg> = [{
+      name: '__depth__',
+      type: macro : Int,
+    }];
       
     var func:Function = 
       switch f.type.reduce() {
         case TFun(args, r):
           
-          var callArgs = new Array<Expr>(),
-              funcArgs = new Array<FunctionArg>();
+          var callArgs = new Array<Expr>();
               
           for (a in args)
-            if (isSpecial(a.name))
-              throw 'ni';
-            else {
-              callArgs.push(macro $i{a.name});
-              var ct = a.t.toComplex();
+            switch a.name {
+              case 'query':
+                
+                throw 'not implemented';
+                
+              case 'body':
+                
+                throw 'not implemented';
               
-              switch (macro @:pos(f.pos) ((null : tink.web.Stringly) : $ct)).typeof() {
-                case Failure(e):
-                  f.pos.error('Routing cannot provide value for function argument ${a.name} of type ${a.t.toString()}');
-                default:
-              }
-              
-              funcArgs.push({
-                type: macro : tink.web.Stringly,
-                name: a.name,
-                opt: a.opt,
-              });
+              case 'path':
+                
+                callArgs.push(macro @:privateAccess new Path(this.prefix.concat(this.path.slice(0, __depth__))));
+                
+              case 'context':
+                
+                callArgs.push(macro @:pos(f.pos) this);
+                
+              default:
+                
+                callArgs.push(macro @:pos(f.pos) $i{a.name});
+                
+                var ct = a.t.toComplex();
+                
+                switch (macro @:pos(f.pos) ((null : tink.web.Stringly) : $ct)).typeof() {
+                  case Failure(e):
+                    f.pos.error('Routing cannot provide value for function argument ${a.name} of type ${a.t.toString()}');
+                  default:
+                }
+                
+                funcArgs.push({
+                  type: macro : tink.web.Stringly,
+                  name: a.name,
+                  opt: a.opt,
+                });
             }
           {
             args: funcArgs,
@@ -100,7 +122,7 @@ class Routing {
         case v:
           
           {
-            args: [],
+            args: funcArgs,
             ret: null,
             expr: ret(macro @:pos(f.pos) this.target.$fName, v),
           };
@@ -122,7 +144,7 @@ class Routing {
     return false;
   }  
   
-  function callHandler(callArgs:Array<Expr>, verb:Expr, f:ClassField, m:MetadataEntry, handler:Handler) {
+  function callHandler(verb:Expr, f:ClassField, m:MetadataEntry, handler:Handler, ?withRest = false) {
     var pos = m.pos;
     var uri:Url = switch m.params {
       case null | []: 
@@ -135,10 +157,12 @@ class Routing {
     }
     
     var parts = uri.path.parts();
-    var withRest = parts[parts.length - 1] == '*';
-    
-    if (withRest)
-      parts.pop();
+    if (!withRest) {
+      withRest = parts[parts.length - 1] == '*';
+      
+      if (withRest)
+        parts.pop();      
+    }
     
     var found = new Map();
     
@@ -162,7 +186,8 @@ class Routing {
       else macro null
     );
                       
-    var guard = null;
+    var callArgs = [],
+        guard = null;
     
     function capture(name:String, opt) {
       
@@ -178,7 +203,7 @@ class Routing {
       }
     }
     
-    for (arg in handler.func.args.slice(callArgs.length))
+    for (arg in handler.func.args.slice(1))
       switch [arg.opt == true, found[arg.name] == true] {
         case [false, false]:
           pos.error('Route does not capture required variable ${arg.name}');
@@ -188,7 +213,7 @@ class Routing {
       }
       
     //TODO: find unused captured vars
-    
+    callArgs.unshift(macro @:pos(m.pos) $v{patternArgs.length-1});
     return {
       pattern: patternArgs, 
       expr: macro @:pos(m.pos) $i{handler.name}($a{callArgs}), 
@@ -228,7 +253,7 @@ class Routing {
               case null:
               case verb:
                 
-                var call = callHandler([], verb, f, m, handler);
+                var call = callHandler(verb, f, m, handler);
                 
                 add(verb, call.pattern, call.expr, call.guard);
                 
@@ -249,15 +274,8 @@ class Routing {
             });
           });
           
-          handler.func.args.unshift({
-            name: '__depth__',
-            type: macro : Int,
-          });
-          
-          var depth = macro 0;
           for (m in sub) {
-            var call = callHandler([depth], macro _, f, m, handler);
-            depth.expr = EConst(CInt(Std.string(call.pattern.length-1)));//TODO: this code shows very nicely that my attempts to factor this code properly led to an overengineered piece of crap that needs cleaning up
+            var call = callHandler(macro _, f, m, handler, true);
             add(macro _, call.pattern, call.expr, call.guard);
           }
       }
@@ -310,7 +328,7 @@ class Routing {
     var name = 'RoutingContext$counter',
         ct = type.toComplex();
         
-    var decl = macro class $name extends tink.web.Router.RoutingContext<$ct> {
+    var decl = macro class $name extends RoutingContext<$ct> {
       
     }
     
