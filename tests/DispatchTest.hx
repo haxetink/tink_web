@@ -16,27 +16,26 @@ using tink.CoreApi;
 
 class DispatchTest extends TestCase {
   
-  function testDispatch() {
+  static var f = new Fake();
+  static var r = new Router<Fake>();
+  
+  function expect<A>(value:A, req) {
     
-    var f = new Fake();
-    var r = new Router<Fake>();
-              
-    function expect<A>(value:A, req) {
-      
-      var succeeded = false;
-      
-      var f:Future<OutgoingResponse> = r.route(f, req);
-      
-      f.handle(function (o) {
-        o.body.all().handle(function (b) {
-          //structEq(value, haxe.Json.parse(b.sure().toString()));
-          succeeded = true;
-        });
+    var succeeded = false;
+    
+    var res:Future<OutgoingResponse> = r.route(f, req);
+    
+    res.handle(function (o) {
+      o.body.all().handle(function (b) {
+        structEq(value, haxe.Json.parse(b.sure().toString()));
+        succeeded = true;
       });
-      
-      assertTrue(succeeded);
-    }
+    });
     
+    assertTrue(succeeded);
+  }  
+  function testDispatch() {
+      
     expect({ hello: 'world' }, get('/'));
     expect({ hello: 'haxe' }, get('/haxe'));
     expect("yo", get('/yo'));

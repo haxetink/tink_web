@@ -352,23 +352,23 @@ class Routing {
   static var counter = 0;
   
   static function buildRouter():Type {
-
+    var counter = counter++;
     var type = getType('tink.web.Router'),
         ct = type.toComplex(),
-        router = 'Router${counter++}';
+        router = 'Router$counter';
         
     var ctx = buildContext(type).path;
     
     var cl = macro class $router {
       
-      public function new() this = $v{router};
+      public inline function new() this = $v{counter};
       
       public function route(target:$ct, request:Request, ?fallback, depth = 0) 
         return 
           new $ctx(target, request, fallback, depth).route();
     }
     
-    cl.kind = TDAbstract(macro : String);
+    cl.kind = TDAbstract(macro : Int);
     
     return declare(cl);
     
