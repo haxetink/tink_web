@@ -13,6 +13,7 @@ private typedef Handler = {
 }
 
 class Routing {  
+  static var PACK = 'tink.web.routes';
   
   var type:Type;
   var ct:ComplexType;
@@ -51,16 +52,19 @@ class Routing {
       case 'request', 'body', 'query': true;
       default: false;
     }  
-
-  function makeHandler(f:ClassField, ?wrap:Expr->Expr):Handler {
+    
+  static function mkResponse(e:Expr) 
+    return macro @:pos(e.pos) ($e : Response);
+    
+  function makeHandler(f:ClassField, ?wrap:Expr->Type->Expr):Handler {
     var fName = f.name;
     var name = 'call_$fName';
     
     if (wrap == null)
-      wrap = function (e) return macro @:pos(e.pos) ($e : tink.web.Response);
+      wrap = function (e, t) return e;
     
-    function ret(e:Expr)
-      return macro @:pos(e.pos) return ${wrap(e)};
+    function ret(e:Expr, t)
+      return macro @:pos(e.pos) return ${mkResponse(wrap(e, t))};
       
     var func:Function = 
       switch f.type.reduce() {
@@ -91,14 +95,14 @@ class Routing {
           {
             args: funcArgs,
             ret: null,
-            expr: ret(macro @:pos(f.pos) __target.$fName($a{callArgs})),
+            expr: ret(macro @:pos(f.pos) this.target.$fName($a{callArgs}), r),
           }
         case v:
           
           {
             args: [],
             ret: null,
-            expr: ret(macro @:pos(f.pos) __target.$fName),
+            expr: ret(macro @:pos(f.pos) this.target.$fName, v),
           };
           
       }  
@@ -134,15 +138,57 @@ class Routing {
       });
     }    
     
+    for (f in type.getFields().sure()) {
+            
+      var meta = f.meta.get();
+      
+      switch [hasRoute(f), meta.getValues(':sub')] {
+        
+        case [true, []]:
+          
+          var handler = makeHandler(f);
+          
+          for (m in meta)
+            switch metas[m.name] {
+              
+              case null:
+              case verb:
+                
+                //callHandler(verb, f, m, handler, add);
+            }
+          
+        case [true, v]:
+          
+          f.pos.error('cannot have both routing and subrouting on the same field');
+          
+        case [false, []]:
+          
+        case [false, sub]:
+          
+          var handler = makeHandler(f, function (e, t) {
+            var path = buildContext(t).path;
+            return macro @:pos(e.pos) SubRoute.of($e).route(function (target) {
+              return new $path(target, this.request, function (_) return this.fallback(this), this.prefix.length + __depth__).route();
+            });
+          });
+          
+          handler.func.args.unshift({
+            name: '__depth__',
+            type: macro : Int,
+          });
+          
+      }
+      
+    }
     
     for (c in cases)
       while (c.pattern.length < max)
         c.pattern.push(c.pattern[c.pattern.length - 1]);
     
-    var switchTarget = [macro request.header.method];
+    var switchTarget = [macro this.request.header.method];
     
     for (i in 0...max - 1)
-      switchTarget.push(macro __parts[$v{i}]);
+      switchTarget.push(macro this.parts[$v{i}]);
     
     var body = ESwitch(
       switchTarget.toArray(),
@@ -155,9 +201,10 @@ class Routing {
     ).at();  
     
     var f = (macro class {
-      public function route():Response {
+      
+      public function route():Response 
         return $body;
-      }
+      
     }).fields;
     
     for (f in f)
@@ -174,7 +221,7 @@ class Routing {
       }  
       
   
-  static function buildContext(type:Type):Type {
+  static public function buildContext(type:Type) {
     //TODO: add cache
     var counter = counter++;
     var name = 'RoutingContext$counter',
@@ -186,11 +233,17 @@ class Routing {
     
     decl.fields = decl.fields.concat(new Routing(type).fields);
     
-    return declare(decl);
+    return {
+      type: declare(decl),
+      path: fullName(name).asTypePath(),
+    }
   }
   
+  static function fullName(name:String)
+    return '$PACK.$name';
+  
   static function declare(t:TypeDefinition):Type {
-    var name = 'tink.web.routes.${t.name}';
+    var name = fullName(t.name);
     Context.defineModule(name, [t]);
     return Context.getType(name);
   }
@@ -203,19 +256,20 @@ class Routing {
         ct = type.toComplex(),
         router = 'Router${counter++}';
         
-    var ctx = buildContext(type).toString().asTypePath();
+    var ctx = buildContext(type).path;
     
-    return declare(macro class $router {
+    var cl = macro class $router {
       
-      public function new() { }
+      inline public function new() this = 0;
       
-      public function route(target:$ct, request:Request, ?fallback) 
+      public function route(target:$ct, request:Request, ?fallback, depth = 0) 
         return 
-          if (fallback == null) 
-            route(target, request, function (_):Response return new tink.core.Error(NotFound, 'Not Found'));
-          else 
-            new $ctx(target, request, fallback).route();
-    });
+          new $ctx(target, request, fallback, depth).route();
+    }
+    
+    cl.kind = TDAbstract(macro : Int);
+    
+    return declare(cl);
     
   }
   

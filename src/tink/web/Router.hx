@@ -13,14 +13,20 @@ class RoutingContext<T> {
   public var target(default, null):T;
   public var request(default, null):Request;
   
-  var fallback:RoutingContext<T>->Response;
+  public var fallback(default, null):RoutingContext<T>->Response;
   
-  public function new(target, request, fallback, depth:Int = 0) {
+  public function new(target, request, fallback = null, depth:Int = 0) {
+    if (fallback == null)
+      fallback = notFound;
     this.target = target;
     this.request = request;
     this.query = request.header.uri.query;
     this.path = request.header.uri.path.parts();
     this.prefix = this.path.splice(0, depth);
     this.fallback = fallback;
-  }  
+  }
+  
+  static function notFound(_):Response {
+    return new tink.core.Error(NotFound, 'Not Found');
+  }
 }
