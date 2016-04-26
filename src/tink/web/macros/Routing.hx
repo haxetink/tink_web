@@ -361,14 +361,14 @@ class Routing {
     
     var cl = macro class $router {
       
-      inline public function new() this = 0;
+      public function new() this = $v{router};
       
       public function route(target:$ct, request:Request, ?fallback, depth = 0) 
         return 
           new $ctx(target, request, fallback, depth).route();
     }
     
-    cl.kind = TDAbstract(macro : Int);
+    cl.kind = TDAbstract(macro : String);
     
     return declare(cl);
     
