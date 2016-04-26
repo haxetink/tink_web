@@ -23,6 +23,7 @@ class RoutingContext<T> {
     this.query = request.header.uri.query;
     this.path = request.header.uri.path.parts();
     this.prefix = this.path.splice(0, depth);
+    trace(this.prefix + ' -- ' + this.path);
     this.fallback = fallback;
   }
   

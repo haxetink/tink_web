@@ -122,6 +122,80 @@ class Routing {
     return false;
   }  
   
+  function callHandler(callArgs:Array<Expr>, verb:Expr, f:ClassField, m:MetadataEntry, handler:Handler) {
+    var pos = m.pos;
+    var uri:Url = switch m.params {
+      case null | []: 
+        f.name;
+      case [v]: 
+        pos = v.pos;
+        v.getName().sure();
+      case v: 
+        v[1].reject('Not Implemented');
+    }
+    
+    var parts = uri.path.parts();
+    var withRest = parts[parts.length - 1] == '*';
+    
+    if (withRest)
+      parts.pop();
+    
+    var found = new Map();
+    
+    var patternArgs = [
+      for (p in parts) 
+        if (p.charAt(0) == '$') {
+          var name = p.substr(1);
+          
+          if (isSpecial(name))
+            pos.error('Cannot use reserved name $name for captured variable');
+            
+          found[name] = true;
+          macro @:pos(m.pos) $i{name}
+        }
+        else
+          macro @:pos(m.pos) $v{p}
+    ]; 
+    
+    patternArgs.push(
+      if (withRest) macro _
+      else macro null
+    );
+                      
+    var guard = null;
+    
+    function capture(name:String, opt) {
+      
+      callArgs.push(macro $i{name});
+      
+      if (!opt) {
+        var cond = macro $i{name} != null;
+        
+        guard = switch guard {
+          case null: cond;
+          default: macro $guard && $cond;
+        }
+      }
+    }
+    
+    for (arg in handler.func.args.slice(callArgs.length))
+      switch [arg.opt == true, found[arg.name] == true] {
+        case [false, false]:
+          pos.error('Route does not capture required variable ${arg.name}');
+        case [true, false]:
+        case [opt, true]:
+          capture(arg.name, opt);
+      }
+      
+    //TODO: find unused captured vars
+    
+    return {
+      pattern: patternArgs, 
+      expr: macro @:pos(m.pos) $i{handler.name}($a{callArgs}), 
+      guard: guard,
+    }
+  }  
+  
   function build() {
     
     function add(verb:Expr, pattern:Array<Expr>, response:Expr, guard:Expr) {
@@ -142,7 +216,7 @@ class Routing {
             
       var meta = f.meta.get();
       
-      switch [hasRoute(f), meta.getValues(':sub')] {
+      switch [hasRoute(f), [for (m in meta) if (m.name == ':sub') m]] {
         
         case [true, []]:
           
@@ -154,7 +228,10 @@ class Routing {
               case null:
               case verb:
                 
-                //callHandler(verb, f, m, handler, add);
+                var call = callHandler([], verb, f, m, handler);
+                
+                add(verb, call.pattern, call.expr, call.guard);
+                
             }
           
         case [true, v]:
@@ -177,6 +254,12 @@ class Routing {
             type: macro : Int,
           });
           
+          var depth = macro 0;
+          for (m in sub) {
+            var call = callHandler([depth], macro _, f, m, handler);
+            depth.expr = EConst(CInt(Std.string(call.pattern.length-1)));//TODO: this code shows very nicely that my attempts to factor this code properly led to an overengineered piece of crap that needs cleaning up
+            add(macro _, call.pattern, call.expr, call.guard);
+          }
       }
       
     }
@@ -188,7 +271,7 @@ class Routing {
     var switchTarget = [macro this.request.header.method];
     
     for (i in 0...max - 1)
-      switchTarget.push(macro this.parts[$v{i}]);
+      switchTarget.push(macro this.path[$v{i}]);
     
     var body = ESwitch(
       switchTarget.toArray(),
@@ -197,7 +280,7 @@ class Routing {
         guard: c.guard,
         expr: c.response,
       }],
-    macro fallback(this)
+      macro fallback(this)
     ).at();  
     
     var f = (macro class {
