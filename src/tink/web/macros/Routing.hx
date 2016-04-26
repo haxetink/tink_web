@@ -29,7 +29,17 @@ class Routing {
     build();
   }
   
-  static var verbs = 'GET,PUT,POST,DELETE,HEAD,PATCH,OPTIONS'.split(',');
+  static function isUpper(s:String) 
+    return s.toUpperCase() == s;
+  
+  static var verbs = 
+    switch Context.getType('tink.http.Method') {
+      case TAbstract(_.get() => a, _):
+        [for (f in a.impl.get().statics.get()) if (isUpper(f.name)) f.name];
+      default:
+        throw 'assert';
+    }
+    
   static var metas = {
     var ret = [for (v in verbs) ':'+v.toLowerCase() => macro $i{v}];
     ret[':all'] = macro _;
@@ -188,12 +198,13 @@ class Routing {
   static var counter = 0;
   
   static function buildRouter():Type {
-    
+
     var type = getType('tink.web.Router'),
         ct = type.toComplex(),
         router = 'Router${counter++}';
         
     var ctx = buildContext(type).toString().asTypePath();
+    
     return declare(macro class $router {
       
       public function new() { }
