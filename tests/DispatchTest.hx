@@ -4,6 +4,7 @@ import haxe.Constraints.IMap;
 import haxe.PosInfos;
 import haxe.io.Bytes;
 import haxe.unit.TestCase;
+import tink.core.Error.ErrorCode;
 import tink.http.Request;
 import tink.http.Response.OutgoingResponse;
 
@@ -26,20 +27,41 @@ class DispatchTest extends TestCase {
     var res:Future<OutgoingResponse> = r.route(f, req);
     
     res.handle(function (o) {
-      o.body.all().handle(function (b) {
-        structEq(value, haxe.Json.parse(b.sure().toString()));
-        succeeded = true;
-      });
+      if (o.header.statusCode != 200)
+        fail('Request to ${req.header.uri} failed because ${o.header.reason}');
+      else
+        o.body.all().handle(function (b) {
+          structEq(value, haxe.Json.parse(b.sure().toString()));
+          succeeded = true;
+        });
     });
     
     assertTrue(succeeded);
   }  
+  
+  function shouldFail(e:ErrorCode, req) {
+    var failed = false;
+    
+    var res:Future<OutgoingResponse> = r.route(f, req);
+    
+    res.handle(function (o) {
+      assertEquals(e, o.header.statusCode);  
+      failed = true;
+    });
+    
+    assertTrue(failed);
+    
+  }
+  
   function testDispatch() {
       
     expect({ hello: 'world' }, get('/'));
     expect({ hello: 'haxe' }, get('/haxe'));
     expect("yo", get('/yo'));
-    expect({ a: 1, b: 2, blargh: 'yo', path: ['sub', '1', '2', 'test', 'yo'] }, get('/sub/1/2/test/yo'));
+    expect({ a: 1, b: 2, blargh: 'yo', path: ['sub', '1', '2', 'test', 'yo'] }, get('/sub/1/2/test/yo?c=3&d=4'));
+    var complex: { foo: Array<{ ?x: String, ?y:Int, z:Float }> } = { foo: [ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ] };
+    expect(complex, get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'));
+    shouldFail(ErrorCode.UnprocessableEntity, get('/sub/1/2/test/yo'));
   }
   
   function get(url, ?headers)
@@ -55,25 +77,27 @@ class DispatchTest extends TestCase {
   }
   
   //TODO: this is a useless duplication with tink_json tests
-	function fail( reason:String, ?c : PosInfos ) : Void {
-		currentTest.done = true;
+  function fail( reason:String, ?c : PosInfos ) : Void {
+    currentTest.done = true;
     currentTest.success = false;
     currentTest.error   = reason;
     currentTest.posInfos = c;
     throw currentTest;
-	}
+  }
   
   function structEq<T>(expected:T, found:T) {
+    
+    currentTest.done = true;
+    
+    if (expected == found) return;
     
     var eType = Type.typeof(expected),
         fType = Type.typeof(found);
     if (!eType.equals(fType))    
       fail('$found should be $eType but is $fType');
     
-    assertTrue(true);
-    
     switch eType {
-      case TNull, TInt, TFloat, TBool, TClass(String):
+      case TNull, TInt, TFloat, TBool, TClass(String), TUnknown:
         assertEquals(expected, found);
       case TFunction:
         throw 'not implemented';
@@ -106,6 +130,7 @@ class DispatchTest extends TestCase {
         
         if (expected.getSeconds() != found.getSeconds() || expected.getMinutes() != found.getMinutes())//python seems to mess up time zones and other stuff too ... -.-
           fail('expected $expected but found $found');    
+          
       case TClass(Bytes):
         
         var expected = (cast expected : Bytes).toHex(),
@@ -124,8 +149,6 @@ class DispatchTest extends TestCase {
             
         assertEquals(Type.enumConstructor(expected), Type.enumConstructor(found));
         structEq(Type.enumParameters(expected), Type.enumParameters(found));
-      case TUnknown:
-        throw 'not implemented';
     }
   }  
   

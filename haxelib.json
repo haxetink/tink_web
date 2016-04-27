@@ -10,6 +10,7 @@
 	"classPath": "src",
   "dependencies": {
     "tink_http": "",
+    "tink_json": "",
     "tink_macro": "",
     "tink_template": ""
   }

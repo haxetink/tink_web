@@ -6,6 +6,7 @@ class Run {
   function new() {}
   static var tests:Array<TestCase> = [
     new DispatchTest(),
+    //new QueryParserTest(),
   ];
   static function main() {  
     //var route = new tink.web.Router<Run>();

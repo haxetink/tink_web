@@ -34,13 +34,7 @@ class Routing {
   static function isUpper(s:String) 
     return s.toUpperCase() == s;
   
-  static var verbs = 
-    switch Context.getType('tink.http.Method') {
-      case TAbstract(_.get() => a, _):
-        [for (f in a.impl.get().statics.get()) if (isUpper(f.name)) f.name];
-      default:
-        throw 'assert';
-    }
+  static var verbs = 'GET,HEAD,OPTIONS,PUT,POST,PATCH,DELETE'.split(',');
     
   static var metas = {
     var ret = [for (v in verbs) ':'+v.toLowerCase() => macro $i{v}];
@@ -82,7 +76,8 @@ class Routing {
             switch a.name {
               case 'query':
                 
-                throw 'not implemented';
+                var parser = QueryParser.build(a.t, f.pos).toString().asTypePath();
+                callArgs.push(macro @:pos(f.pos) new $parser(query).parse());
                 
               case 'body':
                 
@@ -304,7 +299,13 @@ class Routing {
     var f = (macro class {
       
       public function route():Response 
-        return $body;
+        return 
+          try {
+            $body;
+          }
+          catch (e:tink.core.Error) {
+            (e:Response);
+          }
       
     }).fields;
     
