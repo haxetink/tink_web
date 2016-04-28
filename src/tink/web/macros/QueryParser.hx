@@ -34,6 +34,8 @@ class QueryParser {
     var name = 'QueryParser$counter';
     
     var ret = macro class $name extends tink.web.helpers.QueryParserBase {
+      public function tryParse()
+        return tink.core.Error.catchExceptions(this.parse);
     }
     
     function add(t:TypeDefinition)

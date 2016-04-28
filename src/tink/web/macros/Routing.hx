@@ -6,6 +6,7 @@ import haxe.macro.Expr;
 
 using haxe.macro.Tools;
 using tink.MacroApi;
+using Lambda;
 
 private typedef Handler = {
   name:String,
@@ -71,18 +72,50 @@ class Routing {
         case TFun(args, r):
           
           var callArgs = new Array<Expr>();
-              
+          var futures = new Array<Var>();
+          
+          function queryParser(type, e) {
+            var parser = QueryParser.build(type, f.pos).toString().asTypePath();
+            return macro @:pos(f.pos) new $parser($e);
+          }
+          
           for (a in args)
             switch a.name {
               case 'query':
                 
-                var parser = QueryParser.build(a.t, f.pos).toString().asTypePath();
-                callArgs.push(macro @:pos(f.pos) new $parser(query).parse());
+                if (f.meta.has(':sub'))
+                  f.pos.warning('Relying on query for subrouting risks leading to conflicts with the subroute\'s logic');
+                  
+                callArgs.push(macro ${queryParser(a.t, macro query)}.parse());
                 
               case 'body':
                 
-                throw 'not implemented';
-              
+                if (f.meta.has(':sub'))
+                  f.pos.warning('Relying on body for subrouting risks leading to conflicts with the subroute\'s logic');
+                
+                //TODO: give warnings when verb does not have a body
+                
+                var ct = a.t.toComplex();
+                
+                futures.push({
+                  name: a.name,
+                  type: null,
+                  expr: macro @:pos(f.pos) this.request.body.all() >> function (body:haxe.io.Bytes) {
+                    
+                    return switch this.request.header.get('content-type') {
+                      case ['application/json']:
+                        new tink.json.Parser<$ct>().tryParse(body.toString());
+                      case ['application/x-www-form-urlencoded']:
+                        ${queryParser(a.t, macro @:pos(f.pos) body.toString())}.tryParse();
+                      case v:
+                        tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, 'Missing Content-Type header'));
+                    }
+                    
+                  },
+                });
+                
+                callArgs.push(macro @:pos(f.pos) body);
+                
               case 'path':
                 
                 callArgs.push(macro @:privateAccess new Path(this.prefix.concat(this.path.slice(0, __depth__))));
@@ -109,11 +142,44 @@ class Routing {
                   opt: a.opt,
                 });
             }
-          {
-            args: funcArgs,
-            ret: null,
-            expr: ret(macro @:pos(f.pos) this.target.$fName($a{callArgs}), r),
+            
+            
+          var call = macro @:pos(f.pos) this.target.$fName($a{callArgs});
+          
+          if (futures.length > 0) {
+            
+            //call = macro @:pos(call.pos) ${mkResponse(wrap(call, r))}.handle(cb);
+            call = macro @:pos(call.pos) ${mkResponse(wrap(call, r))};
+            
+            futures.reverse();
+            
+            for (f in futures) {
+              var name = f.name;
+              call = macro @:pos(f.expr.pos) $i{name} >> function ($name) return $call;
+              //call = macro @:pos(f.expr.pos) $i{name}.handle(function ($name) $call);
+            }
+            
+            futures.reverse();
+            
+            call = macro {
+              ${EVars(futures).at()};
+              $call;
+            };
+            
+            call = @:pos(call.pos) macro return $call;
+            
+            {
+              args: funcArgs,
+              ret: null,
+              expr: call,
+            }
           }
+          else 
+            {
+              args: funcArgs,
+              ret: null,
+              expr: ret(call, r),
+            }
         case v:
           
           {
@@ -293,7 +359,15 @@ class Routing {
         guard: c.guard,
         expr: c.response,
       }],
-      macro fallback(this)
+      {
+        var ret = macro fallback(this);
+        for (c in cases)
+          if (c.guard == null && c.pattern.filter(function (e) return !e.isWildcard()).length == 0) {
+            ret = null;
+            break;
+          }
+        ret;
+      }
     ).at();  
     
     var f = (macro class {
@@ -313,7 +387,7 @@ class Routing {
       this.fields.push(f);
   }
   
-  static function getType(name) 
+  static public function getType(name) 
     return 
       switch Context.getLocalType() {
         case TInst(_.toString() == name => true, [v]):

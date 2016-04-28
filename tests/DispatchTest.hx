@@ -5,8 +5,10 @@ import haxe.PosInfos;
 import haxe.io.Bytes;
 import haxe.unit.TestCase;
 import tink.core.Error.ErrorCode;
+import tink.http.Header.HeaderField;
 import tink.http.Request;
 import tink.http.Response.OutgoingResponse;
+import tink.io.Source;
 
 import tink.io.IdealSource;
 
@@ -58,16 +60,24 @@ class DispatchTest extends TestCase {
     expect({ hello: 'world' }, get('/'));
     expect({ hello: 'haxe' }, get('/haxe'));
     expect("yo", get('/yo'));
-    expect({ a: 1, b: 2, blargh: 'yo', path: ['sub', '1', '2', 'test', 'yo'] }, get('/sub/1/2/test/yo?c=3&d=4'));
+    expect( { a: 1, b: 2, blargh: 'yo', path: ['sub', '1', '2', 'test', 'yo'] }, get('/sub/1/2/test/yo?c=3&d=4'));
+    
+    shouldFail(ErrorCode.UnprocessableEntity, get('/sub/1/2/test/yo'));
     var complex: { foo: Array<{ ?x: String, ?y:Int, z:Float }> } = { foo: [ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ] };
     expect(complex, get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'));
-    shouldFail(ErrorCode.UnprocessableEntity, get('/sub/1/2/test/yo'));
+    
+    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4'));
+    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4&foo=hey'));
+    
+    expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'));
+    expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })));
+    
   }
   
   function get(url, ?headers)
     return req(url, GET, headers);
   
-  function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body) {
+  function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:Source) {
     if (headers == null)
       headers = [];
       

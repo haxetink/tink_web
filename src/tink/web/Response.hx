@@ -6,6 +6,7 @@ import tink.template.Html;
 
 using tink.CoreApi;
 
+@:forward
 abstract Response(Future<OutgoingResponse>) from Future<OutgoingResponse> to Future<OutgoingResponse> {
   
   @:from static function flatten(f:Future<Response>):Response 

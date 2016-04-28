@@ -21,6 +21,10 @@ class Fake {
     });
   }
   
+  @:post public function post(body:{ foo:String, bar: Int }) {
+    return haxe.Json.stringify(body);
+  }
+  
   @:sub('/sub/$a/$b')
   public function sub(a, b, path:String) {
     return new FakeSub(a, b);
