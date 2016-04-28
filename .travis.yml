@@ -3,10 +3,6 @@ dist: trusty
 
 language: haxe
 
-os:
-  - linux
-  - osx
-  
 haxe:
   - "3.2.1"
   - development
