@@ -14,8 +14,13 @@ abstract Stringly(String) to String from String {
       case v: v;
     }
     
-  @:to public function toBool():Bool {
+  @:to public function toBool():Bool
     return this != null;
-  }
+  
+  @:from static function ofInt(i:Int):Stringly
+    return Std.string(i);
+    
+  @:from static function ofFloat(f:Float):Stringly
+    return Std.string(f);
   
 }
