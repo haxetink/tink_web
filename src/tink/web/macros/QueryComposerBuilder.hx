@@ -3,6 +3,7 @@ package tink.web.macros;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.Type;
+import tink.macro.BuildCache;
 
 import tink.typecrawler.Crawler;
 import tink.typecrawler.FieldInfo;
@@ -13,8 +14,8 @@ using tink.MacroApi;
 
 class QueryComposerBuilder {  
   
-  static function buildNew(pos:Position, type:Type, usings, name:String) {
-    
+  static function buildNew(ctx:BuildContext) {
+    var name = ctx.name;
     var ret = macro class $name {
       public function new() {}
       //public function tryParse()
@@ -25,7 +26,7 @@ class QueryComposerBuilder {
       for (f in t.fields)
         ret.fields.push(f);
         
-    var crawl = Crawler.crawl(type, pos, QueryComposerBuilder);
+    var crawl = Crawler.crawl(ctx.type, ctx.pos, QueryComposerBuilder);
     
     ret.fields = ret.fields.concat(crawl.fields);
     
@@ -126,5 +127,5 @@ class QueryComposerBuilder {
   }  
   
   static public function build(?type:Type, ?pos:Position) 
-    return Cache.getType('tink.web.QueryComposer', type, pos, buildNew);
+    return BuildCache.getType('tink.web.QueryComposer', type, pos, buildNew);
 }

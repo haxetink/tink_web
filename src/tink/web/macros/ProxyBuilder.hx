@@ -3,24 +3,27 @@ package tink.web.macros;
 import haxe.macro.Expr;
 import haxe.macro.Type;
 import tink.web.macros.Rule;
+import tink.macro.BuildCache;
+
 using haxe.macro.Tools;
 using tink.MacroApi;
 
 class ProxyBuilder {
 
   static function build() {
-    return Cache.getType('tink.web.Proxy', makeProxy);
+    return BuildCache.getType('tink.web.Proxy', makeProxy);
     //return proxyFor(Routing.getType('tink.web.Proxy'));
   }
   
-  static function makeProxy(pos:Position, type:Type, _, name:String) {
-    var ct = type.toComplex();
+  static function makeProxy(ctx:BuildContext) {
+    var ct = ctx.type.toComplex(),
+        name = ctx.name;
     
     var ret = macro class $name extends tink.web.Proxy.ProxyBase<$ct> {
       
     }
     
-    for (r in Rules.read(type)) {
+    for (r in Rules.read(ctx.type)) {
       switch r.kind {
         case Sub(_): 
           //r.field.pos.error('no support for subrouting just yet');
