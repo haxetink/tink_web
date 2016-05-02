@@ -47,7 +47,7 @@ typedef RulePath = Array<PathPart>;
 
 enum PathPart {
   Const(s:String);
-  Arg(name:String);
+  Arg(name:String, t:Type);
 }
 
 typedef SubRoute = {
@@ -98,33 +98,45 @@ class Rules {
       }
   }
   
-  static function getPath(f:ClassField, m:MetadataEntry):Pair<RulePath, PathRest> {
-    return
-      switch m.params {
-        case null | []: 
-          new Pair([Const(f.name)], Exact);
-        case [v]: 
-          
-          var uri:Url = v.getName().sure(),
-              parts = uri.path.parts();
-          
-          var rest = switch parts[parts.length - 1] {
-            case '*': Ignore;
-            case null: Exact;
-            case named if (named.startsWith('*')): Capture(named.substr(1));
-            default: Exact;
-          }
-          
-          if (rest != Exact)
-            parts.pop();
-            
-          new Pair([for (p in parts) 
-            if (p.startsWith("$")) Arg(p.substr(1))
-            else Const(p)
-          ], rest);
-        case v: 
-          v[1].reject('Not Implemented');
+  static function pathResolver(f:ClassField, sig:RuleSignature) {
+    
+    var types = new Map();
+    
+    for (arg in sig.args)
+      switch arg {
+        case APart(name, t): types[name] = t;
+        default:
       }
+      
+    return function (m:MetadataEntry)
+      return
+        switch m.params {
+          case null | []: 
+            new Pair([Const(f.name)], Exact);
+          case [v]: 
+            
+            var uri:Url = v.getName().sure(),
+                parts = uri.path.parts();
+            
+            var rest = switch parts[parts.length - 1] {
+              case '*': Ignore;
+              case null: Exact;
+              case named if (named.startsWith('*')): Capture(named.substr(1));
+              default: Exact;
+            }
+            
+            if (rest != Exact)
+              parts.pop();
+              
+            new Pair([for (p in parts) switch p.split("$") {
+              case ['', name]: Arg(name, types[name]);
+              case [const]: Const(const);
+              default:
+                v.reject('cannot parse fragment $p');
+            }], rest);
+          case v: 
+            v[1].reject('Not Implemented');
+        }
     
   }
   
@@ -139,6 +151,10 @@ class Rules {
         
         case [true, []]:
           
+          var sig = makeSignature(f);
+          
+          var getPath = pathResolver(f, sig);
+          
           function makeCalls(f:ClassField) {
             
             var ret = new Array<Call>();
@@ -148,7 +164,7 @@ class Rules {
                 case null:
                 case method:
                   
-                  var sig = getPath(f, m);
+                  var sig = getPath(m);
                   
                   ret.push({
                     method: method,
@@ -173,11 +189,13 @@ class Rules {
         case [false, []]:
           
         case [false, sub]:
+          var sig = makeSignature(f);
           
+          var getPath = pathResolver(f, sig);
           ret.push({
             field: f,
-            signature: makeSignature(f),
-            kind: Sub([for (s in sub) switch getPath(f, s) {
+            signature: sig,
+            kind: Sub([for (s in sub) switch getPath(s) {
               case { a: path, b: Exact }: { path: path };
               default: s.pos.error('subrouting paths must be exact');
             }]),

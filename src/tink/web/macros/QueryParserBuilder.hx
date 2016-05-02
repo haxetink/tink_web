@@ -8,30 +8,12 @@ import tink.typecrawler.Crawler;
 import tink.typecrawler.FieldInfo;
 import tink.typecrawler.Generator;
 
+using haxe.macro.Tools;
 using tink.MacroApi;
 
-class QueryParser { 
-  static var counter;
-  static var cache;
+class QueryParserBuilder { 
   
-  static var __refresh__ = {
-    function refresh() {
-      counter = 0;
-      cache = new TypeMap();
-      return true;
-    }
-    refresh();
-    Context.onMacroContextReused(refresh);
-  }
-  
-  static public function build(type:Type, pos:Position) {
-    switch cache.get(type) {
-      case null:
-      case v: return v;
-    }
-    
-    var counter = counter++;
-    var name = 'QueryParser$counter';
+  static function buildNew(pos:Position, type:Type, usings, name:String) {
     
     var ret = macro class $name extends tink.web.helpers.QueryParserBase {
       public function tryParse()
@@ -41,8 +23,8 @@ class QueryParser {
     function add(t:TypeDefinition)
       for (f in t.fields)
         ret.fields.push(f);
-    
-    var crawl = Crawler.crawl(type, pos, QueryParser);
+        
+    var crawl = Crawler.crawl(type, pos, QueryParserBuilder);
     
     ret.fields = ret.fields.concat(crawl.fields);
     
@@ -51,14 +33,13 @@ class QueryParser {
         var prefix = '';
         return ${crawl.expr};
       }
-    });
-    
-    Context.defineType(ret);
-    
-    var ret = Context.getType(name);
-    cache.set(type, ret);
+    });    
+        
     return ret;
   }
+  
+  static public function build(type:Type, pos:Position) 
+    return Cache.getType('tink.web.QueryParser', type, pos, buildNew);
   
   static public function args():Array<String> 
     return ['prefix'];

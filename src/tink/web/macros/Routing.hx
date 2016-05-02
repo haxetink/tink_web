@@ -3,6 +3,7 @@ package tink.web.macros;
 import haxe.macro.Context;
 import haxe.macro.Type;
 import haxe.macro.Expr;
+import tink.web.macros.Rule.Rules;
 
 using haxe.macro.Tools;
 using tink.MacroApi;
@@ -31,10 +32,7 @@ class Routing {
     
     build();
   }
-  
-  static function isUpper(s:String) 
-    return s.toUpperCase() == s;
-  
+    
   static var verbs = 'GET,HEAD,OPTIONS,PUT,POST,PATCH,DELETE'.split(',');
     
   static var metas = {
@@ -75,7 +73,7 @@ class Routing {
           var futures = new Array<Var>();
           
           function queryParser(type, e) {
-            var parser = QueryParser.build(type, f.pos).toString().asTypePath();
+            var parser = QueryParserBuilder.build(type, f.pos).toString().asTypePath();
             return macro @:pos(f.pos) new $parser($e);
           }
           
@@ -433,7 +431,9 @@ class Routing {
     var type = getType('tink.web.Router'),
         ct = type.toComplex(),
         router = 'Router$counter';
-        
+    
+    Rules.read(type);
+    
     var ctx = buildContext(type).path;
     
     var cl = macro class $router {
