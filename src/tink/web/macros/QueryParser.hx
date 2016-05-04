@@ -107,7 +107,7 @@ class QueryParser {
             case '': $v{f.name};
             case v: v + $v{ '.' + f.name};
           }
-          ${f.expr};
+          ${f.optional ? macro if(!exists[prefix]) null else ${f.expr} : f.expr};
         } 
       });
     return (macro function (prefix:String):$ct {
