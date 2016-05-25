@@ -22,8 +22,7 @@ class RoutingContext<T> {
     this.fallback = fallback;
   }
   
-  static function notFound<T>(r:RoutingContext<T>):Response {
+  static function notFound<T>(r:RoutingContext<T>):Response 
     return new tink.core.Error(NotFound, 'Not Found');
-  }
   
 }

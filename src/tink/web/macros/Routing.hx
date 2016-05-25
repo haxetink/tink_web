@@ -72,8 +72,8 @@ class Routing {
           var callArgs = new Array<Expr>();
           var futures = new Array<Var>();
           
-          function queryParser(type, e) {
-            var parser = QueryParserBuilder.build(type, f.pos).toString().asTypePath();
+          function queryParser(type, e, body) {
+            var parser = QueryParserBuilder.build(type, f.pos, body).toString().asTypePath();
             return macro @:pos(f.pos) new $parser($e);
           }
           
@@ -84,7 +84,7 @@ class Routing {
                 if (f.meta.has(':sub'))
                   f.pos.warning('Relying on query for subrouting risks leading to conflicts with the subroute\'s logic');
                   
-                callArgs.push(macro ${queryParser(a.t, macro query)}.parse());
+                callArgs.push(macro ${queryParser(a.t, macro query.iterator(), false)}.parse());
                 
               case 'body':
                 
@@ -104,7 +104,7 @@ class Routing {
                       case ['application/json']:
                         new tink.json.Parser<$ct>().tryParse(body.toString());
                       case ['application/x-www-form-urlencoded']:
-                        ${queryParser(a.t, macro @:pos(f.pos) body.toString())}.tryParse();
+                        ${queryParser(a.t, macro @:pos(f.pos) body.toString(), true)}.tryParse();
                       case v:
                         tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, 'Missing Content-Type header'));
                     }

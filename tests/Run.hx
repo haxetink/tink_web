@@ -5,8 +5,8 @@ import haxe.unit.*;
 class Run {
   function new() {}
   static var tests:Array<TestCase> = [
-    //new DispatchTest(),
-    new ProxyTest(),
+    new DispatchTest(),
+    //new ProxyTest(),
     //new QueryParserTest(),
     //new QueryComposerTest(),
   ];

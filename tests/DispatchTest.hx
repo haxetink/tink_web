@@ -26,9 +26,8 @@ class DispatchTest extends TestCase {
     
     var succeeded = false;
     
-    var res:Future<OutgoingResponse> = r.route(f, req);
-    
-    res.handle(function (o) {
+    r.route(f, req).handle(function (o) {
+      var o = o.sure();
       if (o.header.statusCode != 200)
         fail('Request to ${req.header.uri} failed because ${o.header.reason}');
       else
@@ -44,7 +43,7 @@ class DispatchTest extends TestCase {
   function shouldFail(e:ErrorCode, req) {
     var failed = false;
     
-    var res:Future<OutgoingResponse> = r.route(f, req);
+    var res:Future<OutgoingResponse> = r.route(f, req).handleError(OutgoingResponse.reportError);
     
     res.handle(function (o) {
       assertEquals(e, o.header.statusCode);  
@@ -83,7 +82,7 @@ class DispatchTest extends TestCase {
       
     if (body == null)
       body = Empty.instance;
-    return new IncomingRequest('1.2.3.4', new IncomingRequestHeader(method, url, '1.1', headers), body);
+    return new IncomingRequest('1.2.3.4', new IncomingRequestHeader(method, url, '1.1', headers), Plain(body));
   }
   
   //TODO: this is a useless duplication with tink_json tests

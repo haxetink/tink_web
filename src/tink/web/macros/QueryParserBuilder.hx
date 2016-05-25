@@ -3,6 +3,7 @@ package tink.web.macros;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.Type;
+import tink.macro.BuildCache;
 
 import tink.typecrawler.Crawler;
 import tink.typecrawler.FieldInfo;
@@ -13,9 +14,10 @@ using tink.MacroApi;
 
 class QueryParserBuilder { 
   
-  static function buildNew(pos:Position, type:Type, usings, name:String) {
-    
-    var ret = macro class $name extends tink.web.helpers.QueryParserBase {
+  static function buildNew(ctx:BuildContext, body:Bool) {
+    var name = ctx.name;
+    var vType = if (body) throw 'noooo' else macro : tink.web.Stringly;
+    var ret = macro class $name extends tink.web.helpers.QueryParserBase<$vType> {
       public function tryParse()
         return tink.core.Error.catchExceptions(this.parse);
     }
@@ -24,7 +26,7 @@ class QueryParserBuilder {
       for (f in t.fields)
         ret.fields.push(f);
         
-    var crawl = Crawler.crawl(type, pos, QueryParserBuilder);
+    var crawl = Crawler.crawl(ctx.type, ctx.pos, QueryParserBuilder);
     
     ret.fields = ret.fields.concat(crawl.fields);
     
@@ -38,8 +40,8 @@ class QueryParserBuilder {
     return ret;
   }
   
-  static public function build(type:Type, pos:Position) 
-    return Cache.getType('tink.web.QueryParser', type, pos, buildNew);
+  static public function build(type:Type, pos:Position, body:Bool) 
+    return BuildCache.getType('tink.web.QueryParser', type, pos, buildNew.bind(_, body));
   
   static public function args():Array<String> 
     return ['prefix'];

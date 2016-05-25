@@ -2,12 +2,12 @@ package tink.web.helpers;
 
 import tink.url.Query;
 
-class QueryParserBase { 
+class QueryParserBase<T> { 
   
-  var params:Map<String, String>;
+  var params:Map<String, T>;
   var exists:Map<String, Bool>;
   
-  public function new(q:Query) {
+  public function new(q:Iterator<{ var name(default, null):String; var value(default, null):T; }>) {
     
     this.params = new Map();
     this.exists = new Map();
