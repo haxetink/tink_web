@@ -16,7 +16,7 @@ class QueryParserBuilder {
   
   static function buildNew(ctx:BuildContext, body:Bool) {
     var name = ctx.name;
-    var vType = if (body) throw 'noooo' else macro : tink.web.Stringly;
+    var vType = if (body) macro : tink.web.helpers.FormField else macro : tink.web.Stringly;
     var ret = macro class $name extends tink.web.helpers.QueryParserBase<$vType> {
       public function tryParse()
         return tink.core.Error.catchExceptions(this.parse);

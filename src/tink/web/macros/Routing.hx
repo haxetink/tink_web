@@ -95,21 +95,24 @@ class Routing {
                 
                 var ct = a.t.toComplex();
                 
+                function fail(msg:String)
+                  return macro tink.core.Future.sync(tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, $v{msg})));
+                
                 futures.push({
                   name: a.name,
                   type: null,
-                  expr: macro @:pos(f.pos) this.request.body.all() >> function (body:haxe.io.Bytes) {
-                    
-                    return switch this.request.header.get('content-type') {
+                  expr: 
+                    macro @:pos(f.pos) switch this.request.header.get('content-type') {
                       case ['application/json']:
-                        new tink.json.Parser<$ct>().tryParse(body.toString());
-                      case ['application/x-www-form-urlencoded']:
-                        ${queryParser(a.t, macro @:pos(f.pos) body.toString(), true)}.tryParse();
-                      case v:
-                        tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, 'Missing Content-Type header'));
+                        switch this.request.body {
+                          case Plain(src):
+                            src.all() >> function (body:haxe.io.Bytes) return new tink.json.Parser<$ct>().tryParse(body.toString());                     
+                          default:
+                            ${fail('Invalid JSON')};
+                        }
+                      default:
+                        this.bodyParts >> function (parts:Array<tink.http.Request.BodyPart>) return ${queryParser(a.t, macro @:pos(f.pos) parts.iterator(), true)}.tryParse();
                     }
-                    
-                  },
                 });
                 
                 callArgs.push(macro @:pos(f.pos) body);
@@ -146,7 +149,6 @@ class Routing {
           
           if (futures.length > 0) {
             
-            //call = macro @:pos(call.pos) ${mkResponse(wrap(call, r))}.handle(cb);
             call = macro @:pos(call.pos) ${mkResponse(wrap(call, r))};
             
             futures.reverse();
@@ -154,7 +156,6 @@ class Routing {
             for (f in futures) {
               var name = f.name;
               call = macro @:pos(f.expr.pos) $i{name} >> function ($name) return $call;
-              //call = macro @:pos(f.expr.pos) $i{name}.handle(function ($name) $call);
             }
             
             futures.reverse();
