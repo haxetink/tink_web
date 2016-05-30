@@ -22,6 +22,9 @@ abstract Response(ResponseRep) from ResponseRep to ResponseRep {
   
   @:from static function ofResponse(o:OutgoingResponse):Response
     return ofSync(Success(o));
+  
+  @:from static function ofFutureResponse(o:Future<OutgoingResponse>):Response
+    return o.map(function(res) return Success(res));
     
   @:from static function ofError(e:Error):Response
     return ofSync(Failure(e));
