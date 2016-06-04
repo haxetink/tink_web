@@ -2,6 +2,14 @@ package tink.web;
 
 abstract Stringly(String) to String from String { 
   
+	@:to public function toUnsafeInt():Null<Int> {
+		return Std.parseInt(this);
+	}
+	
+	@:to public function toUnsafeFlot():Null<Float> {
+		return Std.parseFloat(this);
+	}
+	
   @:to public function toInt():Int
     return switch Std.parseInt(this) {
       case null: throw '$this is not a valid integer';
