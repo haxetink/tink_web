@@ -49,6 +49,6 @@ class RoutingContext<T> {
   }
   
   static function notFound<T>(r:RoutingContext<T>):Response 
-    return new tink.core.Error(NotFound, 'Not Found');
+    return new tink.core.Error(NotFound, 'Not Found: [${r.request.header.method}] ${r.request.header.uri}');
   
 }
