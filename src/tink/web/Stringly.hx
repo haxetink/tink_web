@@ -6,9 +6,11 @@ abstract Stringly(String) to String from String {
 		return Std.parseInt(this);
 	}
 	
-	@:to public function toUnsafeFlot():Null<Float> {
-		return Std.parseFloat(this);
-	}
+	@:to public function toUnsafeFloat():Null<Float>
+		return switch Std.parseFloat(this) {
+    case Math.isNaN(_) => true: null;
+    case v: v;
+  }
 	
   @:to public function toInt():Int
     return switch Std.parseInt(this) {
