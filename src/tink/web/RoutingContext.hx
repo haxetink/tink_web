@@ -2,6 +2,7 @@ package tink.web;
 
 import haxe.io.Bytes;
 import tink.http.Multipart;
+import tink.http.StructuredBody;
 import tink.http.Request;
 import tink.url.Query;
 using tink.CoreApi;
@@ -13,7 +14,7 @@ class RoutingContext<T> {
   public var prefix(default, null):Array<String>;
   public var target(default, null):T;
   public var request(default, null):Request;
-  public var bodyParts(default, null):Surprise<Array<BodyPart>, Error>;
+  public var bodyParts(default, null):Surprise<StructuredBody, Error>;
   
   public var fallback(default, null):RoutingContext<T>->Response;
   
@@ -34,7 +35,7 @@ class RoutingContext<T> {
                 case Some(s):
                   cb(Failure(new Error('multipart currently not supported on this server platform')));
                 case None:
-                  (src.all() >> function (bytes:Bytes):Array<BodyPart> return [for (part in (bytes.toString() : Query)) { name: part.name, value: Value(part.value) } ]).handle(cb);
+                  (src.all() >> function (bytes:Bytes):StructuredBody return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]).handle(cb);
               }
           }
         }, true);

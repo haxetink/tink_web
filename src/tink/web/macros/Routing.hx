@@ -111,7 +111,7 @@ class Routing {
                             ${fail('Invalid JSON')};
                         }
                       default:
-                        this.bodyParts >> function (parts:Array<tink.http.Request.BodyPart>) return ${queryParser(a.t, macro @:pos(f.pos) parts.iterator(), true)}.tryParse();
+                        this.bodyParts >> function (parts:tink.http.StructuredBody) return ${queryParser(a.t, macro @:pos(f.pos) parts.iterator(), true)}.tryParse();
                     }
                 });
                 

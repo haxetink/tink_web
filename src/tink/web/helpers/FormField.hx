@@ -1,9 +1,10 @@
 package tink.web.helpers;
 
 import tink.http.Request;
+import tink.http.StructuredBody;
 import tink.web.Stringly;
 
-abstract FormField(ParsedParam) from ParsedParam to ParsedParam {
+abstract FormField(BodyPart) from BodyPart to BodyPart {
   public function getValue():Stringly 
     return switch this {
       case Value(v): v;
