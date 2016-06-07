@@ -55,7 +55,7 @@ class QueryParserBuilder {
   static public function string():Expr 
     return 
       macro 
-        if (exists[prefix]) params[prefix];
+        if (exists[prefix]) (params[prefix]:String);
         else missing(prefix);
     
   static public function float():Expr
@@ -71,7 +71,7 @@ class QueryParserBuilder {
     return throw "not implemented";
   }
   static public function bool():Expr {
-    return throw "not implemented";
+    return macro (${string()}) == 'true';
   }
   static public function date():Expr {
     return throw "not implemented";

@@ -35,7 +35,7 @@ class RoutingContext<T> {
                 case Some(s):
                   cb(Failure(new Error('multipart currently not supported on this server platform')));
                 case None:
-                  (src.all() >> function (bytes:Bytes):Array<BodyPart> return [for (part in (bytes.toString() : Query)) { name: part.name, value: Value(part.value) } ]).handle(cb);
+                  (src.all() >> function (bytes:Bytes):StructuredBody return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]).handle(cb);
               }
           }
         }, true);
@@ -50,6 +50,6 @@ class RoutingContext<T> {
   }
   
   static function notFound<T>(r:RoutingContext<T>):Response 
-    return new tink.core.Error(NotFound, 'Not Found');
+    return new tink.core.Error(NotFound, 'Not Found: [${r.request.header.method}] ${r.request.header.uri}');
   
 }

@@ -23,6 +23,9 @@ abstract Response(ResponseRep) from ResponseRep to ResponseRep {
   
   @:from static function ofResponse(o:OutgoingResponse):Response
     return ofSync(Success(o));
+  
+  @:from static function ofFutureResponse(o:Future<OutgoingResponse>):Response
+    return o.map(function(res) return Success(res));
     
   @:from static function ofError(e:Error):Response
     return ofSync(Failure(e));
@@ -37,6 +40,9 @@ abstract Response(ResponseRep) from ResponseRep to ResponseRep {
     
   @:from static function html(s:Html):Response
     return ofResponse(OutgoingResponse.blob(Bytes.ofString(s), 'text/html'));
+    
+  @:from static function unsafeText(s:Surprise<String, Error>):Response
+    return s.map(function (o) return o.map(function (s):OutgoingResponse return s));
     
   @:from static function unsafeHtml(s:Surprise<Html, Error>):Response
     return s.map(function (o) return o.map(function (html) return OutgoingResponse.blob(Bytes.ofString(html), 'text/html')));
