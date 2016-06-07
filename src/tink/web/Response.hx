@@ -1,6 +1,7 @@
 package tink.web;
 
 import haxe.io.Bytes;
+import tink.http.Header.HeaderField;
 import tink.http.Response;
 import tink.template.Html;
 
@@ -39,6 +40,9 @@ abstract Response(ResponseRep) from ResponseRep to ResponseRep {
     
   @:from static function unsafeHtml(s:Surprise<Html, Error>):Response
     return s.map(function (o) return o.map(function (html) return OutgoingResponse.blob(Bytes.ofString(html), 'text/html')));
+    
+  @:from static function ofRedirect(s:Surprise<Url, Error>):Response 
+    return s.map(function (o) return o.map(function (url) return new OutgoingResponse(new ResponseHeader(302, 'ok', [new HeaderField('location', url)]), '')));
     
   //@:from static function unsafeResponse(s:Surprise<OutgoingResponse, Error>):Response
     //return s.map(function (o):OutgoingResponse return switch o {

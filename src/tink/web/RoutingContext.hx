@@ -2,6 +2,7 @@ package tink.web;
 
 import haxe.io.Bytes;
 import tink.http.Multipart;
+import tink.http.StructuredBody;
 import tink.http.Request;
 import tink.url.Query;
 using tink.CoreApi;
@@ -13,7 +14,7 @@ class RoutingContext<T> {
   public var prefix(default, null):Array<String>;
   public var target(default, null):T;
   public var request(default, null):Request;
-  public var bodyParts(default, null):Surprise<Array<BodyPart>, Error>;
+  public var bodyParts(default, null):Surprise<StructuredBody, Error>;
   
   public var fallback(default, null):RoutingContext<T>->Response;
   
