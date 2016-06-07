@@ -32,7 +32,7 @@ class DispatchTest extends TestCase {
         fail('Request to ${req.header.uri} failed because ${o.header.reason}');
       else
         o.body.all().handle(function (b) {
-          structEq(value, haxe.Json.parse(b.sure().toString()));
+          structEq(value, haxe.Json.parse(b.toString()));
           succeeded = true;
         });
     });
