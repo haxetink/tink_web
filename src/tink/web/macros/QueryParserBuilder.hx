@@ -71,7 +71,7 @@ class QueryParserBuilder {
     return throw "not implemented";
   }
   static public function bool():Expr {
-    return throw "not implemented";
+    return macro (${string()}) == 'true';
   }
   static public function date():Expr {
     return throw "not implemented";
