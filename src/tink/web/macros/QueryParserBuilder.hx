@@ -55,7 +55,7 @@ class QueryParserBuilder {
   static public function string():Expr 
     return 
       macro 
-        if (exists[prefix]) params[prefix];
+        if (exists[prefix]) (params[prefix]:String);
         else missing(prefix);
     
   static public function float():Expr
