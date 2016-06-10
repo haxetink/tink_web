@@ -1,17 +1,29 @@
 {
 	"name": "tink_web",
-	"url" : "http://haxetink.org/tink_web",
 	"license": "MIT",
-	"tags": ["tink", "cross", "web", "route", "dispatch", "server", "webserver", "http", "routing"],
-	"description": "Tinkerbell Web Router",
-	"version": "1.0.0-rc.1",
-	"releasenote": "AS3 and Java support",
-	"contributors": ["back2dos"], 
+	"tags": [
+		"tink",
+		"cross",
+		"web",
+		"route",
+		"dispatch",
+		"server",
+		"webserver",
+		"http",
+		"routing"
+	],
 	"classPath": "src",
-  "dependencies": {
-    "tink_http": "",
-    "tink_json": "",
-    "tink_macro": "",
-    "tink_template": ""
-  }
+	"description": "Tinkerbell Web Router",
+	"contributors": [
+		"back2dos"
+	],
+	"releasenote": "Experimental prerelease. Only for the brave.",
+	"version": "0.0.0-alpha.0",
+	"url": "http://haxetink.org/tink_web",
+	"dependencies": {
+		"tink_template": "",
+		"tink_macro": "",
+		"tink_http": "",
+		"tink_json": ""
+	}
 }
