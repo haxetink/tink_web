@@ -21,7 +21,7 @@ using tink.CoreApi;
 class DispatchTest extends TestCase {
   
   static var f = new Fake();
-  static var r = new Router<{}, BasicSession<{}>, Fake>();
+  static var r = new Router<BasicSession, Fake>();
   //static function check() {
     //tink.Web.route(null, f);    
   //}
@@ -47,7 +47,7 @@ class DispatchTest extends TestCase {
   function shouldFail(e:ErrorCode, req) {
     var failed = false;
     
-    var res:Future<OutgoingResponse> = r.route({}, f, req).handleError(OutgoingResponse.reportError);
+    var res:Future<OutgoingResponse> = r.route(BasicSession.inst, f, req).handleError(OutgoingResponse.reportError);
     
     res.handle(function (o) {
       assertEquals(e, o.header.statusCode);  
