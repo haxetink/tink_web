@@ -17,16 +17,20 @@ private typedef Handler = {
 class Routing {  
   static var PACK = 'tink.web.routes';
   
-  var type:Type;
-  var ct:ComplexType;
+  var target:Type;
+  var user:Type;
+  var session:Type;
+  //var ct:ComplexType;
   var fields:Array<Field>;
   var cases:Array<{ pattern: Array<Expr>, guard:Expr, response: Expr, }>;
   var max:Int = 0;
   
-  function new(type) {
+  function new(user, session, target) {
     
-    this.type = type;
-    this.ct = type.toComplex();
+    this.user = user;
+    this.session = session;
+    this.target = target;
+    
     this.fields = [];
     this.cases = [];
     
@@ -43,7 +47,7 @@ class Routing {
   
   static function isSpecial(name:String) 
     return switch name {
-      case 'context', 'body', 'query', 'path': true;
+      case 'context', 'body', 'query', 'path', 'session': true;
       default: false;
     }  
     
@@ -120,7 +124,7 @@ class Routing {
               case 'path':
                 
                 callArgs.push(macro @:privateAccess new Path(this.prefix.concat(this.path.slice(0, __depth__))));
-                
+              
               case 'context':
                 
                 callArgs.push(macro @:pos(f.pos) this);
@@ -297,7 +301,7 @@ class Routing {
       });
     }    
     
-    for (f in type.getFields().sure()) {
+    for (f in target.getFields().sure()) {
             
       var meta = f.meta.get();
       
@@ -328,9 +332,9 @@ class Routing {
         case [false, sub]:
           
           var handler = makeHandler(f, function (e, t) {
-            var path = buildContext(t).path;
+            var path = buildContext(user, session, t).path;
             return macro @:pos(e.pos) SubRoute.of($e).route(function (target) {
-              return new $path(target, this.request, function (_) return this.fallback(this), this.prefix.length + __depth__).route();
+              return new $path(this.session, target, this.request, function (_) return this.fallback(this), this.prefix.length + __depth__).route();
             });
           });
           
@@ -386,27 +390,34 @@ class Routing {
       this.fields.push(f);
   }
   
-  static public function getType(name) 
+  static public function getTypes(name, length)
     return 
       switch Context.getLocalType() {
-        case TInst(_.toString() == name => true, [v]):
-          v;
+        case TInst(_.toString() == name => true, v) if (v.length == length):
+          Success(v);
         default:
-          throw 'assert';
-      }  
+          Failure('assert');
+      }
+      
+  static public function getType(name) 
+    return getTypes(name, 1).map(function (x) return x[0]);
       
   
-  static public function buildContext(type:Type):{ type:Type, path:TypePath } {
+  static public function buildContext(user:Type, session:Type, target:Type):{ type:Type, path:TypePath } {
     //TODO: add cache
     var counter = counter++;
-    var name = 'RoutingContext$counter',
-        ct = type.toComplex();
-        
-    var decl = macro class $name extends RoutingContext<$ct> {
+    var name = 'RoutingContext$counter';
+    var decl = {
       
+      var session = session.toComplex(),
+          user = user.toComplex(),
+          target = target.toComplex();
+          
+      macro class $name extends RoutingContext<$user, $session, $target> {
+      }
     }
     
-    decl.fields = decl.fields.concat(new Routing(type).fields);
+    decl.fields = decl.fields.concat(new Routing(user, session, target).fields);
     
     return {
       type: declare(decl),
@@ -441,9 +452,9 @@ class Routing {
       
       public inline function new() this = $v{counter};
       
-      public function route(target:$ct, request:Request, ?fallback, depth = 0) 
+      public function route(session, target:$ct, request:Request, ?fallback, depth = 0) 
         return 
-          new $ctx(target, request, fallback, depth).route();
+          new $ctx(session, target, request, fallback, depth).route();
     }
     
     cl.kind = TDAbstract(macro : Int);

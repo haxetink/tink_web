@@ -6,29 +6,29 @@ class Fake {
   
   public function new() {}
   
-  @:get public var yo(default, null):String = '"yo"';
-  
-  @:get public function complex(query: { foo: Array<{ ?x: String, ?y:Int, z:Float }> } ) {
-    return haxe.Json.stringify(query);
-  }
-  
-  @:get('/')
-  @:get('/$who')
-  public function hello(who:String = 'world') {
-        
-    return haxe.Json.stringify({
-      hello: who
-    });
-  }
-  
-  @:post public function post(body:{ foo:String, bar: Int }) {
-    return haxe.Json.stringify(body);
-  }
-  
-  @:sub('/sub/$a/$b')
-  public function sub(a, b, path:String) {
-    return new FakeSub(a, b);
-  }  
+  //@:get public var yo(default, null):String = '"yo"';
+  //
+  //@:get public function complex(query: { foo: Array<{ ?x: String, ?y:Int, z:Float }> } ) {
+    //return haxe.Json.stringify(query);
+  //}
+  //
+  //@:get('/')
+  //@:get('/$who')
+  //public function hello(who:String = 'world') {
+        //
+    //return haxe.Json.stringify({
+      //hello: who
+    //});
+  //}
+  //
+  //@:post public function post(body:{ foo:String, bar: Int }) {
+    //return haxe.Json.stringify(body);
+  //}
+  //
+  //@:sub('/sub/$a/$b')
+  //public function sub(a, b, path:String) {
+    //return new FakeSub(a, b);
+  //}  
 }
 
 class FakeSub {

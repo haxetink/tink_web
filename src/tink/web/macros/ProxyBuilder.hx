@@ -79,7 +79,7 @@ class ProxyBuilder {
                 });
                 
               exprs.push(macro this.makeRequest($i{method}, $path + __query, __headers, __body));
-             
+              
               ret.fields.push({
                 pos: r.field.pos,
                 name: r.field.name,

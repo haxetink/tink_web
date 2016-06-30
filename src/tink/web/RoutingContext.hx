@@ -7,21 +7,22 @@ import tink.http.Request;
 import tink.url.Query;
 using tink.CoreApi;
 
-class RoutingContext<T> {
+class RoutingContext<User, S:Session<User>, Target> {
   public var fullPath(default, null):tink.url.Path;
   public var query(default, null):Query;
   public var path(default, null):Array<String>;
   public var prefix(default, null):Array<String>;
-  public var target(default, null):T;
+  public var target(default, null):Target;
   public var request(default, null):Request;
   public var bodyParts(default, null):Surprise<StructuredBody, Error>;
+  public var session(default, null):S;
+  public var fallback(default, null):RoutingContext<User, S, Target>->Response;
   
-  public var fallback(default, null):RoutingContext<T>->Response;
-  
-  public function new(target, request, fallback = null, depth:Int = 0, ?bodyParts) {
+  public function new(session:S, target, request, fallback = null, depth:Int = 0, ?bodyParts) {
     if (fallback == null)
       fallback = notFound;
     
+    this.session = session;
     this.target = target;
     this.request = request;
     
@@ -49,7 +50,7 @@ class RoutingContext<T> {
     this.fallback = fallback;
   }
   
-  static function notFound<T>(r:RoutingContext<T>):Response 
+  static function notFound<User, S:Session<User>, Target>(r:RoutingContext<User, S, Target>):Response 
     return new tink.core.Error(NotFound, 'Not Found: [${r.request.header.method}] ${r.request.header.uri}');
   
 }

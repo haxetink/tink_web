@@ -23,6 +23,7 @@ enum RuleArg {
   APart(name:String, t:Type);
   ABody(t:Type);
   AQuery(t:Type);
+  AOther(value:Expr);
   APath;
 }
 
