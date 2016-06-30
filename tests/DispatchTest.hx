@@ -22,9 +22,9 @@ class DispatchTest extends TestCase {
   
   static var f = new Fake();
   static var r = new Router<BasicSession, Fake>();
-  //static function check() {
-    //tink.Web.route(null, f);    
-  //}
+  static function check() {
+    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, BasicSession.inst);    
+  }
   function expect<A>(value:A, req) {
     
     var succeeded = false;
