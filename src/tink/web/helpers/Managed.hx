@@ -6,6 +6,9 @@ abstract Managed<T>(Surprise<T, Error>) from Surprise<T, Error> to Surprise<T, E
   
   public function get() return this;
 
+  @:from static public function ofNested<T>(m:Managed<Managed<T>>):Managed<T> 
+    return m.get() >> function (v:Managed<T>) return v.get();
+  
   @:from static public function ofFuture<T>(f:Future<T>):Managed<T>
     return f.map(Success);
     

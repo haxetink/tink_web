@@ -50,10 +50,19 @@ class Routing {
     
   static function mkResponse(e:Expr) 
     return macro @:pos(e.pos) ($e : Response);
+  
+  function getRestriction(meta:MetaAccess)
+    return [for (m in meta.extract(':restrict')) for (p in m.params) p];
     
-  function makeHandler(f:ClassField, restrict:Expr, ?wrap:Expr->Type->Expr):Handler {
+  function makeHandler(f:ClassField, restrictions:Array<Expr>, ?wrap:Expr->Type->Expr):Handler {
     var fName = f.name;
     var name = 'call_$fName';
+    
+    var restrict = macro (null : tink.web.helpers.AuthResult);
+    
+    for (r in [restrictions, getRestriction(f.meta)])
+      for (r in r)
+        restrict = macro @:pos(r.pos) $restrict && tink.web.helpers.AuthResult.get(this.session, function (user) return $r);
     
     if (wrap == null)
       wrap = function (e, t) return e;
@@ -298,18 +307,17 @@ class Routing {
       });
     }    
     
-    var none = macro (null : tink.web.helpers.AuthResult);
-    var restrict = 
+    var restrict =     
       switch target {
         case TInst(_.get().meta => meta, _):
-          switch meta.extract(':restrict') {
-            case [{ params: [v] }]:
-              var user = user.toComplex();
-              macro tink.web.helpers.AuthResult.get(this.session, function (user) return $v);
-            case []: none;
-            case v: v[0].pos.error('invalid use of @:restrict');
-          }
-        default: none;
+          getRestriction(meta);
+            //case [{ params: [v] }]:
+              //var user = user.toComplex();
+              //macro tink.web.helpers.AuthResult.get(this.session, function (user) return $v);
+            //case []: none;
+            //case v: v[0].pos.error('invalid use of @:restrict');
+          //}
+        default: [];
       }
       
       //trace(restrict.typeof().sure());

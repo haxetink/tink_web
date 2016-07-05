@@ -20,23 +20,23 @@ import haxe.ds.Option;
 
 using tink.CoreApi;
 
-
-
 class DispatchTest extends TestCase {
-  static function session(admin:Bool):Session<{ admin: Bool }>
+  static function loggedin(admin:Bool):Session<{ admin: Bool }>
     return new Session(function () return Future.sync(Success(Some({ admin: admin }))));
     
   static var f = new Fake();
   static var r = new Router<{ admin: Bool }, Fake>();
   static function check() {
-    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, session(true));    
+    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, loggedin(true));    
   }
-  function expect<A>(value:A, req) {
+  function expect<A>(value:A, req, ?session) {
+    
+    if (session == null)
+      session = loggedin(true);
     
     var succeeded = false;
     
-    
-    r.route(session(true), f, req).handle(function (o) {
+    r.route(session, f, req).handle(function (o) {
       var o = o.sure();
       if (o.header.statusCode != 200)
         fail('Request to ${req.header.uri} failed because ${o.header.reason}');
@@ -50,10 +50,13 @@ class DispatchTest extends TestCase {
     assertTrue(succeeded);
   }  
   
-  function shouldFail(e:ErrorCode, req) {
+  function shouldFail(e:ErrorCode, req, ?session) {
     var failed = false;
     
-    var res:Future<OutgoingResponse> = r.route(session(true), f, req).handleError(OutgoingResponse.reportError);
+    if (session == null)
+      session = loggedin(true);
+      
+    var res:Future<OutgoingResponse> = r.route(loggedin(true), f, req).handleError(OutgoingResponse.reportError);
     
     res.handle(function (o) {
       assertEquals(e, o.header.statusCode);  
@@ -76,7 +79,7 @@ class DispatchTest extends TestCase {
     expect(complex, get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'));
     
     shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4'));
-    //shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4&foo=hey'));
+    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4&foo=hey'));
     
     expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'));
     expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })));
