@@ -33,6 +33,7 @@ class Fake {
   }  
 }
 
+@:restrict(@:privateAccess this.target.b > user.id)
 class FakeSub {
   
   var a:Int;
@@ -44,8 +45,8 @@ class FakeSub {
   }
   
   @:restrict(user.admin)
-  @:get('/test/$blargh') public function foo(blargh:String, path:Array<String>, query:{ c:String, d:String }) {
-    
+  @:get('/test/$blargh') 
+  public function foo(blargh:String, path:Array<String>, query:{ c:String, d:String }) {  
     return haxe.Json.stringify({ 
       a: a,
       b: b,
@@ -56,5 +57,7 @@ class FakeSub {
     });
   }
   
-  @:get public function whatever() return 'whatever';
+  @:get public function whatever() 
+    return 'whatever';
+    
 }

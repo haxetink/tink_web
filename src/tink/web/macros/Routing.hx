@@ -61,8 +61,11 @@ class Routing {
     var restrict = macro (null : tink.web.helpers.AuthResult);
     
     for (r in [restrictions, getRestriction(f.meta)])
-      for (r in r)
-        restrict = macro @:pos(r.pos) $restrict && tink.web.helpers.AuthResult.get(this.session, function (user) return $r);
+      for (r in r) {
+        var positioned = macro @:pos(r.pos) ($r : tink.web.helpers.Managed<Bool>);//working around a weird compiler bug with position in the reification below not being applied
+        restrict = macro @:pos(r.pos) $restrict && tink.web.helpers.AuthResult.get(this.session, function (user) return $positioned);
+      }
+    
     
     if (wrap == null)
       wrap = function (e, t) return e;
@@ -161,7 +164,8 @@ class Routing {
                 }
                 
                 funcArgs.push({
-                  type: macro : tink.web.Stringly,
+                  //type: macro : tink.web.Stringly,
+                  type: ct,
                   name: a.name,
                   opt: a.opt,
                 });

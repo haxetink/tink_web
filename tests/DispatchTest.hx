@@ -58,7 +58,7 @@ class DispatchTest extends TestCase {
     assertTrue(succeeded);
   }  
   
-  function shouldFail(e:ErrorCode, req, ?session) {
+  function shouldFail(e:ErrorCode, req, ?session, ?pos) {
     var failed = false;
     
     if (session == null)
@@ -67,7 +67,7 @@ class DispatchTest extends TestCase {
     var res:Future<OutgoingResponse> = r.route(session, f, req).handleError(OutgoingResponse.reportError);
     
     res.handle(function (o) {
-      assertEquals(e, o.header.statusCode);  
+      assertEquals(e, o.header.statusCode, pos);  
       failed = true;
     });
     
@@ -99,7 +99,7 @@ class DispatchTest extends TestCase {
     shouldFail(ErrorCode.Unauthorized, get('/'), anon);
     shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
     shouldFail(ErrorCode.Forbidden, get('/noaccess'));
-    shouldFail(ErrorCode.Forbidden, get('/sub/2/2'));
+    shouldFail(ErrorCode.Forbidden, get('/sub/2/2/whatever'));
   }
   
   function get(url, ?headers)

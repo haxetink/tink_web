@@ -10,8 +10,8 @@ using tink.CoreApi;
 class RoutingContext<User, Target> {
   public var fullPath(default, null):tink.url.Path;
   public var query(default, null):Query;
-  public var path(default, null):Array<String>;
-  public var prefix(default, null):Array<String>;
+  public var path(default, null):Array<Stringly>;
+  public var prefix(default, null):Array<Stringly>;
   public var target(default, null):Target;
   public var request(default, null):Request;
   public var bodyParts(default, null):Surprise<StructuredBody, Error>;
