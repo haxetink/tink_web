@@ -97,6 +97,7 @@ class DispatchTest extends TestCase {
     shouldFail(ErrorCode.Unauthorized, get('/'), anon);
     shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
     shouldFail(ErrorCode.Forbidden, get('/noaccess'));
+    shouldFail(ErrorCode.Forbidden, get('/sub/2/2'));
   }
   
   function get(url, ?headers)

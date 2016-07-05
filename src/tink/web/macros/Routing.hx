@@ -172,7 +172,9 @@ class Routing {
           
           if (futures.length > 0) {
             
-            call = ret(call, r);
+            //call = ret(call, r);
+            
+            call = macro @:pos(call.pos) ${mkResponse(wrap(call, r))};
             
             futures.reverse();
             
@@ -183,10 +185,10 @@ class Routing {
             
             futures.reverse();
             
-            call = macro {
+            call = macro $restrict.respond(function () {
               ${EVars(futures).at()};
-              $call;
-            };
+              return $call;
+            });
             
             call = @:pos(call.pos) macro return $call;
             

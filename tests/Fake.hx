@@ -44,6 +44,7 @@ class FakeSub {
     this.b = b;
   }
   
+  @:restrict(user.admin)
   @:get('/test/$blargh') public function foo(blargh:String, path:Array<String>, query:{ c:String, d:String }) {
     
     return haxe.Json.stringify({ 
@@ -55,4 +56,6 @@ class FakeSub {
       path: path,
     });
   }
+  
+  @:get public function whatever() return 'whatever';
 }
