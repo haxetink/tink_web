@@ -10,7 +10,7 @@ import tink.http.Request;
 import tink.http.Response.OutgoingResponse;
 import tink.io.Source;
 import tink.web.Session;
-
+import tink.web.helpers.AuthResult;
 import tink.io.IdealSource;
 
 import tink.web.Request;
@@ -21,16 +21,16 @@ using tink.CoreApi;
 class DispatchTest extends TestCase {
   
   static var f = new Fake();
-  static var r = new Router<BasicSession, Fake>();
+  static var r = new Router<{}, Fake>();
   static function check() {
-    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, BasicSession.inst);    
+    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, Session.BASIC);    
   }
   function expect<A>(value:A, req) {
     
     var succeeded = false;
     
     
-    r.route(null, f, req).handle(function (o) {
+    r.route(Session.BASIC, f, req).handle(function (o) {
       var o = o.sure();
       if (o.header.statusCode != 200)
         fail('Request to ${req.header.uri} failed because ${o.header.reason}');
@@ -47,7 +47,7 @@ class DispatchTest extends TestCase {
   function shouldFail(e:ErrorCode, req) {
     var failed = false;
     
-    var res:Future<OutgoingResponse> = r.route(BasicSession.inst, f, req).handleError(OutgoingResponse.reportError);
+    var res:Future<OutgoingResponse> = r.route(Session.BASIC, f, req).handleError(OutgoingResponse.reportError);
     
     res.handle(function (o) {
       assertEquals(e, o.header.statusCode);  

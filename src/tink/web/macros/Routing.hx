@@ -18,15 +18,14 @@ class Routing {
   static var PACK = 'tink.web.routes';
   
   var target:Type;
-  var session:Type;
-  //var ct:ComplexType;
+  var user:Type;
   var fields:Array<Field>;
   var cases:Array<{ pattern: Array<Expr>, guard:Expr, response: Expr, }>;
   var max:Int = 0;
   
-  function new(session, target) {
+  function new(user, target) {
     
-    this.session = session;
+    this.user = user;
     this.target = target;
     
     this.fields = [];
@@ -45,7 +44,7 @@ class Routing {
   
   static function isSpecial(name:String) 
     return switch name {
-      case 'context', 'body', 'query', 'path', 'session': true;
+      case 'context', 'body', 'query', 'path': true;
       default: false;
     }  
     
@@ -299,6 +298,18 @@ class Routing {
       });
     }    
     
+    var restrict = 
+      switch target {
+        case TInst(_.get().meta => meta, _):
+          switch meta.extract(':restrict') {
+            case [{ params: [v] }]:
+              macro tink.web.helpers.AuthResult.tryAuth(this.session.getUser() >> function (user) return v);
+            case []: null;
+            case v: v[0].pos.error('invalid use of @:restrict');
+          }
+        default: null;
+      }
+    
     for (f in target.getFields().sure()) {
             
       var meta = f.meta.get();
@@ -330,7 +341,7 @@ class Routing {
         case [false, sub]:
           
           var handler = makeHandler(f, function (e, t) {
-            var path = buildContext(session, t).path;
+            var path = buildContext(user, t).path;
             return macro @:pos(e.pos) SubRoute.of($e).route(function (target) {
               return new $path(this.session, target, this.request, function (_) return this.fallback(this), this.prefix.length + __depth__).route();
             });
@@ -401,20 +412,20 @@ class Routing {
     return getTypes(name, 1).map(function (x) return x[0]);
       
   
-  static public function buildContext(session:Type, target:Type):{ type:Type, path:TypePath } {
+  static public function buildContext(user:Type, target:Type):{ type:Type, path:TypePath } {
     //TODO: add cache
     var counter = counter++;
     var name = 'RoutingContext$counter';
     var decl = {
       
-      var session = session.toComplex(),
+      var user = user.toComplex(),
           target = target.toComplex();
           
-      macro class $name extends RoutingContext<$session, $target> {
+      macro class $name extends RoutingContext<$user, $target> {
       }
     }
     
-    decl.fields = decl.fields.concat(new Routing(session, target).fields);
+    decl.fields = decl.fields.concat(new Routing(user, target).fields);
     
     return {
       type: declare(decl),
@@ -436,21 +447,21 @@ class Routing {
   static function buildRouter():Type {
     
     switch getTypes('tink.web.Router', 2) {
-      case Success([session, target]):
+      case Success([user, target]):
         
         var counter = counter++;
         var router = 'Router$counter';
         
-        var ctx = buildContext(session, target).path;
+        var ctx = buildContext(user, target).path;
         
-        var session = session.toComplex(),
+        var user = user.toComplex(),
             target = target.toComplex();
             
         var cl = macro class $router {
           
           public inline function new() this = $v{counter};
           
-          public function route(session:$session, target:$target, request:Request, ?fallback, depth = 0) 
+          public function route(session:tink.web.Session<$user>, target:$target, request:Request, ?fallback, depth = 0) 
             return 
               new $ctx(session, target, request, fallback, depth).route();
         }

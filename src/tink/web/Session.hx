@@ -3,16 +3,12 @@ package tink.web;
 import tink.CoreApi;
 import haxe.ds.Option;
 
-interface Session {
-  function getUser():Surprise<Option<{}>, Error>;
-}
-
-class BasicSession implements Session {
+class Session<User> {
+  public var getUser(default, null):Void->Surprise<Option<User>, Error>;
   
-  function new() { }
+  public function new(getUser) {
+    this.getUser = getUser;
+  }  
   
-  public function getUser():Surprise<Option<{}>, Error>
-    return Future.sync(Success(None));
-    
-  static public var inst(default, null):BasicSession = new BasicSession();
+  static public var BASIC(default, null):Session<{}> = new Session(function () return Future.sync(Success(None)));
 }
