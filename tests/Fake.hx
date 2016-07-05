@@ -15,7 +15,6 @@ class Fake {
     return haxe.Json.stringify(query);
   }
   
-  @:get('/')
   @:get('/$who')
   public function hello(who:String = 'world') {        
     return haxe.Json.stringify({

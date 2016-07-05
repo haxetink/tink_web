@@ -48,7 +48,10 @@ abstract Response(ResponseRep) from ResponseRep to ResponseRep {
     return s.map(function (o) return o.map(function (html) return OutgoingResponse.blob(Bytes.ofString(html), 'text/html')));
     
   @:from static function ofRedirect(s:Surprise<Url, Error>):Response 
-    return s.map(function (o) return o.map(function (url) return new OutgoingResponse(new ResponseHeader(302, 'ok', [new HeaderField('location', url)]), '')));
+    return s.map(function (o) return o.map(function (url) return new OutgoingResponse(new ResponseHeader(302, 'redirect', [new HeaderField('location', url)]), '')));
+    
+  @:from static function ofSyncRedirect(u:Url):Response 
+    return ofRedirect(Future.sync(Success(u)));
     
   //@:from static function unsafeResponse(s:Surprise<OutgoingResponse, Error>):Response
     //return s.map(function (o):OutgoingResponse return switch o {

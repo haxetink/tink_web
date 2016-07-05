@@ -1,18 +1,32 @@
 # Tinkerbell Web Routing
 
-In simple terms, `tink_web` is a super-charged proxy and router for `tink_http`, that strives to embed the semantics of REST and HTTP into Haxe in a seamless way.
+In simple terms, `tink_web` is a super-charged router for `tink_http`, that strives to embed the semantics of REST and HTTP into Haxe in a seamless way.
 
-It is composed of three parts:
+## Basic usage
+
+Let's look at what a hello world app might look like:
+
+```haxe
+class Api {
   
-1. Client side proxies
-2. Server side routing
-3. Server side reverse routing
+  var greeting:String = 'hello';
+  
+  public function new() {}
+  
+  @:get('/$who')
+  public function hello(who = 'world') 
+    return '$greeting $who';
+  
+  @:post('/greeting')
+  public function setGreeting(greeting):tink.Url {
+    this.greeting = greeting;
+    return '/';
+  } 
+}
 
-# Client side proxies
+var api = new Api();
+var c:tink.http.Container = /* pick one */;
+c.run(function (req) return tink.Web.route(req, api));
+```
 
-Client side proxies allow you to make calls against APIs over HTTP. 
-
-----
-
-## Handling POST
-
+Note that POSTing new greetings will have no effect on non-permanent containers.
