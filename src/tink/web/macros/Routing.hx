@@ -51,7 +51,7 @@ class Routing {
   static function mkResponse(e:Expr) 
     return macro @:pos(e.pos) ($e : Response);
     
-  function makeHandler(f:ClassField, ?wrap:Expr->Type->Expr):Handler {
+  function makeHandler(f:ClassField, restrict:Expr, ?wrap:Expr->Type->Expr):Handler {
     var fName = f.name;
     var name = 'call_$fName';
     
@@ -59,7 +59,7 @@ class Routing {
       wrap = function (e, t) return e;
     
     function ret(e:Expr, t)
-      return macro @:pos(e.pos) return ${mkResponse(wrap(e, t))};
+      return macro @:pos(e.pos) return $restrict.respond(${mkResponse(wrap(e, t))});
     
     var funcArgs:Array<FunctionArg> = [{
       name: '__depth__',
@@ -298,17 +298,21 @@ class Routing {
       });
     }    
     
+    var none = macro (null : tink.web.helpers.AuthResult);
     var restrict = 
       switch target {
         case TInst(_.get().meta => meta, _):
           switch meta.extract(':restrict') {
             case [{ params: [v] }]:
-              macro tink.web.helpers.AuthResult.tryAuth(this.session.getUser() >> function (user) return v);
-            case []: null;
+              var user = user.toComplex();
+              macro tink.web.helpers.AuthResult.get(this.session, function (user) return $v);
+            case []: none;
             case v: v[0].pos.error('invalid use of @:restrict');
           }
-        default: null;
+        default: none;
       }
+      
+      //trace(restrict.typeof().sure());
     
     for (f in target.getFields().sure()) {
             
@@ -318,7 +322,7 @@ class Routing {
         
         case [true, []]:
           
-          var handler = makeHandler(f);
+          var handler = makeHandler(f, restrict);
           
           for (m in meta)
             switch metas[m.name] {
@@ -340,7 +344,7 @@ class Routing {
           
         case [false, sub]:
           
-          var handler = makeHandler(f, function (e, t) {
+          var handler = makeHandler(f, restrict, function (e, t) {
             var path = buildContext(user, t).path;
             return macro @:pos(e.pos) SubRoute.of($e).route(function (target) {
               return new $path(this.session, target, this.request, function (_) return this.fallback(this), this.prefix.length + __depth__).route();

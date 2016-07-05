@@ -2,6 +2,7 @@ package;
 
 import tink.web.RoutingContext;
 
+@:restrict(user.admin)
 class Fake {
   
   public function new() {}

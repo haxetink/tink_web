@@ -16,21 +16,27 @@ import tink.io.IdealSource;
 import tink.web.Request;
 import tink.web.Response;
 import tink.web.Router;
+import haxe.ds.Option;
+
 using tink.CoreApi;
 
+
+
 class DispatchTest extends TestCase {
-  
+  static function session(admin:Bool):Session<{ admin: Bool }>
+    return new Session(function () return Future.sync(Success(Some({ admin: admin }))));
+    
   static var f = new Fake();
-  static var r = new Router<{}, Fake>();
+  static var r = new Router<{ admin: Bool }, Fake>();
   static function check() {
-    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, Session.BASIC);    
+    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, session(true));    
   }
   function expect<A>(value:A, req) {
     
     var succeeded = false;
     
     
-    r.route(Session.BASIC, f, req).handle(function (o) {
+    r.route(session(true), f, req).handle(function (o) {
       var o = o.sure();
       if (o.header.statusCode != 200)
         fail('Request to ${req.header.uri} failed because ${o.header.reason}');
@@ -47,7 +53,7 @@ class DispatchTest extends TestCase {
   function shouldFail(e:ErrorCode, req) {
     var failed = false;
     
-    var res:Future<OutgoingResponse> = r.route(Session.BASIC, f, req).handleError(OutgoingResponse.reportError);
+    var res:Future<OutgoingResponse> = r.route(session(true), f, req).handleError(OutgoingResponse.reportError);
     
     res.handle(function (o) {
       assertEquals(e, o.header.statusCode);  
