@@ -21,13 +21,19 @@ import haxe.ds.Option;
 using tink.CoreApi;
 
 class DispatchTest extends TestCase {
-  static function loggedin(admin:Bool):Session<{ admin: Bool }>
-    return new Session(function () return Future.sync(Success(Some({ admin: admin }))));
+  
+  static function loggedin(admin:Bool, id:Int = 1):Session<{ admin: Bool, id:Int }>
+    return new Session(function () return Future.sync(Success(Some({ admin: admin, id:id }))));
+    
+  static var anon:Session<{ admin: Bool, id:Int }> = new Session(function () return Future.sync(Success(None)));
+  
+  static function logginFail():Session<{ admin: Bool, id:Int }>
+    return new Session(function () return Future.sync(Failure(new Error('whoops'))));
     
   static var f = new Fake();
-  static var r = new Router<{ admin: Bool }, Fake>();
+  static var r = new Router<{ admin: Bool, id:Int }, Fake>();
   static function check() {
-    tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, loggedin(true));    
+    //tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, loggedin(true));    
   }
   function expect<A>(value:A, req, ?session) {
     
@@ -56,7 +62,7 @@ class DispatchTest extends TestCase {
     if (session == null)
       session = loggedin(true);
       
-    var res:Future<OutgoingResponse> = r.route(loggedin(true), f, req).handleError(OutgoingResponse.reportError);
+    var res:Future<OutgoingResponse> = r.route(session, f, req).handleError(OutgoingResponse.reportError);
     
     res.handle(function (o) {
       assertEquals(e, o.header.statusCode);  
@@ -79,11 +85,18 @@ class DispatchTest extends TestCase {
     expect(complex, get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'));
     
     shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4'));
-    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4&foo=hey'));
+    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'));
+    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=5&foo=hey'));
     
     expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'));
     expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })));
     
+  }
+  
+  function testAuth() {
+    shouldFail(ErrorCode.Unauthorized, get('/'), anon);
+    shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
+    shouldFail(ErrorCode.Forbidden, get('/noaccess'));
   }
   
   function get(url, ?headers)

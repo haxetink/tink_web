@@ -1,6 +1,7 @@
 package tink.web.helpers;
 
 import tink.url.Query;
+using tink.CoreApi;
 
 class QueryParserBase<T> { 
   
@@ -37,8 +38,7 @@ class QueryParserBase<T> {
       }
   }
   
-  function missing(name:String):Dynamic {
-    return throw new tink.core.Error(UnprocessableEntity, 'Missing parameter $name');
-  }
+  function missing(name:String):Dynamic 
+    return throw new Error(UnprocessableEntity, 'Missing parameter $name');
   
 }

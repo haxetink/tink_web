@@ -51,18 +51,21 @@ class QueryParserBuilder {
       macro 
         if (exists[prefix]) $e;
         else null;
-    
-  static public function string():Expr 
+  
+  static function prim(type:ComplexType) 
     return 
       macro 
-        if (exists[prefix]) (params[prefix]:String);
-        else missing(prefix);
+        if (exists[prefix]) ((params[prefix]:tink.web.Stringly):$type);
+        else missing(prefix); 
+    
+  static public function string():Expr 
+    return prim(macro : String);
     
   static public function float():Expr
-    return macro Std.parseFloat(${string()});
+    return prim(macro : Float);
   
   static public function int():Expr 
-    return macro Std.parseInt(${string()});
+    return prim(macro : Int);
     
   static public function dyn(e:Expr, ct:ComplexType):Expr {
     return throw "not implemented";

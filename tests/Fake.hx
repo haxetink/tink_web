@@ -2,11 +2,13 @@ package;
 
 import tink.web.RoutingContext;
 
-@:restrict(user.admin)
+@:restrict(true)
 class Fake {
   
   public function new() {}
   
+  @:restrict(false) @:get public function noaccess() return 'nope';
+
   @:get public var yo(default, null):String = '"yo"';
   
   @:get public function complex(query: { foo: Array<{ ?x: String, ?y:Int, z:Float }> } ) {
@@ -15,17 +17,17 @@ class Fake {
   
   @:get('/')
   @:get('/$who')
-  public function hello(who:String = 'world') {
-        
+  public function hello(who:String = 'world') {        
     return haxe.Json.stringify({
       hello: who
     });
   }
   
-  @:post public function post(body:{ foo:String, bar: Int }) {
+  @:post public function post(body: { foo:String, bar: Int } ) {
     return haxe.Json.stringify(body);
-  }
+  }  
   
+  @:restrict(user.id == a)  
   @:sub('/sub/$a/$b')
   public function sub(a, b, path:String) {
     return new FakeSub(a, b);

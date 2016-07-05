@@ -49,7 +49,7 @@ class Routing {
     }  
     
   static function mkResponse(e:Expr) 
-    return macro @:pos(e.pos) ($e : Response);
+    return macro @:pos(e.pos) ($e : tink.web.Response);
   
   function getRestriction(meta:MetaAccess)
     return [for (m in meta.extract(':restrict')) for (p in m.params) p];
@@ -68,7 +68,12 @@ class Routing {
       wrap = function (e, t) return e;
     
     function ret(e:Expr, t)
-      return macro @:pos(e.pos) return $restrict.respond(${mkResponse(wrap(e, t))});
+      return 
+        macro @:pos(e.pos) return 
+          try 
+            $restrict.respond(${mkResponse(wrap(e, t))}) 
+          catch (e:tink.core.Error) { (e:tink.web.Response); } 
+          catch (e:Dynamic) { (tink.core.Error.withData(InternalError, 'Internal Server Error', e) : tink.web.Response); };
     
     var funcArgs:Array<FunctionArg> = [{
       name: '__depth__',
@@ -120,8 +125,16 @@ class Routing {
                           default:
                             ${fail('Invalid JSON')};
                         }
-                      default:
+                      case ['application/x-www-form-urlencoded' | 'multipart/form-data']:
                         this.bodyParts >> function (parts:tink.http.StructuredBody) return ${queryParser(a.t, macro @:pos(f.pos) parts.iterator(), true)}.tryParse();
+                      case v:
+                        
+                        tink.core.Future.sync(tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, switch v {
+                          case []: 'Unspecified Content-Type';
+                          case [v]: 'Unknown Content-Type ' + v;
+                          case many: 'Duplicate Content-Type headers';
+                        })));
+                        
                     }
                 });
                 
@@ -159,7 +172,7 @@ class Routing {
           
           if (futures.length > 0) {
             
-            call = macro @:pos(call.pos) ${mkResponse(wrap(call, r))};
+            call = ret(call, r);
             
             futures.reverse();
             
@@ -311,17 +324,9 @@ class Routing {
       switch target {
         case TInst(_.get().meta => meta, _):
           getRestriction(meta);
-            //case [{ params: [v] }]:
-              //var user = user.toComplex();
-              //macro tink.web.helpers.AuthResult.get(this.session, function (user) return $v);
-            //case []: none;
-            //case v: v[0].pos.error('invalid use of @:restrict');
-          //}
         default: [];
       }
       
-      //trace(restrict.typeof().sure());
-    
     for (f in target.getFields().sure()) {
             
       var meta = f.meta.get();
@@ -397,13 +402,7 @@ class Routing {
     var f = (macro class {
       
       public function route():Response 
-        return 
-          try {
-            $body;
-          }
-          catch (e:tink.core.Error) {
-            (e:Response);
-          }
+        return $body;
       
     }).fields;
     
