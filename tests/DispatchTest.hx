@@ -33,7 +33,9 @@ class DispatchTest extends TestCase {
   static var f = new Fake();
   static var r = new Router<{ admin: Bool, id:Int }, Fake>();
   static function check() {
-    //tink.Web.route((null:IncomingRequest), f, function (_) return 'whatever', 0, loggedin(true));    
+    tink.Web.route((null:IncomingRequest), f, {
+      session: loggedin(true)
+    });    
   }
   function expect<A>(value:A, req, ?session) {
     
