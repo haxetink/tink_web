@@ -5,6 +5,7 @@ import haxe.macro.Type;
 import tink.core.Pair;
 import tink.http.Method;
 
+using tink.CoreApi;
 using tink.MacroApi;
 using StringTools;
 
@@ -119,7 +120,7 @@ class Rules {
             var uri:Url = v.getName().sure(),
                 parts = uri.path.parts();
             
-            var rest = switch parts[parts.length - 1] {
+            var rest = switch (parts[parts.length - 1]:String) {
               case '*': Ignore;
               case null: Exact;
               case named if (named.startsWith('*')): Capture(named.substr(1));
@@ -129,7 +130,7 @@ class Rules {
             if (rest != Exact)
               parts.pop();
               
-            new Pair([for (p in parts) switch p.split("$") {
+            new Pair([for (p in parts) switch (p:String).split("$") {
               case ['', name]: Arg(name, types[name]);
               case [const]: Const(const);
               default:

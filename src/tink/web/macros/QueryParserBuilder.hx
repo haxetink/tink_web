@@ -9,6 +9,7 @@ import tink.typecrawler.Crawler;
 import tink.typecrawler.FieldInfo;
 import tink.typecrawler.Generator;
 
+using tink.CoreApi;
 using haxe.macro.Tools;
 using tink.MacroApi;
 
