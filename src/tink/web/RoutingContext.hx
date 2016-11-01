@@ -1,6 +1,7 @@
 package tink.web;
 
 import haxe.io.Bytes;
+import tink.Stringly;
 import tink.http.Multipart;
 import tink.http.StructuredBody;
 import tink.http.Request;
