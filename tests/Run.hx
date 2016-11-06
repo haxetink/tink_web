@@ -23,10 +23,8 @@ class Run {
   ];
   static function main() {  
     
-    //var router = new Router<{ admin: Bool, id:Int }, Fake>(new Fake());
+    var router = new Router<Session<{ admin: Bool, id:Int }>, Fake>(new Fake());
     
-    //var router = new Router<Session<{ admin: Bool, id:Int }>>(new Fake());
-    var router = new Router<{ admin: Bool, id:Int }, Fake>(new Fake());
     router.route(null);
     //var router = new Router<{ admin: Bool, id:Int }, Fake>(new Fake());
     

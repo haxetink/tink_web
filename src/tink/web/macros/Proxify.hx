@@ -91,10 +91,6 @@ class Proxify {
   }
   
   static function remote():Type 
-    //return BuildCache.getType('tink.web.proxy.Remote', build(remoteCall, remoteSub));
     return BuildCache.getType('tink.web.proxy.Remote', build);
-    
-  //static function local():Type 
-    //return BuildCache.getType('tink.web.proxy.Remote', build(localCall, localSub));
-  
+      
 }

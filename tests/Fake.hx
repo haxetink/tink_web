@@ -28,9 +28,10 @@ class Fake {
     //return '';
   //}
   
-  //@:post public function post(body: { foo:String, bar: Int } ) {
-    //return haxe.Json.stringify(body);
-  //}  
+  @:params(horst in body)
+  @:post public function post(body: { foo:String, bar: Int }, horst:String) {
+    return haxe.Json.stringify(body);
+  }  
   
   //@:restrict(user.id == a)  
   @:sub('/sub/$a/$b')
