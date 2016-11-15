@@ -366,7 +366,13 @@ class Routing {
         case [false, sub]:
           
           var handler = makeHandler(f, restrict, function (e, t) {
-            var path = buildContext(user, t).path;
+            var subType = switch t {
+              case TAbstract(_.get() => {name: 'Future'}, [TEnum(_.get() => {name: 'Outcome'}, [t, _])])
+              | TEnum(_.get() => {name: 'Outcome'}, [t, _])
+              | TAbstract(_.get() => {name: 'Future'}, [t]): t;
+              default: t;
+            }
+            var path = buildContext(user, subType).path;
             return macro @:pos(e.pos) SubRoute.of($e).route(function (target) {
               return new $path(this.session, target, this.request, function (_) return this.fallback(this), this.prefix.length + __depth__).route();
             });
