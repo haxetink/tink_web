@@ -256,7 +256,8 @@ class Routing {
     var found = new Map();
     
     var patternArgs = [
-      for (p in parts) 
+      for (p in parts) {
+        var p:String = p;
         if (p.charAt(0) == '$') {
           var name = p.substr(1);
           
@@ -268,6 +269,7 @@ class Routing {
         }
         else
           macro @:pos(m.pos) $v{p}
+      }
     ]; 
     
     patternArgs.push(

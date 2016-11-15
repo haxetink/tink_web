@@ -9,6 +9,7 @@ import tink.typecrawler.Crawler;
 import tink.typecrawler.FieldInfo;
 import tink.typecrawler.Generator;
 
+using tink.CoreApi;
 using haxe.macro.Tools;
 using tink.MacroApi;
 
@@ -43,8 +44,8 @@ class QueryParserBuilder {
   static public function build(type:Type, pos:Position, body:Bool) 
     return BuildCache.getType('tink.web.QueryParser', type, pos, buildNew.bind(_, body));
   
-  static public function args():Array<String> 
-    return ['prefix'];
+  static public function wrap(placeholder:Expr, ct:ComplexType)
+    return placeholder.func(['prefix'.toArg(macro : String)], false);
     
   static public function nullable(e:Expr):Expr 
     return 
@@ -83,7 +84,7 @@ class QueryParserBuilder {
     return throw "not implemented";
   }
   
-  static public function anon(fields:Array<FieldInfo>, ct:ComplexType):Function {
+  static public function anon(fields:Array<FieldInfo>, ct:ComplexType) {
     var ret = [];
     for (f in fields)
       ret.push( { 
@@ -96,9 +97,7 @@ class QueryParserBuilder {
           ${f.expr};
         } 
       });
-    return (macro function (prefix:String):$ct {
-      return ${EObjectDecl(ret).at()};
-    }).getFunction().sure();
+    return macro return ${EObjectDecl(ret).at()};
   }
   
   static public function array(e:Expr):Expr {

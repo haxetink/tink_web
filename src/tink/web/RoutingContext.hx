@@ -45,7 +45,7 @@ class RoutingContext<User, Target> {
     
     this.query = request.header.uri.query;
     this.fullPath = request.header.uri.path;
-    this.path = fullPath.parts();
+    this.path = cast fullPath.parts();
     this.prefix = this.path.splice(0, depth);
     this.fallback = fallback;
   }
