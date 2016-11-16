@@ -157,14 +157,14 @@ class Routing {
                 
                 var ct = a.t.toComplex();
                 
-                switch (macro @:pos(f.pos) ((null : tink.web.Stringly) : $ct)).typeof() {
+                switch (macro @:pos(f.pos) ((null : tink.Stringly) : $ct)).typeof() {
                   case Failure(e):
                     f.pos.error('Routing cannot provide value for function argument ${a.name} of type ${a.t.toString()}');
                   default:
                 }
                 
                 funcArgs.push({
-                  //type: macro : tink.web.Stringly,
+                  //type: macro : tink.Stringly,
                   type: ct,
                   name: a.name,
                   opt: a.opt,

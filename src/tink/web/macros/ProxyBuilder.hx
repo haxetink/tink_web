@@ -73,7 +73,7 @@ class ProxyBuilder {
               for (arg in call.path)
                 add(switch arg {
                   case Arg(name, _):
-                    macro (($i{name}:tink.web.Stringly):String);
+                    macro (($i{name}:tink.Stringly):String);
                   case Const(v):
                     macro $v{v};
                 });

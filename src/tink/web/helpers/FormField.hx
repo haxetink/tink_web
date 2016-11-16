@@ -3,10 +3,10 @@ package tink.web.helpers;
 import tink.http.StructuredBody;
 import tink.http.Request;
 import tink.http.StructuredBody;
-import tink.web.Stringly;
+import tink.Stringly;
 
 abstract FormField(BodyPart) from BodyPart to BodyPart {
-  public function getValue():Stringly 
+  public function getValue():tink.Stringly 
     return switch this {
       case Value(v): v;
       case File(_): throw 'expected plain value but received file';
