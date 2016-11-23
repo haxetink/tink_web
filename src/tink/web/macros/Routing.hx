@@ -115,7 +115,7 @@ class Routing {
                           var files = [];
                           for(part in parts) switch part.value {
                             case Value(_):
-                            case File(file): trace('got file'); files.push(new tink.core.Named.NamedWith(part.name, file));
+                            case File(file): files.push(new tink.core.Named.NamedWith(part.name, file));
                           }
                           return files;
                         }
