@@ -6,7 +6,7 @@ import tink.http.Response;
 abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   
   @:from static function ofString(s:String):Response {
-    return ofBytes(Bytes.ofString(s));
+    return make('text/plain', Bytes.ofString(s));
   }
   
   @:from static function ofBytes(b:Bytes):Response {

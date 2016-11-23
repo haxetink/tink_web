@@ -51,7 +51,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
       case v: v.join('/');
     }) + this.query;
   
-  public function request<A>(client:Client, method, body, reader:DataReader<A>):Promise<A>
+  public function request<A>(client:Client, method, body, reader:ResponseReader<A>):Promise<A>
     return 
       client.request(
         new OutgoingRequest(
@@ -61,12 +61,12 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
       ).flatMap(function (response) return reader.withHeader(response.header)(response.body));
 }
 
-abstract DataReader<A>(ResponseHeader->Source->Promise<A>) from ResponseHeader->Source->Promise<A> {
+abstract ResponseReader<A>(ResponseHeader->Source->Promise<A>) from ResponseHeader->Source->Promise<A> {
   
   public function withHeader(header)
     return this.bind(header, _);
         
-  @:from static function ofStringReader<A>(read:String->Outcome<A, Error>):DataReader<A>
+  @:from static function ofStringReader<A>(read:String->Outcome<A, Error>):ResponseReader<A>
     return 
       function (header:ResponseHeader, body:Source):Promise<A>
         return 
@@ -76,7 +76,7 @@ abstract DataReader<A>(ResponseHeader->Source->Promise<A>) from ResponseHeader->
             else
               read(body.toString());
             
-  @:from static function ofSafeStringReader<A>(read:String->A):DataReader<A>
+  @:from static function ofSafeStringReader<A>(read:String->A):ResponseReader<A>
     return ofStringReader(function (s) return Success(read(s)));
             
 }
