@@ -44,7 +44,7 @@ class Routing {
   
   static function isSpecial(name:String) 
     return switch name {
-      case 'context', 'body', 'query', 'path': true;
+      case 'context', 'body', 'query', 'path', 'upload': true;
       default: false;
     }  
     
@@ -103,7 +103,32 @@ class Routing {
                   f.pos.warning('Relying on query for subrouting risks leading to conflicts with the subroute\'s logic');
                   
                 callArgs.push(macro ${queryParser(a.t, macro query.iterator(), false)}.parse());
+              
+              case 'upload':
                 
+                futures.push({
+                  name: a.name,
+                  type: null,
+                  expr: macro @:pos(f.pos) switch this.request.header.get('content-type') {
+                      case [v] if(StringTools.startsWith(v, 'multipart/form-data')):
+                        this.bodyParts >> function (parts:tink.http.StructuredBody) {
+                          var files = [];
+                          for(part in parts) switch part.value {
+                            case Value(_):
+                            case File(file): trace('got file'); files.push(new tink.core.Named.NamedWith(part.name, file));
+                          }
+                          return files;
+                        }
+                      case v:
+                        tink.core.Future.sync(tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, switch v {
+                          case []: 'Unspecified Content-Type';
+                          case [v]: 'Unknown Content-Type ' + v;
+                          case many: 'Duplicate Content-Type headers';
+                        })));
+                  }
+                });
+                callArgs.push(macro @:pos(f.pos) upload);
+              
               case 'body':
                 
                 if (f.meta.has(':sub'))

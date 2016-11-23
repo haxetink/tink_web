@@ -50,9 +50,10 @@ class RoutingContext<User, Target> {
                         }
                         return chunk.body.all().map(function(o) switch o {
                           case Success(bytes):
-                            trace(name, filename, bytes.length);
-                            if(filename != null) parts.push(new NamedWith(name, File(new TempFile(filename, '', bytes.length, bytes))));
-                            else parts.push(new NamedWith(name, Value(bytes.toString())));
+                            switch chunk.header.byName('content-type') {
+                              case Success(mime): parts.push(new NamedWith(name, File(new TempFile(filename, mime, bytes.length, bytes))));
+                              case Failure(_): parts.push(new NamedWith(name, Value(bytes.toString())));
+                            }
                             return true;
                           case Failure(e): 
                             err = e;
