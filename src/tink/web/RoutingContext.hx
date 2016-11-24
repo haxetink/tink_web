@@ -40,13 +40,12 @@ class RoutingContext<User, Target> {
                   s.forEachAsync(function(chunk) {
                     inline function escapeQuotes(v:String) return v.startsWith('"') && v.endsWith('"') ? v.substring(1, v.length - 1) : v;
                     switch chunk.header.byName('content-disposition') {
-                      case Success(formData):
-                        var query = tink.url.Query.parseString(formData, '; ', '=');
+                      case Success(_.parse() => parsed):
                         var name = null;
                         var filename = null;
-                        for(param in query) {
-                          if(param.name == 'name') name = escapeQuotes(param.value);
-                          if(param.name == 'filename') filename = escapeQuotes(param.value);
+                        for(ext in parsed[0].extensions) { // TODO: extensions should be a map?
+                          if(ext.name == 'name') name = ext.value;
+                          if(ext.name == 'filename') filename = ext.value;
                         }
                         return chunk.body.all().map(function(o) switch o {
                           case Success(bytes):
