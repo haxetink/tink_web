@@ -102,7 +102,7 @@ class Routing {
                 if (f.meta.has(':sub'))
                   f.pos.warning('Relying on query for subrouting risks leading to conflicts with the subroute\'s logic');
                   
-                callArgs.push(macro ${queryParser(a.t, macro query.iterator(), false)}.parse());
+                callArgs.push(macro ${queryParser(a.t, macro cast query.iterator(), false)}.parse());
               
               case 'upload':
                 
