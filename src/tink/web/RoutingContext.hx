@@ -41,12 +41,9 @@ class RoutingContext<User, Target> {
                     inline function escapeQuotes(v:String) return v.startsWith('"') && v.endsWith('"') ? v.substring(1, v.length - 1) : v;
                     switch chunk.header.byName('content-disposition') {
                       case Success(_.parse() => parsed):
-                        var name = null;
-                        var filename = null;
-                        for(ext in parsed[0].extensions) { // TODO: extensions should be a map?
-                          if(ext.name == 'name') name = ext.value;
-                          if(ext.name == 'filename') filename = ext.value;
-                        }
+                        var ext = parsed[0].extensions;
+                        var name = ext['name'];
+                        var filename = ext['filename'];
                         return chunk.body.all().map(function(o) switch o {
                           case Success(bytes):
                             switch chunk.header.byName('content-type') {
