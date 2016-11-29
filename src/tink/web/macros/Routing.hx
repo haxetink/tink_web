@@ -7,6 +7,7 @@ import haxe.macro.Expr;
 import tink.web.macros.Route;
 import tink.macro.BuildCache;
 import tink.http.Method;
+import tink.web.routing.Response;
 
 using tink.MacroApi;
 using tink.CoreApi;
@@ -28,7 +29,6 @@ class Routing {
     
     this.routes = routes;
     this.session = session;
-        
     firstPass();
   }
   
@@ -70,14 +70,16 @@ class Routing {
         case Some(m): macro $i{m};
         case None: IGNORE;
       },
-      switch v.path.rest {
-        case RNotAllowed: macro $v{v.path.parts.length}; 
-        default: IGNORE;
-      }
     ];
     
-    for (i in 0...depth + named.length * 2)
+    for (i in 0...depth * 2 + named.length * 2 + 1)
       pattern.push(IGNORE);
+      
+    for (i in 0...v.path.parts.length)
+      pattern[i + 1 + depth] = macro true;
+      
+    if (v.path.rest == RNotAllowed)
+      pattern[depth + 1 + v.path.parts.length] = macro false;
       
     var captured = new Map();
       
@@ -91,7 +93,7 @@ class Routing {
       }
       
     for (i in 0...v.path.parts.length)
-      pattern[i + 2] = part(v.path.parts[i]);
+      pattern[i + 1] = part(v.path.parts[i]);
       
     for (name in v.path.query.keys()) {
       
@@ -103,20 +105,24 @@ class Routing {
     
     var callArgs = [for (a in funcArgs) 
       if (a == funcArgs[0] || captured[a.name]) macro $i{a.name}
+      else if (a.name == '__depth__') macro $v{v.path.parts.length}
       else macro null //wtf?
     ];
     
     return { 
       values: [pattern.toArray(v.path.pos)],
-      expr: macro this.$field($a{callArgs}),
+      expr: macro @:pos(v.path.pos) this.$field($a{callArgs}),
     } 
   }  
 
   function switchTarget() {
-    var ret = [macro ctx.header.method, macro ctx.pathLength];
+    var ret = [macro ctx.header.method];
     
-    for (i in 0...depth)
-      ret.push(macro ctx.part($v{i}));
+    for (i in 0...depth) 
+      ret.push(macro ctx.part($v { i } ));
+      
+    for (i in 0...depth+1) 
+      ret.push(macro l > $v{i});
       
     for (name in named) 
       ret.push(macro ctx.hasParam($v{name}));
@@ -146,14 +152,13 @@ class Routing {
       }
       
       public function route(ctx:tink.web.routing.Context):tink.core.Promise<tink.http.Response.OutgoingResponse> {
+        var l = ctx.pathLength;
         return $theSwitch;
       }
     };
     
     for (f in fields)
       ret.fields.push(f);
-    
-    //trace(TAnonymous(ret.fields).toString());
       
     return ret;    
   }
@@ -207,7 +212,10 @@ class Routing {
       callArgs.push(arg.name.resolve());        
     }
      
-    var result = macro @:pos(pos) this.target.$field($a{callArgs});
+    var result = macro @:pos(pos) this.target.$field;
+    
+    if (route.field.type.reduce().match(TFun(_, _)))
+      result = macro @:pos(pos) $result($a{callArgs});
     
     result = 
       switch route.kind {
@@ -222,37 +230,46 @@ class Routing {
           macro @:pos(pos) tink.core.Promise.lift($result)
             .next(function (__target__:$target) 
               return 
-                new tink.web.routing.Router<$target>(result).route(ctx.sub(__depth__))
+                new tink.web.routing.Router<$target>(__target__).route(ctx.sub(__depth__))
             );
           
         case KCall(c):
           switch c.response {
-            case RData(_.toComplex() => t):
+            case RData(t):
+              var ct = t.toComplex();
+              var formats = [];
               
-              var render = 
-                switch route.field.meta.extract(':html') {
-                  case []: 
-                    macro { };
-                  case [{ params: [v] }]:
-                    macro if (ctx.accepts('text/html')) 
+              switch route.field.meta.extract(':html') {
+                case []: 
+                case [{ pos: pos, params: [v] }]:
+                  formats.push(
+                    macro @:pos(pos) if (ctx.accepts('text/html')) 
                       return tink.core.Promise.lift($v(__data__)).next(
-                        function (d):tink.web.Response return d
-                      ); 
-                  case [v]: 
-                    v.pos.error('@:html must have one argument exactly');
-                  case v:
-                    v[1].pos.error('Cannot have multiple @:html directives');
-                }
-                
-              macro @:pos(pos) tink.core.Promise.lift($result).next(function (__data__:$t) {
-                $render;
-                var ret:tink.core.Promise<tink.web.Response> = new tink.core.Error(UnsupportedMediaType, 'Unsupported Media Type');
-                return ret;
-              });
+                        function (d) return tink.web.routing.Response.textual('text/html', d)
+                      )
+                  );
+                case [v]: 
+                  v.pos.error('@:html must have one argument exactly');
+                case v:
+                  v[1].pos.error('Cannot have multiple @:html directives');
+              }
               
+              for (fmt in route.produces)
+                formats.push(
+                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return tink.web.routing.Response.textual(
+                    $v{fmt}, ${MimeType.writers.get([fmt], t, pos)}(__data__)
+                  )
+                );
+                
+              macro @:pos(pos) tink.core.Promise.lift($result).next(
+                function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
+                  $b{formats};
+                  return new tink.core.Error(UnsupportedMediaType, 'Unsupported Media Type');
+                }
+              );
               
             case ROpaque(_.toComplex() => t):
-              macro @:pos(pos) tink.core.Promise.lift($result).next(function (v:$t):tink.web.Response return v);
+              macro @:pos(pos) tink.core.Promise.lift($result).next(function (v:$t):tink.web.routing.Response return v);
           }
       }
       
@@ -326,8 +343,9 @@ class Routing {
               var target = locVar.resolve();
               var parts:Array<Var> = [];
               
-              for (s in separate)
-                parts.push({ name: s.name, type: null, expr: target.field(s.name) });
+              if (separate != null)
+                for (s in separate)
+                  parts.push({ name: s.name, type: null, expr: target.field(s.name) });
               
               for (c in compound) 
                 if (c.name != '')
@@ -351,11 +369,57 @@ class Routing {
             var promise = 
               switch loc {
                 case PBody:
-                  throw 'not implemented';
+                  var cases:Array<Case> = [];
+                  
+                  var structured = [];
+                  
+                  for (type in route.consumes) 
+                    switch type {
+                      case 'application/x-www-form-urlencoded' | 'multipart/form-data': 
+                        structured.push(macro @:pos(pos) $v{type});
+                      default: 
+                        cases.push({ 
+                          values: [macro $v{type}],
+                          expr: macro @:pos(pos) tink.core.Promise.lift(ctx.rawBody.all()).next(
+                            function (b) return ${MimeType.readers.get([type], sum.toType(pos).sure(), pos)}(b.toString())
+                          )
+                        });
+                    }
+                  
+                  switch structured {
+                    case []:
+                    case v:
+                      cases.unshift({ 
+                        values: structured, 
+                        expr: macro @:pos(pos) ctx.parse().next(function (pairs)
+                          return new tink.querystring.Parser<tink.web.forms.FormField->$sum>().tryParse(pairs)
+                        ),
+                      });
+                  }
+                  
+                  var contentType = macro @:pos(pos) switch ctx.header.contentType() {
+                    case Success(v): v.fullType;
+                    default: 'application/json';
+                  }
+                  
+                  cases.push({ 
+                    values: [macro invalid],
+                    expr: macro new tink.core.Error(NotAcceptable, 'Cannot process Content-Type '+invalid),
+                  });
+                  
+                  macro @:pos(pos) (
+                    ${ESwitch(contentType, cases, null).at(pos)} 
+                      : 
+                    tink.core.Promise<$sum>
+                  );
                 case PHeader:
-                  throw 'not implemented';
+                  macro @:pos(pos) tink.core.Promise.lift(
+                    new tink.querystring.Parser<tink.http.Header.HeaderValue->$sum>().tryParse(ctx.headers())
+                  );
                 case PQuery:
-                  macro tink.core.Promise.lift(new tink.querystring.Parser<$sum>().tryParse(ctx.header.uri.query));
+                  macro tink.core.Promise.lift(
+                    new tink.querystring.Parser<$sum>().tryParse(ctx.header.uri.query)
+                  );
               }
             
             macro return $promise.next(function ($locVar) {
@@ -393,6 +457,8 @@ class Routing {
           for (v in c.variants)
             cases.push(makeCase(route.field.name, args, v, v.method));
         case KSub(s):
+          for (v in s.variants)  
+            cases.push(makeCase(route.field.name, args, v, None));
       }
     }
   
@@ -415,9 +481,9 @@ class Routing {
       case [t]: t;
       case [s, t]:
         var s = s.toComplex();
-        (macro {
+        (macro @:pos(ctx.pos) {
           var x:$s = null;
-          function test<U>(s:Session<U>) {
+          function test<U>(s:tink.web.Session<U>) {
             return s;
           }
           test(x);

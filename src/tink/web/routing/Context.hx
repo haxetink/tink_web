@@ -6,10 +6,13 @@ import tink.http.Multipart;
 import tink.http.Request;
 import tink.http.StructuredBody;
 import tink.io.Source;
+import tink.querystring.Pairs;
 import tink.streams.Stream;
 import tink.url.Portion;
 import tink.url.Query;
+import tink.web.forms.FormField;
 
+using StringTools;
 using tink.CoreApi;
 
 private typedef ContextData = { 
@@ -36,7 +39,30 @@ abstract Context(ContextData) {
         default: new Error(NotImplemented, 'not implemented');//TODO: implement
       }
       
-  public function parse():Promise<StructuredBody>
+  public function headers():Pairs<tink.http.Header.HeaderValue> {
+    return [for (f in header.fields) new Named(toCamelCase(f.name), f.value)];
+  }
+      
+  static function toCamelCase(header:HeaderName) {
+    var header:String = header;
+    var ret = new StringBuf(),  
+        pos = 0,
+        max = header.length;
+       
+    while (pos < max) {
+      switch header.fastCodeAt(pos++) {
+        case '-'.code:
+          if (pos < max) 
+            ret.add(header.charAt(pos++).toLowerCase());
+        case v: 
+          ret.addChar(v);
+      }
+    }
+      
+    return ret.toString();
+  }
+  
+  public function parse():Promise<Array<Named<FormField>>>
     return switch this.request.body {
       case Parsed(parts): parts;
       case Plain(src):
@@ -44,7 +70,7 @@ abstract Context(ContextData) {
           case Some(s):
             parseMultipart(s);
           case None:
-            (src.all() >> function (bytes:Bytes):StructuredBody return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]);
+            (src.all() >> function (bytes:Bytes):Array<Named<FormField>> return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]);
         }      
     }
       
@@ -87,12 +113,13 @@ abstract Context(ContextData) {
       request.header.uri.query
     );
    
-  static function parseAcceptHeader(h:Header) 
+  static function parseAcceptHeader(h:Header)
     return switch h.get('accept') {
       case []: acceptsAll;
       case values:
         var accepted = [for (v in values) for (part in v.parse()) part.value => true];
-        function (t) return accepted.exists(t);
+        if (accepted['*/*']) acceptsAll;
+        else function (t) return accepted.exists(t);
     }
     
   static function acceptsAll(s:String) return true;
@@ -137,7 +164,7 @@ abstract Context(ContextData) {
           case Success(bytes):
             ret.push(new Named(
               name, 
-              File(tink.web.UploadedFile.ofBlob(fileName, mimeType, bytes))
+              File(tink.web.forms.FormFile.ofBlob(fileName, mimeType, bytes))
             ));
             true;
           case Failure(e):

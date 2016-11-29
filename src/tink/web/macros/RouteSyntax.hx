@@ -51,7 +51,6 @@ class RouteSyntax {
       case []: 
         
         getPath(fieldName, sig, { pos: m.pos, name: m.name, params: [fieldName.toExpr(m.pos)] });
-        //m.pos.error('please specify path');
         
       case [v]: 
         //TODO: check path against signature
@@ -88,6 +87,18 @@ class RouteSyntax {
             default:
               RNotAllowed;
           }
+          
+        if (!metas.exists(m.name)) {
+          switch rest {
+            case RCapture(_):
+              v.reject('cannot capture path rest in @${m.name}');
+            case RIgnore:
+              v.pos.warning('Path rest is always allowed for @${m.name}');
+            default:
+              rest = RIgnore;
+          }
+          
+        }
         
         function part(of:Portion) 
           return switch of {
@@ -264,7 +275,7 @@ class RouteSyntax {
                 case v: { method: v, path: path(m), }
               }
             ],
-            response: switch result.isSubTypeOf(haxe.macro.Context.getType('tink.web.Response')) {
+            response: switch result.isSubTypeOf(haxe.macro.Context.getType('tink.web.routing.Response')) {
               case Success(_): ROpaque(result);
               default: RData(result);
             }
