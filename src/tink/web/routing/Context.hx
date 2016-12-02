@@ -98,7 +98,7 @@ class Context {
     this.params = params;
   }
   
-  public function sub(descend:Int)
+  public function sub(descend:Int):Context
     return new Context(this.accepts, this.request, this.depth + descend, this.parts, this.params);
   
   static public function ofRequest(request:IncomingRequest)
@@ -168,6 +168,22 @@ class Context {
       }) >> function (n:Bool) return ret).handle(cb);
     });
   
+}
+
+class AuthedContext<U, S:Session<U>> extends Context {
+  var session:Lazy<Promise<S>>;
+  var user:Lazy<Promise<U>>;
+  
+  public function new(session, user, accepts, request, depth, parts, params) {
+    
+    this.session = session;
+    this.user = user;
+    
+    super(accepts, request, depth, parts, params);
+  }
+  
+  override public function sub(descend:Int):AuthedContext<U, S>
+    return new AuthedContext(session, user, accepts, request, depth + descend, parts, params);
 }
 
 abstract RequestReader<A>(Context->Promise<A>) from Context->Promise<A> {
