@@ -36,13 +36,6 @@ class DispatchTest extends TestCase {
     return { getUser: function () return new Error('whoops') };
     
   static var f = new Fake();
-  //static var r = new Router<Session<{ admin: Bool, id:Int }>, Fake>(f);
-  
-  //static function check() {
-    //tink.Web.route((null:IncomingRequest), f, {
-      //session: loggedin(true)
-    //});    
-  //}
   
   static function exec(req, ?session):Promise<OutgoingResponse> {
     
@@ -66,7 +59,12 @@ class DispatchTest extends TestCase {
         fail('Request to ${req.header.uri} failed because ${o.header.reason}', pos);
       else
         o.body.all().handle(function (b) {
-          structEq(value, haxe.Json.parse(b.toString()), pos);
+          structEq(
+            value, 
+            if (Std.is(value, String)) cast b.toString()
+            else haxe.Json.parse(b.toString()),
+            pos
+          );
           succeeded = true;
         });
     });
@@ -83,12 +81,12 @@ class DispatchTest extends TestCase {
     });
     
     assertTrue(failed);
-    
   }
   
   function testDispatch() {
       
     expect({ hello: 'world' }, get('/'));
+    expect('<p>Hello world</p>', get('/', []));
     expect({ hello: 'haxe' }, get('/haxe'));
     expect("yo", get('/yo'));
     expect( { a: 1, b: 2, blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, get('/sub/1/2/test/yo?c=3&d=4'));
@@ -120,7 +118,7 @@ class DispatchTest extends TestCase {
   
   function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:Source) {
     if (headers == null)
-      headers = [];
+      headers = [new HeaderField('accept', 'application/json')];
       
     if (body == null)
       body = Empty.instance;

@@ -6,32 +6,30 @@ import tink.web.routing.Response;
 //import tink.web.RoutingContext;
 //import tink.web.UploadedFile;
 
-@:restrict(true)
 class Fake {
   
   public function new() {}
   
   @:restrict(false) @:get public function noaccess() return 'nope';
 
-  @:get public var yo(default, null):String = '"yo"';
+  @:get public var yo(default, null):String = 'yo';
     
   //@:params(bar in query)
   @:get public function complex(query: { foo: Array<{ ?x: String, ?y:Int, z:Float }> }, ?bar:String) {
     return haxe.Json.stringify(query);
   }
-  //
+  
   @:post public function buffered(body:Bytes)
     return body;
     
   @:post public function textual(body:String)
     return body;
   
-  
   @:get public function headers(header: { accept:String } ) {
     return header.accept;
   }    
     
-  //@:html(function (o) return '<p>Hello ${o.hello}</p>')
+  @:html(function (o) return '<p>Hello ${o.hello}</p>')
   @:get('/$who')
   @:get('/')
   public function hello(?who:String = 'world') {
