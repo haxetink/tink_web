@@ -2,6 +2,7 @@ package;
 
 import haxe.ds.Option;
 import haxe.io.Bytes;
+import tink.core.Either;
 import tink.http.Multipart;
 import tink.http.Response;
 import tink.io.Source;
@@ -42,7 +43,11 @@ class Fake {
   @:get public function headers(header: { accept:String } ) {
     return header.accept;
   }    
-    
+  
+  @:consumes('application/json')
+  @:post public function enm(body:{ field: Either<String, String> })
+    return 'ok';
+  
   @:restrict(true)
   @:html(function (o) return '<p>Hello ${o.hello}</p>')
   @:get('/$who')
