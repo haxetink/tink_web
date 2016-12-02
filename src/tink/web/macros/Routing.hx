@@ -16,7 +16,7 @@ using Lambda;
 class Routing { 
   
   var routes:Array<Route>;
-  var session:Option<ComplexType>;
+  var auth:Option<{ user: Type, session: Type }>;
   
   var cases:Array<Case> = [];
   var fields:Array<Field> = [];
@@ -24,12 +24,22 @@ class Routing {
   var depth:Int = 0;
   var named:Array<String> = [];
   var nameIndex:Map<String, Int> = new Map();
-
-  function new(routes, session) {
+  var ctx:ComplexType;
+  
+  function new(routes, auth) {
     
     this.routes = routes;
-    this.session = session;
+    this.auth = auth;
     firstPass();
+    ctx = 
+      switch auth {
+        case Some(a):
+          var user = a.user.toComplex(),
+              session = a.session.toComplex();
+          macro : tink.web.routing.Context.AuthedContext<$user, $session>;
+        case None:
+          macro : tink.web.routing.Context;
+      }
   }
   
   function firstPass() {
@@ -134,7 +144,7 @@ class Routing {
   }
   
   function restrict(meta:Array<MetadataEntry>, e:Expr) {
-    switch [meta, session] {
+    switch [meta, auth] {
       case [[], None]: 
       case [v, None]:
         v[0].pos.error('restriction cannot be applied because no session handling is provided');
@@ -153,7 +163,19 @@ class Routing {
     return e;
   }
   
-  function generate(name:String, target:ComplexType, pos:Position) {
+  static function allMeta(t:Type):Array<MetaAccess> //TODO: move out
+    return switch t {
+      case TInst(_.get() => { meta: meta }, _),
+           TEnum(_.get() => { meta: meta }, _),
+           TAbstract(_.get() => { meta: meta }, _): 
+        [meta];
+      case TType(_.get() => { meta: meta }, _):
+        [meta].concat(allMeta(t.reduce(true)));
+      case TLazy(f): allMeta(f());
+      default: [];
+    }
+  
+  function generate(name:String, target:Type, pos:Position) {
     
     secondPass();
 
@@ -163,48 +185,24 @@ class Routing {
       macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found')
     ).at(pos);
     
+    theSwitch = restrict([for (a in allMeta(target)) for (m in a.extract(':restrict')) m], theSwitch);
+      
+    var target = target.toComplex();
+    
     var ret = 
-      switch session {
-        case Some(ct):
-          
-          
-          
-          macro class $name {
-            
-            var target:$target;
-            var getSession:tink.http.Request.IncomingRequestHeader->$ct;
-            
-            public function new(target, getSession) {
-              this.target = target;
-              this.getSession = getSession;
-            }
-            
-            public function route(ctx:tink.web.routing.Context, ?user):tink.core.Promise<tink.http.Response.OutgoingResponse> {
-              if (user == null)
-                user = tink.core.Promise.lift(
-                  tink.core.Future.async(function (cb)
-                    this.getSession(ctx.header).getUser().handle(cb)
-                  )
-                );
-              var l = ctx.pathLength;
-              return $theSwitch;
-            }
-          };          
-        default:
-          macro class $name {
-            
-            var target:$target;
-            
-            public function new(target) {
-              this.target = target;
-            }
-            
-            public function route(ctx:tink.web.routing.Context):tink.core.Promise<tink.http.Response.OutgoingResponse> {
-              var l = ctx.pathLength;
-              return $theSwitch;
-            }
-          };
-      }
+      macro class $name {
+        
+        var target:$target;
+        
+        public function new(target) {
+          this.target = target;
+        }
+        
+        public function route(ctx:$ctx):tink.core.Promise<tink.http.Response.OutgoingResponse> {
+          var l = ctx.pathLength;
+          return $theSwitch;
+        }
+      };
     
     for (f in fields)
       ret.fields.push(f);
@@ -219,7 +217,7 @@ class Routing {
         callArgs = [],
         funcArgs:Array<FunctionArg> = [{
           name: 'ctx',
-          type: macro : tink.web.routing.Context,
+          type: ctx,
         }];
         
     var field = route.field.name;
@@ -276,10 +274,16 @@ class Routing {
           
           var target = s.target.toComplex();
           
+          var router = switch auth {
+            case None:
+              macro new tink.web.routing.Router<$target>(__target__);
+            case Some(_.session.toComplex() => s):
+              macro new tink.web.routing.Router<$s, $target>(__target__);
+          }
+          
           macro @:pos(pos) tink.core.Promise.lift($result)
             .next(function (__target__:$target) 
-              return 
-                new tink.web.routing.Router<$target>(__target__).route(ctx.sub(__depth__))
+              return $router.route(ctx.sub(__depth__))
             );
           
         case KCall(c):
@@ -515,7 +519,7 @@ class Routing {
   
   static function build(ctx:BuildContextN) {
     
-    var session = None;
+    var auth = None;
     
     var target = switch ctx.types {
       case []:
@@ -529,15 +533,18 @@ class Routing {
         }
       case [t]: t;
       case [s, t]:
-        var s = s.toComplex();
-        (macro @:pos(ctx.pos) {
-          var x:$s = null;
-          function test<U>(s:tink.web.Session<U>) {
-            return s;
-          }
-          test(x);
-        }).typeof().sure();
-        session = Some(s);
+        var sc = s.toComplex();
+        
+        var user = 
+          (macro @:pos(ctx.pos) {
+            var x:$sc = null;
+            function test<U>(s:tink.web.Session<U>):U {
+              return null;
+            }
+            test(x);
+          }).typeof().sure();
+        
+        auth = Some({ session: s, user: user });
         t;
       default:
         ctx.pos.error('Invalid usage');
@@ -549,8 +556,8 @@ class Routing {
         ['multipart/form-data', 'application/x-www-form-urlencoded', 'application/json'], 
         ['application/json']
       ),
-      session
-    ).generate(ctx.name, target.toComplex(), ctx.pos);
+      auth
+    ).generate(ctx.name, target, ctx.pos);
   }
   
   static function apply() {

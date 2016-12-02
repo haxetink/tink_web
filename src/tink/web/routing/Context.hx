@@ -108,6 +108,15 @@ class Context {
       request.header.uri.path.parts(), 
       request.header.uri.query
     );
+    
+  static public function authed<U, S:Session<U>>(request:IncomingRequest, getSession:IncomingRequestHeader->S) 
+    return new AuthedContext<U, S>(
+      parseAcceptHeader(request.header),
+      request, 
+      request.header.uri.path.parts(), 
+      request.header.uri.query,
+      getSession.bind(request.header)
+    );
    
   static function parseAcceptHeader(h:Header)
     return switch h.get('accept') {
@@ -171,19 +180,24 @@ class Context {
 }
 
 class AuthedContext<U, S:Session<U>> extends Context {
-  var session:Lazy<Promise<S>>;
-  var user:Lazy<Promise<U>>;
   
-  public function new(session, user, accepts, request, depth, parts, params) {
+  var session:Lazy<S>;
+  var user:Lazy<Promise<Option<U>>>;
+  
+  public function new(accepts, request, depth = 0, parts, params, session, ?user) {
     
     this.session = session;
-    this.user = user;
+    this.user = switch user {
+      case null:
+        session.map(function (s) return s.getUser());
+      case v: v;
+    }
     
     super(accepts, request, depth, parts, params);
   }
   
   override public function sub(descend:Int):AuthedContext<U, S>
-    return new AuthedContext(session, user, accepts, request, depth + descend, parts, params);
+    return new AuthedContext(accepts, request, depth + descend, parts, params, session, user);
 }
 
 abstract RequestReader<A>(Context->Promise<A>) from Context->Promise<A> {

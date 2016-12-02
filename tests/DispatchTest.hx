@@ -36,7 +36,7 @@ class DispatchTest extends TestCase {
     return { getUser: function () return new Error('whoops') };
     
   static var f = new Fake();
-  static var r = new Router<Session<{ admin: Bool, id:Int }>, Fake>(f, null);
+  //static var r = new Router<Session<{ admin: Bool, id:Int }>, Fake>(f);
   
   //static function check() {
     //tink.Web.route((null:IncomingRequest), f, {
@@ -50,8 +50,8 @@ class DispatchTest extends TestCase {
       session = loggedin(true);
       
     return 
-      new Router<Session<{ admin: Bool, id:Int }>, Fake>(f, function (_) return session)
-        .route(Context.ofRequest(req));
+      new Router<Session<{ admin: Bool, id:Int }>, Fake>(f)
+        .route(Context.authed(req, function (_) return session));
   }
   
   function expect<A>(value:A, req, ?session, ?pos) {
@@ -98,7 +98,7 @@ class DispatchTest extends TestCase {
     expect(complex, get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'));
     
     shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4'));
-    //shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'));
+    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'));
     shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=5&foo=hey'));
     
     expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'));
@@ -106,14 +106,14 @@ class DispatchTest extends TestCase {
     
   }
   
-  //function testAuth() {
-    //shouldFail(ErrorCode.Unauthorized, get('/'), anon);
+  function testAuth() {
+    shouldFail(ErrorCode.Unauthorized, get('/'), anon);
     //shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
     //shouldFail(ErrorCode.Forbidden, get('/noaccess'));
     //shouldFail(ErrorCode.Forbidden, get('/sub/2/2/'));
     //shouldFail(ErrorCode.Forbidden, get('/sub/1/1/whatever'));
     //shouldFail(ErrorCode.Forbidden, get('/sub/1/2/whatever'));
-  //}
+  }
   
   function get(url, ?headers)
     return req(url, GET, headers);
