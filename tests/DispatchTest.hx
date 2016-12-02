@@ -108,11 +108,11 @@ class DispatchTest extends TestCase {
   
   function testAuth() {
     shouldFail(ErrorCode.Unauthorized, get('/'), anon);
-    //shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
-    //shouldFail(ErrorCode.Forbidden, get('/noaccess'));
-    //shouldFail(ErrorCode.Forbidden, get('/sub/2/2/'));
-    //shouldFail(ErrorCode.Forbidden, get('/sub/1/1/whatever'));
-    //shouldFail(ErrorCode.Forbidden, get('/sub/1/2/whatever'));
+    shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
+    shouldFail(ErrorCode.Forbidden, get('/noaccess'));
+    shouldFail(ErrorCode.Forbidden, get('/sub/2/2/'));
+    shouldFail(ErrorCode.Forbidden, get('/sub/1/1/whatever'));
+    expect({ foo: 'bar' }, get('/sub/1/2/whatever'));
   }
   
   function get(url, ?headers)

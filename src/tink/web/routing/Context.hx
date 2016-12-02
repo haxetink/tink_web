@@ -181,8 +181,8 @@ class Context {
 
 class AuthedContext<U, S:Session<U>> extends Context {
   
-  var session:Lazy<S>;
-  var user:Lazy<Promise<Option<U>>>;
+  public var session(default, null):Lazy<S>;
+  public var user(default, null):Lazy<Promise<Option<U>>>;
   
   public function new(accepts, request, depth = 0, parts, params, session, ?user) {
     

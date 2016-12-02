@@ -143,25 +143,48 @@ class Routing {
     return ret.toArray();
   }
   
-  function restrict(meta:Array<MetadataEntry>, e:Expr) {
-    switch [meta, auth] {
-      case [[], None]: 
-      case [v, None]:
-        v[0].pos.error('restriction cannot be applied because no session handling is provided');
-      case [_, Some(_)]: 
-        
-        for (m in meta)
-          switch m.params {
-            case []:
-              m.pos.error('@:restrict must have one parameter');
-            case [v]:
-              
-            case v:
-              v[1].reject('@:restrict must have one parameter');
-          }     
-    }
-    return e;
-  }
+  function restrict(meta:Array<MetadataEntry>, e:Expr) 
+    return 
+      switch [meta, auth] {
+        case [[], None]: 
+          e;
+        case [v, None]:
+          v[0].pos.error('restriction cannot be applied because no session handling is provided');
+        case [_, Some(_)]: 
+          
+          for (m in meta)
+            switch m.params {
+              case []:
+                m.pos.error('@:restrict must have one parameter');
+              case [v]:
+                
+                function subst(e:Expr)
+                  return switch e {
+                    case macro this.$field: 
+                      macro @:pos(e.pos) (@:privateAccess this.target.$field);
+                    case macro this: 
+                      macro @:pos(e.pos) (@:privateAccess this.target);
+                    default:
+                      e.map(subst);
+                  }
+                
+                e = macro @:pos(v.pos) (${subst(v)} : tink.core.Promise<Bool>).next(
+                  function (authorized)
+                    return 
+                      if (authorized) $e;
+                      else new tink.core.Error(Forbidden, 'forbidden')
+                );
+              case v:
+                v[1].reject('@:restrict must have one parameter');
+            }     
+            
+          macro ctx.user.get().next(function (o) return switch o {
+            case Some(user):
+              $e;
+            case None:
+              new tink.core.Error(Unauthorized, 'not authorized');
+          });
+      }
   
   static function allMeta(t:Type):Array<MetaAccess> //TODO: move out
     return switch t {
@@ -481,9 +504,8 @@ class Routing {
             });
         }
         
-      if (loc == PBody) {
-        //TODO: apply access control
-      }
+      if (loc == PBody) 
+        result = restrict(route.field.meta.extract(':restrict'), result);
     }    
     
     var f:Function = {

@@ -11,7 +11,7 @@ class Fake {
   
   public function new() {}
   
-  //@:restrict(false) @:get public function noaccess() return 'nope';
+  @:restrict(false) @:get public function noaccess() return 'nope';
 
   @:get public var yo(default, null):String = '"yo"';
     
@@ -53,15 +53,14 @@ class Fake {
     //return haxe.Json.stringify(body);
   //}  
   
-  //@:restrict(user.id == a)  
+  @:restrict(user.id == a)  
   @:sub('/sub/$a/$b')
-  //public function sub(a, b, path:String) {
   public function sub(a, b) {
     return new FakeSub(a, b);
   }  
 }
 
-@:restrict(@:privateAccess this.target.b > user.id)
+@:restrict(this.b > user.id)
 class FakeSub {
   
   var a:Int;
@@ -72,7 +71,7 @@ class FakeSub {
     this.b = b;
   }
   
-  //@:restrict(user.admin)
+  @:restrict(user.admin)
   @:get('/test/$blargh') 
   public function foo(blargh:String, /*path:Array<String>,*/ query: { c:String, d:String } ) {  
     return haxe.Json.stringify({ 
@@ -85,7 +84,7 @@ class FakeSub {
     });
   }
   
-  //@:get public function whatever() 
-    //return 'whatever';
+  @:get public function whatever() 
+    return { foo: 'bar' }
     
 }
