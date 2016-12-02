@@ -90,7 +90,7 @@ class Context {
   public function param(name:String):Stringly
     return this.params[name];
 
-  function new(accepts, request, depth = 0, parts, params) {
+  function new(accepts, request, depth, parts, params) {
     this.accepts = accepts;
     this.request = request;
     this.depth = depth;
@@ -105,6 +105,7 @@ class Context {
     return new Context(
       parseAcceptHeader(request.header),
       request, 
+      0,
       request.header.uri.path.parts(), 
       request.header.uri.query
     );
@@ -113,6 +114,7 @@ class Context {
     return new AuthedContext<U, S>(
       parseAcceptHeader(request.header),
       request, 
+      0,
       request.header.uri.path.parts(), 
       request.header.uri.query,
       getSession.bind(request.header)
@@ -184,7 +186,7 @@ class AuthedContext<U, S:Session<U>> extends Context {
   public var session(default, null):Lazy<S>;
   public var user(default, null):Lazy<Promise<Option<U>>>;
   
-  public function new(accepts, request, depth = 0, parts, params, session, ?user) {
+  public function new(accepts, request, depth, parts, params, session, ?user) {
     
     this.session = session;
     this.user = switch user {

@@ -52,7 +52,8 @@ abstract FormFile(UploadedFile) {
           #elseif sys
             Sink.ofOutput(name, sys.io.File.write(path))
           #else
-            #error
+            null
+            //#error
           #end
         ;
         return (data : IdealSource).pipeTo(dest, { end: true } ).map(function (r) return switch r {

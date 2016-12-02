@@ -145,11 +145,11 @@ GIF87a.............,...........D..;
     shouldFail(ErrorCode.Forbidden, get('/sub/1/1/whatever'));
     expect({ foo: 'bar' }, get('/sub/1/2/whatever'));
     
-    expect(-1, get('/anonOrNot'), anon);
-    expect(1, get('/anonOrNot'));
-    expect(4, get('/anonOrNot'), loggedin(true, 4));
-    expect(true, get('/withUser'));
-    expect(false, get('/withUser'), loggedin(false, 2));
+    expect({ id: -1 }, get('/anonOrNot'), anon);
+    expect({ id: 1 }, get('/anonOrNot'));
+    expect({ id: 4 }, get('/anonOrNot'), loggedin(true, 4));
+    expect({ admin: true }, get('/withUser'));
+    expect({ admin: false }, get('/withUser'), loggedin(false, 2));
   }
   
   function get(url, ?headers)

@@ -14,13 +14,15 @@ class Fake {
   public function new() {}
   
   @:get public function anonOrNot(user:Option<{ id: Int }>) 
-    return switch user {
-      case Some(v): v.id;
-      case None: -1;
+    return {
+      id: switch user {
+        case Some(v): v.id;
+        case None: -1;
+      }
     }
     
   @:get public function withUser(user: { admin: Bool } )
-    return user.admin;
+    return { admin: user.admin };
   
   @:restrict(false) @:get public function noaccess() return 'nope';
 
@@ -65,27 +67,16 @@ class Fake {
       content: b.toString(),
     };
   }
-  //@:post 
-  //public function upload(body: { foo:String, theFile: FormFile } ) {
-    //return new OutgoingResponse(
-      //new ResponseHeader(200, 'ok', []),
-      //body.theFile.read().idealize(function (e) e.throwSelf())
-    //);
-  //}
   
-  @:post public function post(body: { foo:String, bar: Int }) {
-    return haxe.Json.stringify(body);
-  }  
-  //@:params(horst in body)
-  //@:post public function post(body: { foo:String, bar: Int }, horst:String) {
-    //return haxe.Json.stringify(body);
-  //}  
+  @:post public function post(body: { foo:String, bar: Int }) 
+    return body;
   
   @:restrict(user.id == a)  
   @:sub('/sub/$a/$b')
   public function sub(a, b) {
     return new FakeSub(a, b);
   }
+  
 }
 
 @:restrict(this.b > user.id)

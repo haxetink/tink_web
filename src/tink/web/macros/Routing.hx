@@ -234,10 +234,10 @@ class Routing {
           return $theSwitch;
         }
       };
-    //trace(TAnonymous(fields).toString());
+    
     for (f in fields)
       ret.fields.push(f);
-      
+    
     return ret;    
   }
   
