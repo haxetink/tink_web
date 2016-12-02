@@ -133,6 +133,26 @@ class Routing {
     return ret.toArray();
   }
   
+  function restrict(meta:Array<MetadataEntry>, e:Expr) {
+    switch [meta, session] {
+      case [[], None]: 
+      case [v, None]:
+        v[0].pos.error('restriction cannot be applied because no session handling is provided');
+      case [_, Some(_)]: 
+        
+        for (m in meta)
+          switch m.params {
+            case []:
+              m.pos.error('@:restrict must have one parameter');
+            case [v]:
+              
+            case v:
+              v[1].reject('@:restrict must have one parameter');
+          }     
+    }
+    return e;
+  }
+  
   function generate(name:String, target:ComplexType, pos:Position) {
     
     secondPass();
@@ -143,19 +163,48 @@ class Routing {
       macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found')
     ).at(pos);
     
-    var ret = macro class $name {
-      
-      var target:$target;
-      
-      public function new(target) {
-        this.target = target;
+    var ret = 
+      switch session {
+        case Some(ct):
+          
+          
+          
+          macro class $name {
+            
+            var target:$target;
+            var getSession:tink.http.Request.IncomingRequestHeader->$ct;
+            
+            public function new(target, getSession) {
+              this.target = target;
+              this.getSession = getSession;
+            }
+            
+            public function route(ctx:tink.web.routing.Context, ?user):tink.core.Promise<tink.http.Response.OutgoingResponse> {
+              if (user == null)
+                user = tink.core.Promise.lift(
+                  tink.core.Future.async(function (cb)
+                    this.getSession(ctx.header).getUser().handle(cb)
+                  )
+                );
+              var l = ctx.pathLength;
+              return $theSwitch;
+            }
+          };          
+        default:
+          macro class $name {
+            
+            var target:$target;
+            
+            public function new(target) {
+              this.target = target;
+            }
+            
+            public function route(ctx:tink.web.routing.Context):tink.core.Promise<tink.http.Response.OutgoingResponse> {
+              var l = ctx.pathLength;
+              return $theSwitch;
+            }
+          };
       }
-      
-      public function route(ctx:tink.web.routing.Context):tink.core.Promise<tink.http.Response.OutgoingResponse> {
-        var l = ctx.pathLength;
-        return $theSwitch;
-      }
-    };
     
     for (f in fields)
       ret.fields.push(f);

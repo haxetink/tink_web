@@ -2,6 +2,7 @@ package;
 
 import haxe.Constraints.IMap;
 import haxe.PosInfos;
+import haxe.Timer;
 import haxe.io.Bytes;
 import haxe.unit.TestCase;
 import tink.core.Error.ErrorCode;
@@ -10,6 +11,7 @@ import tink.http.Request;
 import tink.http.Response.OutgoingResponse;
 import tink.io.Source;
 import tink.web.Session;
+import tink.web.routing.Context;
 import tink.web.routing.Router;
 //import tink.web.helpers.AuthResult;
 import tink.io.IdealSource;
@@ -34,20 +36,29 @@ class DispatchTest extends TestCase {
     return { getUser: function () return new Error('whoops') };
     
   static var f = new Fake();
-  static var r = new Router<Session<{ admin: Bool, id:Int }>, Fake>(f);
+  static var r = new Router<Session<{ admin: Bool, id:Int }>, Fake>(f, null);
+  
   //static function check() {
     //tink.Web.route((null:IncomingRequest), f, {
       //session: loggedin(true)
     //});    
   //}
-  function expect<A>(value:A, req, ?session, ?pos) {
+  
+  static function exec(req, ?session):Promise<OutgoingResponse> {
     
     if (session == null)
       session = loggedin(true);
+      
+    return 
+      new Router<Session<{ admin: Bool, id:Int }>, Fake>(f, function (_) return session)
+        .route(Context.ofRequest(req));
+  }
+  
+  function expect<A>(value:A, req, ?session, ?pos) {
     
     var succeeded = false;
     
-    r.route(req).handle(function (o) {
+    exec(req, session).handle(function (o) {
       if (!o.isSuccess())
         trace(o);
       var o = o.sure();
@@ -66,12 +77,7 @@ class DispatchTest extends TestCase {
   function shouldFail(e:ErrorCode, req, ?session, ?pos) {
     var failed = false;
     
-    if (session == null)
-      session = loggedin(true);
-      
-    var res:Future<OutgoingResponse> = r.route(req).recover(OutgoingResponse.reportError);
-    
-    res.handle(function (o) {
+    exec(req, session).recover(OutgoingResponse.reportError).handle(function (o) {
       assertEquals(e, o.header.statusCode, pos);  
       failed = true;
     });

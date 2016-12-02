@@ -15,22 +15,19 @@ import tink.web.forms.FormField;
 using StringTools;
 using tink.CoreApi;
 
-private typedef ContextData = { 
-  var accepts:String->Bool;
+class Context {
+  
   var request:IncomingRequest;
   var depth:Int;
   var parts:Array<Portion>;
   var params:Map<String, Portion>;
-}
-
-abstract Context(ContextData) {
     
-  public function accepts(type:String)
-    return this.accepts(type);
-  
   public var header(get, never):IncomingRequestHeader;
     inline function get_header()
-      return this.request.header;
+      return request.header;
+      
+  public var accepts(default, null):String->Bool;
+  
       
   public var rawBody(get, never):Source;
     inline function get_rawBody():Source
@@ -43,7 +40,7 @@ abstract Context(ContextData) {
     return [for (f in header.fields) new Named(toCamelCase(f.name), f.value)];
   }
       
-  static function toCamelCase(header:HeaderName) {
+  static function toCamelCase(header:HeaderName) {//TODO: should go some place else
     var header:String = header;
     var ret = new StringBuf(),  
         pos = 0,
@@ -93,19 +90,18 @@ abstract Context(ContextData) {
   public function param(name:String):Stringly
     return this.params[name];
 
-  inline function new(accepts, request, depth = 0, parts, params) 
-    this = {
-      accepts: accepts,
-      request: request,
-      depth: depth,
-      parts: parts, 
-      params: params,
-    }
+  function new(accepts, request, depth = 0, parts, params) {
+    this.accepts = accepts;
+    this.request = request;
+    this.depth = depth;
+    this.parts = parts;
+    this.params = params;
+  }
   
   public function sub(descend:Int)
     return new Context(this.accepts, this.request, this.depth + descend, this.parts, this.params);
   
-  @:from static function ofRequest(request:IncomingRequest)
+  static public function ofRequest(request:IncomingRequest)
     return new Context(
       parseAcceptHeader(request.header),
       request, 
@@ -129,7 +125,6 @@ abstract Context(ContextData) {
       var ret:StructuredBody = [];
       
       (s.forEachAsync(function (cur:MultipartChunk) {
-        
         
         var name = null,
             fileName = null,
