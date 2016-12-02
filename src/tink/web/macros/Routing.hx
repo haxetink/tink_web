@@ -114,9 +114,17 @@ class Routing {
     }
     
     var callArgs = [for (a in funcArgs) 
-      if (a == funcArgs[0] || captured[a.name]) macro $i{a.name}
-      else if (a.name == '__depth__') macro $v{v.path.parts.length}
-      else macro null //wtf?
+      switch a.name {
+        case '__depth__': 
+          macro $v{v.path.parts.length};
+        case 'user' | 'session': 
+          macro $i{a.name};
+        default:
+          if (a == funcArgs[0] || captured[a.name]) 
+            macro $i{a.name}
+          else 
+            macro null;
+      }
     ];
     
     return { 
@@ -146,7 +154,7 @@ class Routing {
   function restrict(meta:Array<MetadataEntry>, e:Expr) 
     return 
       switch [meta, auth] {
-        case [[], None]: 
+        case [[], _]: 
           e;
         case [v, None]:
           v[0].pos.error('restriction cannot be applied because no session handling is provided');
@@ -226,7 +234,7 @@ class Routing {
           return $theSwitch;
         }
       };
-    
+    //trace(TAnonymous(fields).toString());
     for (f in fields)
       ret.fields.push(f);
       
@@ -245,6 +253,8 @@ class Routing {
         
     var field = route.field.name;
             
+    var beforeBody = [function (e) return restrict(route.field.meta.extract(':restrict'), e)];
+    
     for (arg in route.signature) {
       
       switch arg.kind {
@@ -274,6 +284,22 @@ class Routing {
             kind: FVar(t.toComplex()),
           });
           
+        case AUser(u):        
+
+          beforeBody.push(function (e:Expr) {
+            
+            switch u.getID() {
+              case 'haxe.ds.Option':
+              case null:
+                e = macro @:pos(e.pos) switch user {
+                  case Some(user): $e;
+                  case None: new tink.core.Error(Unauthorized, 'unauthorized');
+                }
+            }          
+            
+            return macro @:pos(e.pos) ctx.user.get().next(function (user) return $e);
+          });
+        
         default:
           
           throw 'not implemented: '+arg.kind;
@@ -357,15 +383,8 @@ class Routing {
         switch [loc, separate[loc], compound[loc]] {
           case [_, null, null]:
             result;//there's nothing to be done here
-          case [PBody, null, [raw]] if (raw.value.isSubTypeOf(Context.getType('tink.io.Source'))):
             
-            var name = raw.name;
-            macro @:pos(pos) {
-              var $name = ctx.rawBody;
-              $result;
-            }
-            
-          case [PBody, null, [buffered]] if (buffered.value.isSubTypeOf(Context.getType('haxe.io.Bytes')).isSuccess()):
+          case [PBody, null, [buffered]] if (Context.getType('haxe.io.Bytes').isSubTypeOf(buffered.value).isSuccess()):
             
             var name = buffered.name;
             
@@ -375,7 +394,7 @@ class Routing {
                   return $result
                 );
               
-          case [PBody, null, [textual]] if (textual.value.isSubTypeOf(Context.getType('String')).isSuccess()):
+          case [PBody, null, [textual]] if (Context.getType('String').isSubTypeOf(textual.value).isSuccess()):
             
             var name = textual.name;
             
@@ -385,7 +404,15 @@ class Routing {
                   var $name = $i{name}.toString();
                   return $result;
                 });
+                
+          case [PBody, null, [raw]] if (Context.getType('tink.io.Source').isSubTypeOf(raw.value).isSuccess()):
             
+            var name = raw.name;
+            macro @:pos(pos) {
+              var $name = ctx.rawBody;
+              $result;
+            }
+                        
           case [_, separate, compound]:
             
             if (compound == null)
@@ -435,7 +462,7 @@ class Routing {
                           expr: target.field(f.name)
                         }]).at(),
                       });
-                    default:
+                    case v:
                       throw 'assert';
                   };
                 
@@ -505,7 +532,8 @@ class Routing {
         }
         
       if (loc == PBody) 
-        result = restrict(route.field.meta.extract(':restrict'), result);
+        for (f in beforeBody)
+          result = f(result);
     }    
     
     var f:Function = {

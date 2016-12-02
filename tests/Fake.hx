@@ -1,14 +1,25 @@
 package;
 
+import haxe.ds.Option;
 import haxe.io.Bytes;
+import tink.http.Multipart;
+import tink.http.Response;
+import tink.io.Source;
 import tink.web.forms.FormFile;
 import tink.web.routing.Response;
-//import tink.web.RoutingContext;
-//import tink.web.UploadedFile;
 
 class Fake {
   
   public function new() {}
+  
+  @:get public function anonOrNot(user:Option<{ id: Int }>) 
+    return switch user {
+      case Some(v): v.id;
+      case None: -1;
+    }
+    
+  @:get public function withUser(user: { admin: Bool } )
+    return user.admin;
   
   @:restrict(false) @:get public function noaccess() return 'nope';
 
@@ -19,6 +30,9 @@ class Fake {
     return haxe.Json.stringify(query);
   }
   
+  @:post public function streaming(body:Source)
+    return body.all();
+    
   @:post public function buffered(body:Bytes)
     return body;
     
@@ -29,6 +43,7 @@ class Fake {
     return header.accept;
   }    
     
+  @:restrict(true)
   @:html(function (o) return '<p>Hello ${o.hello}</p>')
   @:get('/$who')
   @:get('/')
@@ -39,9 +54,19 @@ class Fake {
   }
   
   @:post 
-  public function upload(body: { foo:String, theFile: FormFile } ):Response {
-    return '';
+  public function upload(body: { datafile1: FormFile } ) {
+    return body.datafile1.read().all() >> function (b:Bytes) return {
+      name: body.datafile1.fileName,
+      content: b.toString(),
+    };
   }
+  //@:post 
+  //public function upload(body: { foo:String, theFile: FormFile } ) {
+    //return new OutgoingResponse(
+      //new ResponseHeader(200, 'ok', []),
+      //body.theFile.read().idealize(function (e) e.throwSelf())
+    //);
+  //}
   
   @:post public function post(body: { foo:String, bar: Int }) {
     return haxe.Json.stringify(body);
@@ -55,7 +80,7 @@ class Fake {
   @:sub('/sub/$a/$b')
   public function sub(a, b) {
     return new FakeSub(a, b);
-  }  
+  }
 }
 
 @:restrict(this.b > user.id)

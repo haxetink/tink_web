@@ -42,6 +42,8 @@ enum RouteArgKind {
   AParam(type:Type, loc:ParamLocation, kind:ParamKind);
   
   AUser(type:Type);
+  
+  ASession(type:Type);
 }
 
 enum RouteKind {

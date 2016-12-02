@@ -6,7 +6,10 @@ import haxe.Timer;
 import haxe.io.Bytes;
 import haxe.unit.TestCase;
 import tink.core.Error.ErrorCode;
+import tink.http.Header;
 import tink.http.Header.HeaderField;
+import tink.http.Message;
+import tink.http.Multipart;
 import tink.http.Request;
 import tink.http.Response.OutgoingResponse;
 import tink.io.Source;
@@ -104,13 +107,49 @@ class DispatchTest extends TestCase {
     
   }
   
+  function testMultipart() {
+    //TODO: somehow, posting multipart gets us nowhere
+    expect({
+      content: 'GIF87a.............,...........D..;',
+      name: 'r.gif',
+    }, req('/upload', POST, [
+      new HeaderField('Content-Type', 'multipart/form-data; boundary=----------287032381131322'),
+      new HeaderField('Content-Length', 514),
+    ], 
+'------------287032381131322
+Content-Disposition: form-data; name="datafile1"; filename="r.gif"
+Content-Type: image/gif
+
+GIF87a.............,...........D..;
+------------287032381131322
+Content-Disposition: form-data; name="datafile2"; filename="g.gif"
+Content-Type: image/gif
+
+GIF87a.............,...........D..;
+------------287032381131322
+Content-Disposition: form-data; name="datafile3"; filename="b.gif"
+Content-Type: image/gif
+
+GIF87a.............,...........D..;
+------------287032381131322--
+'));
+
+  }
+  
   function testAuth() {
+    shouldFail(ErrorCode.Unauthorized, get('/withUser'), anon);
     shouldFail(ErrorCode.Unauthorized, get('/'), anon);
     shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
     shouldFail(ErrorCode.Forbidden, get('/noaccess'));
     shouldFail(ErrorCode.Forbidden, get('/sub/2/2/'));
     shouldFail(ErrorCode.Forbidden, get('/sub/1/1/whatever'));
     expect({ foo: 'bar' }, get('/sub/1/2/whatever'));
+    
+    expect(-1, get('/anonOrNot'), anon);
+    expect(1, get('/anonOrNot'));
+    expect(4, get('/anonOrNot'), loggedin(true, 4));
+    expect(true, get('/withUser'));
+    expect(false, get('/withUser'), loggedin(false, 2));
   }
   
   function get(url, ?headers)
