@@ -40,7 +40,7 @@ class DispatchTest extends TestCase {
     
   static var f = new Fake();
   
-  static function exec(req, ?session):Promise<OutgoingResponse> {
+  static public function exec(req, ?session):Promise<OutgoingResponse> {
     
     if (session == null)
       session = loggedin(true);

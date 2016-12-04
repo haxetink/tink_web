@@ -49,7 +49,7 @@ class Proxify {
         pos: f.field.pos,
         name: f.field.name,
         kind: FFun({
-          args: [for (arg in f.signature) { name: arg.name, type: arg.type.toComplex() }],
+          args: [for (arg in f.signature) { name: arg.name, type: arg.type.toComplex(), opt: arg.optional }],
           expr: {
             
             var call = [];
@@ -70,7 +70,7 @@ class Proxify {
                   '', 
                   ${switch call.response {
                     case RData(t): MimeType.readers.get(f.produces, t, f.field.pos);
-                    default: throw 'not implemented';
+                    default: macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
                   }}
                 );
                 

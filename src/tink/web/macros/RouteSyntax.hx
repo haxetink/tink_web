@@ -11,6 +11,12 @@ using tink.MacroApi;
 using tink.CoreApi;
 using Lambda;
 
+enum RoutePayload {
+  Empty;
+  Mixed(separate:Array<Field>, compound:Array<Named<Type>>, sum:ComplexType);
+  SingleCompound(name:String, type:Type);
+}
+
 class RouteSyntax {
   
   static var metas = {
@@ -133,7 +139,7 @@ class RouteSyntax {
         }
         
       case v: 
-        v[1].reject('only on path per route allowed');
+        v[1].reject('only one path per route allowed');
     }
     
   static function liftResponse(t:Type, pos:Position) {
@@ -228,6 +234,65 @@ class RouteSyntax {
         warn('Route captures surplus portion', v.path.pos, v.path.deviation.surplus);
     }
       
+  }
+  
+  static public function getPayload(route:Route, loc:ParamLocation):RoutePayload {
+    var compound = new Array<Named<Type>>(),
+        separate = new Array<Field>();
+        
+    for (arg in route.signature) 
+      switch arg.kind {
+        case AParam(t, _ == loc => true, kind):
+          switch kind {
+            case PCompound:
+              compound.push(new Named(arg.name, t));
+            case PSeparate:
+              separate.push({
+                name: arg.name,
+                pos: route.field.pos,
+                kind: FVar(t.toComplex()),
+              });     
+          }
+        default:
+    }
+    
+    var locName = loc.getName().substr(1).toLowerCase();    
+    
+    return 
+      switch [compound, separate] {
+        case [[], []]: 
+          
+          Empty;
+          
+        case [[v], []]: 
+          
+          SingleCompound(v.name, v.value);
+          
+        case [[], v]: 
+        
+          Mixed(separate, compound, TAnonymous(separate));
+          
+        default:
+        
+          Mixed(separate, compound, switch compound {
+            case [v]: 
+              v.value.toComplex();
+            case v:
+              
+              var fields = separate.copy();
+              
+              for (t in v)
+                switch t.value.reduce().toComplex() {
+                  case TAnonymous(f):
+                    for (f in f)
+                      fields.push(f);
+                  default:
+                    route.field.pos.error('If multiple types are defined for $locName then all must be anonymous objects');
+                }
+                
+              TAnonymous(fields);
+          });
+      }
   }
   
   static public function read(t:Type, consumes:Array<MimeType>, produces:Array<MimeType>) {

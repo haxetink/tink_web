@@ -6,7 +6,7 @@ class Run {
   function new() {}
   static var tests:Array<TestCase> = [
     new DispatchTest(),
-    //new ProxyTest(),
+    new ProxyTest(),
   ];
   static function main() {  
     var r = new TestRunner();

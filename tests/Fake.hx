@@ -28,9 +28,9 @@ class Fake {
 
   @:get public var yo(default, null):String = 'yo';
     
-  //@:params(bar in query)
+  @:params(bar in query)
   @:get public function complex(query: { foo: Array<{ ?x: String, ?y:Int, z:Float }> }, ?bar:String) {
-    return haxe.Json.stringify(query);
+    return query;
   }
   
   @:post public function streaming(body:Source)
