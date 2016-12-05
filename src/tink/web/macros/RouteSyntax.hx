@@ -311,8 +311,16 @@ class RouteSyntax {
       
       function add(kind:RouteKind) {
         switch kind {
-          case KCall(call): checkVariants(f.pos, call.variants);
-          case KSub(sub): checkVariants(f.pos, sub.variants);
+          case KCall(call): 
+            checkVariants(f.pos, call.variants);
+          case KSub(sub): 
+            for (arg in signature.get())
+              switch arg.kind {
+                case AParam(_, PBody, _):
+                  sub.variants[0].path.pos.error('Sub routes may not have a body');
+                default:
+              }
+            checkVariants(f.pos, sub.variants);
         }
         ret.push({
           field: f,
