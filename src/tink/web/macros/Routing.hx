@@ -378,25 +378,23 @@ class Routing {
     for (loc in [PBody, PQuery, PHeader]) {
       
       var locName = loc.getName().substr(1).toLowerCase();
+      var locVar = '__${locName}__';
       
       result = 
-        switch [loc, separate[loc], compound[loc]] {
-          case [_, null, null]:
-            result;//there's nothing to be done here
+        switch [loc, RouteSyntax.getPayload(route, loc)] {
+          case [_, Empty]:
             
-          case [PBody, null, [buffered]] if (Context.getType('haxe.io.Bytes').isSubTypeOf(buffered.value).isSuccess()):
+            result;
             
-            var name = buffered.name;
+          case [PBody, SingleCompound(name, is(_, 'haxe.io.Bytes') => true)]:
             
             macro @:pos(pos) 
               tink.core.Promise.lift(ctx.rawBody.all())
                 .next(function ($name:haxe.io.Bytes) 
                   return $result
-                );
-              
-          case [PBody, null, [textual]] if (Context.getType('String').isSubTypeOf(textual.value).isSuccess()):
-            
-            var name = textual.name;
+                );            
+                
+          case [PBody, SingleCompound(name, is(_, 'String') => true)]:
             
             macro @:pos(pos) 
               tink.core.Promise.lift(ctx.rawBody.all())
@@ -405,42 +403,20 @@ class Routing {
                   return $result;
                 });
                 
-          case [PBody, null, [raw]] if (Context.getType('tink.io.Source').isSubTypeOf(raw.value).isSuccess()):
+          case [PBody, SingleCompound(name, is(_, 'tink.io.Source') => true)]:
             
-            var name = raw.name;
             macro @:pos(pos) {
               var $name = ctx.rawBody;
               $result;
             }
-                        
-          case [_, separate, compound]:
             
-            if (compound == null)
-              compound = [];
-              
-            if (separate != null)
-              compound.push(new Named('', ComplexType.TAnonymous(separate).toType().sure()));
-              
-            var sum = switch compound {
-              case [v]: 
-                v.value.toComplex();
-              case v:
-                
-                var fields = [];
-                
-                for (t in v)
-                  switch t.value.reduce().toComplex() {
-                    case TAnonymous(f):
-                      for (f in f)
-                        fields.push(f);
-                    default:
-                      route.field.pos.error('If multiple types are defined for $locName then all must be anonymous objects');
-                  }
-                  
-                ComplexType.TAnonymous(fields);
-            }
+          case [_, SingleCompound(name, _.toComplex() => t)]:
             
-            var locVar = '__${locName}__';
+            macro @:pos(pos) return ${parse(loc, route, t)}.next(function ($name) {
+              return $result;
+            });
+            
+          case [_, Mixed(separate, compound, t)]:
             
             function dissect() {
               var target = locVar.resolve();
@@ -467,65 +443,9 @@ class Routing {
                   };
                 
               return EVars(parts).at();
-            }
+            }  
             
-            var promise = 
-              switch loc {
-                case PBody:
-                  var cases:Array<Case> = [];
-                  
-                  var structured = [];
-                  
-                  for (type in route.consumes) 
-                    switch type {
-                      case 'application/x-www-form-urlencoded' | 'multipart/form-data': 
-                        structured.push(macro @:pos(pos) $v{type});
-                      default: 
-                        cases.push({ 
-                          values: [macro $v{type}],
-                          expr: macro @:pos(pos) tink.core.Promise.lift(ctx.rawBody.all()).next(
-                            function (b) return ${MimeType.readers.get([type], sum.toType(pos).sure(), pos)}(b.toString())
-                          )
-                        });
-                    }
-                  
-                  switch structured {
-                    case []:
-                    case v:
-                      cases.unshift({ 
-                        values: structured, 
-                        expr: macro @:pos(pos) ctx.parse().next(function (pairs)
-                          return new tink.querystring.Parser<tink.web.forms.FormField->$sum>().tryParse(pairs)
-                        ),
-                      });
-                  }
-                  
-                  var contentType = macro @:pos(pos) switch ctx.header.contentType() {
-                    case Success(v): v.fullType;
-                    default: 'application/json';
-                  }
-                  
-                  cases.push({ 
-                    values: [macro invalid],
-                    expr: macro new tink.core.Error(NotAcceptable, 'Cannot process Content-Type '+invalid),
-                  });
-                  
-                  macro @:pos(pos) (
-                    ${ESwitch(contentType, cases, null).at(pos)} 
-                      : 
-                    tink.core.Promise<$sum>
-                  );
-                case PHeader:
-                  macro @:pos(pos) tink.core.Promise.lift(
-                    new tink.querystring.Parser<tink.http.Header.HeaderValue->$sum>().tryParse(ctx.headers())
-                  );
-                case PQuery:
-                  macro tink.core.Promise.lift(
-                    new tink.querystring.Parser<$sum>().tryParse(ctx.header.uri.query)
-                  );
-              }
-            
-            macro return $promise.next(function ($locVar) {
+            macro @:pos(pos) return ${parse(loc, route, t)}.next(function ($locVar) {
               ${dissect()};
               return $result;
             });
@@ -566,6 +486,75 @@ class Routing {
     }
   
   static var IGNORE = macro _;
+  
+  static function is(t:Type, name:String)
+    return Context.getType(name).isSubTypeOf(t).isSuccess();
+    
+  static function parse(loc:ParamLocation, route:Route, payload:ComplexType):Expr 
+    return
+      switch loc {
+        case PBody:
+          
+          bodyParser(payload, route);
+          
+        case PHeader:
+          
+          macro @:pos(route.field.pos) tink.core.Promise.lift(
+            new tink.querystring.Parser<tink.http.Header.HeaderValue->$payload>().tryParse(ctx.headers())
+          );
+          
+        case PQuery:
+          
+          macro @:pos(route.field.pos) tink.core.Promise.lift(
+            new tink.querystring.Parser<$payload>().tryParse(ctx.header.uri.query)
+          );
+      }     
+      
+  static function bodyParser(payload:ComplexType, route:Route) {
+    var cases:Array<Case> = [],
+        structured = [],
+        pos = route.field.pos;
+    
+    for (type in route.consumes) 
+      switch type {
+        case 'application/x-www-form-urlencoded' | 'multipart/form-data': 
+          structured.push(macro @:pos(pos) $v{type});
+        default: 
+          cases.push({ 
+            values: [macro $v{type}],
+            expr: macro @:pos(pos) tink.core.Promise.lift(ctx.rawBody.all()).next(
+              function (b) return ${MimeType.readers.get([type], payload.toType(pos).sure(), pos)}(b.toString())
+            )
+          });
+      }
+    
+    switch structured {
+      case []:
+      case v:
+        cases.unshift({ 
+          values: structured, 
+          expr: macro @:pos(pos) ctx.parse().next(function (pairs)
+            return new tink.querystring.Parser<tink.web.forms.FormField->$payload>().tryParse(pairs)
+          ),
+        });
+    }
+    
+    var contentType = macro @:pos(pos) switch ctx.header.contentType() {
+      case Success(v): v.fullType;
+      default: 'application/json';
+    }
+    
+    cases.push({ 
+      values: [macro invalid],
+      expr: macro new tink.core.Error(NotAcceptable, 'Cannot process Content-Type '+invalid),
+    });
+    
+    return macro @:pos(pos) (
+      ${ESwitch(contentType, cases, null).at(pos)} 
+        : 
+      tink.core.Promise<$payload>
+    );  
+  }
   
   static function build(ctx:BuildContextN) {
     
