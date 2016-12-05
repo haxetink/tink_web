@@ -273,25 +273,19 @@ class RouteSyntax {
           Mixed(separate, compound, TAnonymous(separate));
           
         default:
-        
-          Mixed(separate, compound, switch compound {
-            case [v]: 
-              v.value.toComplex();
-            case v:
-              
-              var fields = separate.copy();
-              
-              for (t in v)
-                switch t.value.reduce().toComplex() {
-                  case TAnonymous(f):
-                    for (f in f)
-                      fields.push(f);
-                  default:
-                    route.field.pos.error('If multiple types are defined for $locName then all must be anonymous objects');
-                }
-                
-              TAnonymous(fields);
-          });
+          //trace(TAnonymous(separate).toString());
+          var fields = separate.copy();
+          
+          for (t in compound)
+            switch t.value.reduce().toComplex() {
+              case TAnonymous(f):
+                for (f in f)
+                  fields.push(f);
+              default:
+                route.field.pos.error('If multiple types are defined for $locName then all must be anonymous objects');
+            }          
+            
+          Mixed(separate, compound, TAnonymous(fields));
       }
   }
   

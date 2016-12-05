@@ -325,9 +325,9 @@ class Routing {
           
           var router = switch auth {
             case None:
-              macro new tink.web.routing.Router<$target>(__target__);
+              macro @:pos(pos) new tink.web.routing.Router<$target>(__target__);
             case Some(_.session.toComplex() => s):
-              macro new tink.web.routing.Router<$s, $target>(__target__);
+              macro @:pos(pos) new tink.web.routing.Router<$s, $target>(__target__);
           }
           
           macro @:pos(pos) tink.core.Promise.lift($result)
@@ -445,7 +445,7 @@ class Routing {
               return EVars(parts).at();
             }  
             
-            macro @:pos(pos) return ${parse(loc, route, t)}.next(function ($locVar) {
+            macro @:pos(pos) return ${parse(loc, route, t)}.next(function ($locVar:$t) {
               ${dissect()};
               return $result;
             });
