@@ -44,7 +44,7 @@ class Routing {
   
   static function isSpecial(name:String) 
     return switch name {
-      case 'context', 'body', 'query', 'path': true;
+      case 'context', 'body', 'query', 'path', 'upload': true;
       default: false;
     }  
     
@@ -102,8 +102,33 @@ class Routing {
                 if (f.meta.has(':sub'))
                   f.pos.warning('Relying on query for subrouting risks leading to conflicts with the subroute\'s logic');
                   
-                callArgs.push(macro ${queryParser(a.t, macro query.iterator(), false)}.parse());
+                callArgs.push(macro ${queryParser(a.t, macro cast query.iterator(), false)}.parse());
+              
+              case 'upload':
                 
+                futures.push({
+                  name: a.name,
+                  type: null,
+                  expr: macro @:pos(f.pos) switch this.request.header.get('content-type') {
+                      case [v] if(StringTools.startsWith(v, 'multipart/form-data')):
+                        this.bodyParts >> function (parts:tink.http.StructuredBody) {
+                          var files = [];
+                          for(part in parts) switch part.value {
+                            case Value(_):
+                            case File(file): files.push(new tink.core.Named.NamedWith(part.name, file));
+                          }
+                          return files;
+                        }
+                      case v:
+                        tink.core.Future.sync(tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, switch v {
+                          case []: 'Unspecified Content-Type';
+                          case [v]: 'Unknown Content-Type ' + v;
+                          case many: 'Duplicate Content-Type headers';
+                        })));
+                  }
+                });
+                callArgs.push(macro @:pos(f.pos) upload);
+              
               case 'body':
                 
                 if (f.meta.has(':sub'))
@@ -121,14 +146,14 @@ class Routing {
                   type: null,
                   expr: 
                     macro @:pos(f.pos) switch this.request.header.get('content-type') {
-                      case ['application/json']:
+                      case [v] if(StringTools.startsWith(v, 'application/json')):
                         switch this.request.body {
                           case Plain(src):
                             src.all() >> function (body:haxe.io.Bytes) return new tink.json.Parser<$ct>().tryParse(body.toString());                     
                           default:
                             ${fail('Invalid JSON')};
                         }
-                      case ['application/x-www-form-urlencoded' | 'multipart/form-data']:
+                      case [v] if(StringTools.startsWith(v, 'application/x-www-form-urlencoded') || StringTools.startsWith(v, 'multipart/form-data')):
                         this.bodyParts >> function (parts:tink.http.StructuredBody) return ${queryParser(a.t, macro @:pos(f.pos) parts.iterator(), true)}.tryParse();
                       case v:
                         

@@ -6,6 +6,7 @@ import tink.http.StructuredBody;
 import tink.http.Request;
 import tink.url.Query;
 using tink.CoreApi;
+using StringTools;
 
 class RoutingContext<User, Target> {
   public var fullPath(default, null):tink.url.Path;
@@ -34,7 +35,35 @@ class RoutingContext<User, Target> {
             case Plain(src):
               switch Multipart.check(request) {
                 case Some(s):
-                  cb(Failure(new Error('multipart currently not supported on this server platform')));
+                  var parts = [];
+                  var err = null;
+                  s.forEachAsync(function(chunk) {
+                    inline function escapeQuotes(v:String) return v.startsWith('"') && v.endsWith('"') ? v.substring(1, v.length - 1) : v;
+                    switch chunk.header.byName('content-disposition') {
+                      case Success(_.parse() => parsed):
+                        var ext = parsed[0].extensions;
+                        var name = ext['name'];
+                        var filename = ext['filename'];
+                        return chunk.body.all().map(function(o) switch o {
+                          case Success(bytes):
+                            switch chunk.header.byName('content-type') {
+                              case Success(mime): parts.push(new NamedWith(name, File(new TempFile(filename, mime, bytes.length, bytes))));
+                              case Failure(_): parts.push(new NamedWith(name, Value(bytes.toString())));
+                            }
+                            return true;
+                          case Failure(e): 
+                            err = e;
+                            return false;
+                        });
+                      case Failure(e):
+                        err = e;
+                        return Future.sync(false);
+                    }
+                  }).handle(function(o) switch o {
+                    case Success(true): cb(Success(parts));
+                    case Success(false): cb(Failure(err));
+                    case Failure(e): cb(Failure(e));
+                  });
                 case None:
                   (src.all() >> function (bytes:Bytes):StructuredBody return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]).handle(cb);
               }
@@ -53,4 +82,23 @@ class RoutingContext<User, Target> {
   static function notFound<User, Target>(r:RoutingContext<User, Target>):Response 
     return new tink.core.Error(NotFound, 'Not Found: [${r.request.header.method}] ${r.request.header.uri}');
   
+}
+
+class TempFile {
+  public var fileName(default, null):String;
+  public var mimeType(default, null):String;
+  public var size(default, null):Int;
+  var bytes:Bytes;
+  
+  public function new(fileName, mimeType, size, bytes) {
+    this.fileName = fileName;
+    this.mimeType = mimeType;
+    this.size = size;
+    this.bytes = bytes;
+  }
+  
+  public function read():tink.io.Source
+    return bytes;
+  public function saveTo(path:String):Surprise<Noise, Error>
+    return Future.sync(Failure(new Error('not implemented')));
 }
