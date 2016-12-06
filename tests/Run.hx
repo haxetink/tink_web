@@ -9,6 +9,7 @@ class Run {
     new ProxyTest(),
   ];
   static function main() {  
+    
     var r = new TestRunner();
     for (c in tests)
       r.add(c);

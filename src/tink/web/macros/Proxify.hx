@@ -7,12 +7,39 @@ import tink.macro.BuildCache;
 import tink.http.Method;
 import tink.web.macros.Route;
 import tink.url.Portion;
+import tink.web.macros.RouteSyntax;
 
+using tink.CoreApi;
 using tink.MacroApi;
 
 class Proxify { 
   
-  static function makeEndpoint(from:RoutePath, sig:RouteSignature):Expr {
+  static function combine(pos:Position, payload:RoutePayload, write:Expr->ComplexType->Expr) 
+    return switch payload {
+      case Empty: 
+        None;
+      case SingleCompound(name, type):
+        Some(write(macro $i{name}, type.toComplex()));
+      case Mixed(sep, com, res):
+        var ret:Array<{ field:String, expr: Expr }> = [];
+        
+        for (f in sep)
+          ret.push({ field: f.name, expr: macro $i{f.name} });
+          
+        for (c in com)
+          switch c.value.reduce() {
+            case TAnonymous(_.get() => { fields: fields } ):
+              for (f in fields)
+                ret.push({ field: f.name, expr: [c.name, f.name].drill() });
+            default:
+              throw 'assert';
+          }
+        Some(write(EObjectDecl(ret).at(pos), res));
+    }
+  
+  static function makeEndpoint(from:RoutePath, route:Route):Expr {
+    
+    var sig = route.signature;
     
     function val(p:RoutePathPart)
       return switch p {
@@ -23,11 +50,22 @@ class Proxify {
     var path = from.parts.map(val),
         query = [for (name in from.query.keys()) 
           macro new tink.CoreApi.NamedWith(${(name:Portion)}, ${val(from.query[name])})
-        ];
+        ].toArray();
+        
+    var combined = combine(route.field.pos, RouteSyntax.getPayload(route, PQuery), function (e, t) {
+      return macro @:pos(e.pos) new tink.querystring.Builder<$t->tink.web.proxy.Remote.QueryParams>().stringify($e);
+    });
+    
+    switch combined {
+      case Some(v):
+        query = macro @:pos(v.pos) $query.concat($v);
+        //trace(v.toString());
+      case None:
+    }
     
     return macro this.endpoint.sub({
       path: $a{path},
-      query: $a{query},
+      query: $query,
     });
   }
   
@@ -64,7 +102,7 @@ class Proxify {
                   default: GET;
                 }
                 
-                macro @:pos(f.field.pos) return ${makeEndpoint(v.path, f.signature)}.request(
+                macro @:pos(f.field.pos) return ${makeEndpoint(v.path, f)}.request(
                   this.client, 
                   cast $v{method}, 
                   '', 
@@ -79,7 +117,7 @@ class Proxify {
                 var target = sub.target.toComplex(),
                     v = seekVariant(sub.variants, f.field.pos);
                 
-                macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.client, ${makeEndpoint(v.path, f.signature)});
+                macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.client, ${makeEndpoint(v.path, f)});
             }
           },
           ret: null,
