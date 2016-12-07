@@ -169,8 +169,11 @@ class Context {
         return cur.body.all().map(function (o) return switch o {
           case Success(bytes):
             ret.push(new Named(
-              name, 
-              File(tink.web.forms.FormFile.ofBlob(fileName, mimeType, bytes))
+              name,
+              if(fileName == null)
+                Value(bytes.toString())
+              else 
+                File(tink.web.forms.FormFile.ofBlob(fileName, mimeType, bytes))
             ));
             true;
           case Failure(e):
