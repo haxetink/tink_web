@@ -85,7 +85,7 @@ class Context {
     return this.params.exists(name);
   
   public function part(index:Int):Stringly
-    return this.parts[this.depth + index];
+    return if(this.depth + index >= this.parts.length) '' else this.parts[this.depth + index];
    
   public function param(name:String):Stringly
     return this.params[name];
