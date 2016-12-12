@@ -213,7 +213,7 @@ class Routing {
     var theSwitch = ESwitch(
       switchTarget(), 
       cases, 
-      macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found')
+      macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.uri)
     ).at(pos);
     
     theSwitch = restrict([for (a in allMeta(target)) for (m in a.extract(':restrict')) m], theSwitch);
