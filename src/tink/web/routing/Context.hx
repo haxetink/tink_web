@@ -65,25 +65,16 @@ class Context {
       case Plain(src):
         switch tink.multipart.Multipart.check(this.request) {
           case Some(result):
-            return Future.async(function(cb) {
+            return Future.async(function(cb:Callback<Outcome<Array<Named<FormField>>, Error>>) {
               var contentType = result.a;
-              var body = result.b;
+              var body = result.b.idealize(function(e) cb.invoke(Failure(e)));
               var parser:tink.multipart.Parser = // TODO: make this configurable
                 #if busboy
                   new tink.multipart.parsers.BusboyParser(contentType.toString());
                 #else
                   new tink.multipart.parsers.TinkParser(contentType.extension['boundary']);
                 #end
-              var ret:Array<Named<FormField>> = [];
-              var body = body.idealize(function(e) cb(Failure(e)));
-              parser.parse(body).forEach(function(chunk) {
-                ret.push(chunk);
-                return true;
-              }).handle(function(o) switch o {
-                case Success(true): cb(Success(ret));
-                case Success(false): cb(Failure(new Error('Failed in parsing multipart')));
-                case Failure(e): cb(Failure(e));
-              });
+              parser.parse(body).collect().handle(cb);
             });
           case None:
             (src.all() >> function (bytes:Bytes):Array<Named<FormField>> return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]);
