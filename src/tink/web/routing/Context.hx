@@ -76,20 +76,9 @@ class Context {
                 #end
               var ret:Array<Named<FormField>> = [];
               var body = body.idealize(function(e) cb(Failure(e)));
-              parser.parse(body).forEachAsync(function(chunk) {
-                return switch chunk.body {
-                  case Field(value):
-                    ret.push(new Named(chunk.name, Value(value)));
-                    Future.sync(true);
-                  case File(file):
-                    file.content.all().map(function(o) return switch o {
-                      case Success(bytes):
-                        ret.push(new Named(chunk.name, File(tink.web.forms.FormFile.ofBlob(file.filename, file.mimeType, bytes))));
-                        true;
-                      case Failure(e):
-                        false;
-                    });
-                }
+              parser.parse(body).forEach(function(chunk) {
+                ret.push(chunk);
+                return true;
               }).handle(function(o) switch o {
                 case Success(true): cb(Success(ret));
                 case Success(false): cb(Failure(new Error('Failed in parsing multipart')));
