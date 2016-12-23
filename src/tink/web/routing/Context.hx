@@ -63,9 +63,39 @@ class Context {
     return switch this.request.body {
       case Parsed(parts): parts;
       case Plain(src):
-        switch Multipart.check(this.request) {
-          case Some(s):
-            parseMultipart(s);
+        switch tink.multipart.Multipart.check(this.request) {
+          case Some(result):
+            return Future.async(function(cb) {
+              var contentType = result.a;
+              var body = result.b;
+              var parser:tink.multipart.Parser = // TODO: make this configurable
+                #if busboy
+                  new tink.multipart.parsers.BusboyParser(contentType.toString());
+                #else
+                  new tink.multipart.parsers.TinkParser(contentType.extension['boundary']);
+                #end
+              var ret:Array<Named<FormField>> = [];
+              var body = body.idealize(function(e) cb(Failure(e)));
+              parser.parse(body).forEachAsync(function(chunk) {
+                return switch chunk.body {
+                  case Field(value):
+                    ret.push(new Named(chunk.name, Value(value)));
+                    Future.sync(true);
+                  case File(file):
+                    file.content.all().map(function(o) return switch o {
+                      case Success(bytes):
+                        ret.push(new Named(chunk.name, File(tink.web.forms.FormFile.ofBlob(file.filename, file.mimeType, bytes))));
+                        true;
+                      case Failure(e):
+                        false;
+                    });
+                }
+              }).handle(function(o) switch o {
+                case Success(true): cb(Success(ret));
+                case Success(false): cb(Failure(new Error('Failed in parsing multipart')));
+                case Failure(e): cb(Failure(e));
+              });
+            });
           case None:
             (src.all() >> function (bytes:Bytes):Array<Named<FormField>> return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]);
         }      
@@ -130,57 +160,6 @@ class Context {
     }
     
   static function acceptsAll(s:String) return true;
-  
-  static function parseMultipart(s:Stream<MultipartChunk>):Promise<StructuredBody>  //TODO: this is pretty misplaced
-    return Future.async(function (cb) {
-      var ret:StructuredBody = [];
-      
-      (s.forEachAsync(function (cur:MultipartChunk) {
-        
-        var name = null,
-            fileName = null,
-            mimeType = null;
-        
-        switch cur.header.byName('content-disposition') {
-          case Failure(e):
-            cb(Failure(e));
-            return Future.sync(false);
-          case Success(_.getExtension() => xt):
-            
-            name = xt['name'];
-            fileName = xt['filename'];
-            
-            if (name == null) {
-              cb(Failure(new Error(UnprocessableEntity, 'Missing name for multi part chunk')));
-              return Future.sync(false);              
-            }
-            
-            if (fileName != null) 
-              switch cur.header.contentType() {
-                case Failure(e): 
-                  cb(Failure(e));
-                  return Future.sync(false);
-                case Success(v):
-                  mimeType = v.fullType;
-              }
-            
-        }
-        
-        return cur.body.all().map(function (o) return switch o {
-          case Success(bytes):
-            ret.push(new Named(
-              name,
-              if(fileName == null)
-                Value(bytes.toString())
-              else 
-                File(tink.web.forms.FormFile.ofBlob(fileName, mimeType, bytes))
-            ));
-            true;
-          case Failure(e):
-            false;
-        });
-      }) >> function (n:Bool) return ret).handle(cb);
-    });
   
 }
 
