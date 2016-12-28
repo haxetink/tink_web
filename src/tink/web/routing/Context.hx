@@ -2,7 +2,6 @@ package tink.web.routing;
 
 import haxe.io.Bytes;
 import tink.http.Header;
-import tink.http.Multipart;
 import tink.http.Request;
 import tink.http.StructuredBody;
 import tink.io.Source;
