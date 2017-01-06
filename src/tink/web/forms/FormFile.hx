@@ -37,30 +37,6 @@ abstract FormFile(UploadedFile) {
     return new FormFile(ofBlob(data.fileName, data.mimeType, data.content));
   }
   
-  static public function ofBlob(name:String, type:String, data:Bytes):UploadedFile 
-    return {
-      fileName: name,
-      mimeType: type,
-      size: data.length,
-      read: function () return data,
-      saveTo: function (path:String) {
-        var name = 'File sink $path';
-        
-        var dest:Sink = 
-          #if (nodejs && !macro)
-            Sink.ofNodeStream(name, js.node.Fs.createWriteStream(path))
-          #elseif sys
-            Sink.ofOutput(name, sys.io.File.write(path))
-          #else
-            null
-            //#error
-          #end
-        ;
-        return (data : IdealSource).pipeTo(dest, { end: true } ).map(function (r) return switch r {
-          case AllWritten: Success(Noise);
-          case SinkEnded: Failure(new Error("File $path closed unexpectedly"));
-          case SinkFailed(e): Failure(e);
-        });
-      }
-    };
+  static inline public function ofBlob(name:String, type:String, data:Bytes):UploadedFile 
+    return UploadedFile.ofBlob(name, type, data);
 }

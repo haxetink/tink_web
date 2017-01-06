@@ -2,7 +2,6 @@ package tink.web.routing;
 
 import haxe.io.Bytes;
 import tink.http.Header;
-import tink.http.Multipart;
 import tink.http.Request;
 import tink.http.StructuredBody;
 import tink.io.Source;
@@ -63,9 +62,19 @@ class Context {
     return switch this.request.body {
       case Parsed(parts): parts;
       case Plain(src):
-        switch Multipart.check(this.request) {
-          case Some(s):
-            parseMultipart(s).next(function (a):Array<Named<FormField>> return a);
+        switch tink.multipart.Multipart.check(this.request) {
+          case Some(result):
+            return Future.async(function(cb:Callback<Outcome<Array<Named<FormField>>, Error>>) {
+              var contentType = result.a;
+              var body = result.b.idealize(function(e) cb.invoke(Failure(e)));
+              var parser:tink.multipart.Parser = // TODO: make this configurable
+                #if busboy
+                  new tink.multipart.parsers.BusboyParser(contentType.toString());
+                #else
+                  new tink.multipart.parsers.TinkParser(contentType.extension['boundary']);
+                #end
+              parser.parse(body).collect().handle(cb);
+            });
           case None:
             (src.all() >> function (bytes:Bytes):Array<Named<FormField>> return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]);
         }      
@@ -85,7 +94,7 @@ class Context {
     return this.params.exists(name);
   
   public function part(index:Int):Stringly
-    return this.parts[this.depth + index];
+    return if(this.depth + index >= this.parts.length) '' else this.parts[this.depth + index];
    
   public function param(name:String):Stringly
     return this.params[name];
@@ -130,54 +139,6 @@ class Context {
     }
     
   static function acceptsAll(s:String) return true;
-  
-  static function parseMultipart(s:Stream<MultipartChunk>):Promise<StructuredBody>  //TODO: this is pretty misplaced
-    return Future.async(function (cb) {
-      var ret:StructuredBody = [];
-      
-      (s.forEachAsync(function (cur:MultipartChunk) {
-        
-        var name = null,
-            fileName = null,
-            mimeType = null;
-        
-        switch cur.header.byName('content-disposition') {
-          case Failure(e):
-            cb(Failure(e));
-            return Future.sync(false);
-          case Success(_.getExtension() => xt):
-            
-            name = xt['name'];
-            fileName = xt['filename'];
-            
-            if (name == null) {
-              cb(Failure(new Error(UnprocessableEntity, 'Missing name for multi part chunk')));
-              return Future.sync(false);              
-            }
-            
-            if (fileName != null) 
-              switch cur.header.contentType() {
-                case Failure(e): 
-                  cb(Failure(e));
-                  return Future.sync(false);
-                case Success(v):
-                  mimeType = v.fullType;
-              }
-            
-        }
-        
-        return cur.body.all().map(function (o) return switch o {
-          case Success(bytes):
-            ret.push(new Named(
-              name, 
-              File(tink.web.forms.FormFile.ofBlob(fileName, mimeType, bytes))
-            ));
-            true;
-          case Failure(e):
-            false;
-        });
-      }) >> function (n:Bool) return ret).handle(cb);
-    });
   
 }
 
