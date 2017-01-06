@@ -10,6 +10,11 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   
   @:from static function ofBytes(b:Bytes):Response 
     return binary('application/octetstream', b);
+    
+  #if tink_template
+  @:from static function ofHtml(h:tink.template.Html)
+    return textual('text/html', h);
+  #end
   
   static public function binary(contentType:String, bytes:Bytes):Response {
     //TODO: calculate ETag

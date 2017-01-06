@@ -65,7 +65,7 @@ class Context {
       case Plain(src):
         switch Multipart.check(this.request) {
           case Some(s):
-            parseMultipart(s);
+            parseMultipart(s).next(function (a):Array<Named<FormField>> return a);
           case None:
             (src.all() >> function (bytes:Bytes):Array<Named<FormField>> return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]);
         }      

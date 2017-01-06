@@ -102,15 +102,45 @@ class Proxify {
                   default: GET;
                 }
                 
-                macro @:pos(f.field.pos) return ${makeEndpoint(v.path, f)}.request(
-                  this.client, 
-                  cast $v{method}, 
-                  '', 
-                  ${switch call.response {
-                    case RData(t): MimeType.readers.get(f.produces, t, f.field.pos);
-                    default: macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
-                  }}
-                );
+                var contentType = None;
+                var body = combine(f.field.pos, RouteSyntax.getPayload(f, PBody), function (expr, type) {
+                  var writer = 
+                    switch f.consumes {
+                      case ['application/x-www-form-urlencoded']:
+                        contentType = Some('application/x-www-form-urlencoded');
+                        macro new tink.querystring.Builder<$type>().stringify;
+                      case v: 
+                        var w = MimeType.writers.get(v, type.toType().sure(), f.field.pos);
+                        contentType = Some(w.type);
+                        w.generator;
+                    }
+                    
+                  return macro @:pos(expr.pos) ${writer}($expr);
+                }).or(macro '');
+                
+                var endPoint = makeEndpoint(v.path, f);
+                
+                switch contentType {
+                  case Some(v):
+                    endPoint = macro $endPoint.sub({ headers: [
+                      new tink.http.Header.HeaderField('content-type', $v{v}),
+                      //new tink.http.Header.HeaderField('content-length', __body__.length),
+                    ]});
+                  case None:
+                }
+                
+                macro @:pos(f.field.pos) {
+                  var __body__ = $body;
+                  return $endPoint.request(
+                    this.client, 
+                    cast $v{method}, 
+                    __body__, 
+                    ${switch call.response {
+                      case RData(t): MimeType.readers.get(f.produces, t, f.field.pos).generator;
+                      default: macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                    }}
+                  );
+                };
                 
               case KSub(sub):
                 

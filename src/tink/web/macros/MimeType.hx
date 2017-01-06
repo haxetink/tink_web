@@ -86,7 +86,7 @@ private class Registry {
     for (a in options)
       switch map[a] {
         case null:
-        case gen: return gen(type, pos);
+        case gen: return { type: a, generator: gen(type, pos) };
       }
       
     options = options.copy();
