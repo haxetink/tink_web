@@ -3,7 +3,6 @@ package;
 import haxe.ds.Option;
 import haxe.io.Bytes;
 import tink.core.Either;
-import tink.http.Multipart;
 import tink.http.Response;
 import tink.io.Source;
 import tink.web.forms.FormFile;

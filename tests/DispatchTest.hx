@@ -9,7 +9,6 @@ import tink.core.Error.ErrorCode;
 import tink.http.Header;
 import tink.http.Header.HeaderField;
 import tink.http.Message;
-import tink.http.Multipart;
 import tink.http.Request;
 import tink.http.Response.OutgoingResponse;
 import tink.io.Source;

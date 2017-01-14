@@ -130,7 +130,7 @@ class Context {
     );
    
   static function parseAcceptHeader(h:Header)
-    return switch h.get('accept') {
+    return switch h.get(Accept) {
       case []: acceptsAll;
       case values:
         var accepted = [for (v in values) for (part in v.parse()) part.value => true];

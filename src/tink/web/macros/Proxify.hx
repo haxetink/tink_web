@@ -103,6 +103,7 @@ class Proxify {
                 }
                 
                 var contentType = None;
+                
                 var body = combine(f.field.pos, RouteSyntax.getPayload(f, PBody), function (expr, type) {
                   var writer = 
                     switch f.consumes {

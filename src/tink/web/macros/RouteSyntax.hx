@@ -292,11 +292,17 @@ class RouteSyntax {
   static public function read(t:Type, consumes:Array<MimeType>, produces:Array<MimeType>) {
     
     var ret = new Array<Route>();
-    
+    switch t {
+      case TInst(_.get().meta => m, _) | TAbstract(_.get().meta => m, _) | TType(_.get().meta => m, _): 
+        consumes = MimeType.fromMeta(m, 'consumes', consumes);
+        produces = MimeType.fromMeta(m, 'produces', produces);
+      default:
+    }
+    //consumes = MimeType.fromMeta(t.get
     for (f in t.getFields().sure()) {
       
       function mimes(name, init)
-        return Lazy.ofFunc(MimeType.forField.bind(f, name, init));
+        return Lazy.ofFunc(MimeType.fromMeta.bind(f.meta, name, init));
       
       var meta = f.meta.get(),
           type = Lazy.ofFunc(fieldType.bind(f)),

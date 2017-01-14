@@ -359,7 +359,7 @@ class Routing {
               for (fmt in route.produces)
                 formats.push(
                   macro @:pos(pos) if (ctx.accepts($v{fmt})) return tink.web.routing.Response.textual(
-                    $v{fmt}, ${MimeType.writers.get([fmt], t, pos)}(__data__)
+                    $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
                   )
                 );
                 
@@ -523,7 +523,7 @@ class Routing {
           cases.push({ 
             values: [macro $v{type}],
             expr: macro @:pos(pos) tink.core.Promise.lift(ctx.rawBody.all()).next(
-              function (b) return ${MimeType.readers.get([type], payload.toType(pos).sure(), pos)}(b.toString())
+              function (b) return ${MimeType.readers.get([type], payload.toType(pos).sure(), pos).generator}(b.toString())
             )
           });
       }

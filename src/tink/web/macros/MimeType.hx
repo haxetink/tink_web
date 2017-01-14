@@ -16,8 +16,8 @@ abstract MimeType(String) from String to String {
         e.reject('Expected String but found $t');
     }  
   
-  static public function forField(f:ClassField, kind:String, old:Array<MimeType>) 
-    return switch [for (m in f.meta.extract(':$kind')) for (e in m.params) e] {
+  static public function fromMeta(meta:MetaAccess, kind:String, old:Array<MimeType>) 
+    return switch [for (m in meta.extract(':$kind')) for (e in m.params) e] {
       case []: old;
       case v:
         function isUnop(e:Expr)
