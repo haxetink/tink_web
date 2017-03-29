@@ -173,6 +173,8 @@ class RouteSyntax {
           for (a in args)
             switch reserved[a.name] {
               case null:
+                if (a.t.getID() == 'tink.web.routing.Context')
+                  addSpecial((macro null).pos, a.name, function (_) return AContext);
               case v:
                 addSpecial(f.pos, a.name, v);
             }  

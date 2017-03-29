@@ -14,6 +14,11 @@ import tink.web.forms.FormField;
 using StringTools;
 using tink.CoreApi;
 
+abstract Path(Array<Portion>) from Array<Portion> to Array<Portion> {
+  @:to public function toString():String
+    return '/'+[for (p in this) (p:String)].join('/');
+}
+
 class Context {
   
   var request:IncomingRequest;
@@ -84,10 +89,10 @@ class Context {
     inline function get_pathLength()
       return this.parts.length - this.depth;
   
-  public function getPrefix()
+  public function getPrefix():Path
     return this.parts.slice(0, this.depth);
     
-  public function getPath()
+  public function getPath():Path
     return this.parts.slice(this.depth);     
   
   public function hasParam(name:String)

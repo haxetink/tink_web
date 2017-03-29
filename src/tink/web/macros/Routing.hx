@@ -299,7 +299,12 @@ class Routing {
             
             return macro @:pos(e.pos) ctx.user.get().next(function (user) return $e);
           });
-        
+        case AContext:
+          var name = arg.name;
+          beforeBody.push(function (e:Expr) return macro @:pos(e.pos) {
+            var $name = ctx;
+            $e;
+          });
         default:
           
           throw 'not implemented: '+arg.kind;

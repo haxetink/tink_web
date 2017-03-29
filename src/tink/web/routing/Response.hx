@@ -2,6 +2,7 @@ package tink.web.routing;
 
 import haxe.io.Bytes;
 import tink.http.Response;
+import tink.http.Header;
 
 abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   
@@ -16,6 +17,17 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
     return textual('text/html', h);
   #end
   
+  @:from static function ofUrl(u:tink.Url):Response {
+    return new OutgoingResponse(
+      new ResponseHeader(
+        302,
+        'Temporary Redirect',
+        [new HeaderField('location', u)]
+      ),
+      ''
+    );
+  }
+
   static public function binary(contentType:String, bytes:Bytes):Response {
     //TODO: calculate ETag
     return OutgoingResponse.blob(bytes, contentType);

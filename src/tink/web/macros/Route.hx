@@ -37,6 +37,7 @@ enum ParamKind {
 
 enum RouteArgKind {
   
+  AContext;
   ACapture;//note that this may come from path *or* query string
   
   AParam(type:Type, loc:ParamLocation, kind:ParamKind);
