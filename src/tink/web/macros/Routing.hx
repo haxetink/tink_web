@@ -1,530 +1,611 @@
 package tink.web.macros;
 
+import haxe.ds.Option;
 import haxe.macro.Context;
 import haxe.macro.Type;
 import haxe.macro.Expr;
-import tink.web.macros.Rule.Rules;
+import tink.web.macros.Route;
+import tink.macro.BuildCache;
+import tink.http.Method;
+import tink.web.routing.Response;
 
-using haxe.macro.Tools;
 using tink.MacroApi;
+using tink.CoreApi;
 using Lambda;
 
-private typedef Handler = {
-  name:String,
-  func:Function,
-}
-
-class Routing {  
-  static var PACK = 'tink.web.routes';
+class Routing { 
   
-  var target:Type;
-  var user:Type;
-  var fields:Array<Field>;
-  var cases:Array<{ pattern: Array<Expr>, guard:Expr, response: Expr, }>;
-  var max:Int = 0;
+  var routes:Array<Route>;
+  var auth:Option<{ user: Type, session: Type }>;
   
-  function new(user, target) {
+  var cases:Array<Case> = [];
+  var fields:Array<Field> = [];
+  
+  var depth:Int = 0;
+  var named:Array<String> = [];
+  var nameIndex:Map<String, Int> = new Map();
+  var ctx:ComplexType;
+  
+  function new(routes, auth) {
     
-    this.user = user;
-    this.target = target;
-    
-    this.fields = [];
-    this.cases = [];
-    
-    build();
+    this.routes = routes;
+    this.auth = auth;
+    firstPass();
+    ctx = 
+      switch auth {
+        case Some(a):
+          var user = a.user.toComplex(),
+              session = a.session.toComplex();
+          macro : tink.web.routing.Context.AuthedContext<$user, $session>;
+        case None:
+          macro : tink.web.routing.Context;
+      }
   }
-    
-  static var verbs = 'GET,HEAD,OPTIONS,PUT,POST,PATCH,DELETE'.split(',');
-    
-  static var metas = {
-    var ret = [for (v in verbs) ':'+v.toLowerCase() => macro $i{v}];
-    ret[':all'] = macro _;
-    ret;
-  }  
   
-  static function isSpecial(name:String) 
-    return switch name {
-      case 'context', 'body', 'query', 'path', 'upload': true;
-      default: false;
-    }  
-    
-  static function mkResponse(e:Expr) 
-    return macro @:pos(e.pos) ($e : tink.web.Response);
-  
-  function getRestriction(meta:MetaAccess)
-    return [for (m in meta.extract(':restrict')) for (p in m.params) p];
-    
-  function makeHandler(f:ClassField, restrictions:Array<Expr>, ?wrap:Expr->Type->Expr):Handler {
-    var fName = f.name;
-    var name = 'call_$fName';
-    
-    var restrict = macro (null : tink.web.helpers.AuthResult);
-    
-    for (r in [restrictions, getRestriction(f.meta)])
-      for (r in r) {
-        var positioned = macro @:pos(r.pos) ($r : tink.web.helpers.Managed<Bool>);//working around a weird compiler bug with position in the reification below not being applied
-        restrict = macro @:pos(r.pos) $restrict && tink.web.helpers.AuthResult.get(this.session, function (user) return $positioned);
-      }
-    
-    
-    if (wrap == null)
-      wrap = function (e, t) return e;
-    
-    function ret(e:Expr, t)
-      return 
-        macro @:pos(e.pos) return 
-          try 
-            $restrict.respond(${mkResponse(wrap(e, t))}) 
-          catch (e:tink.core.Error) { (e:tink.web.Response); } 
-          catch (e:Dynamic) { (tink.core.Error.withData(InternalError, 'Internal Server Error', e) : tink.web.Response); };
-    
-    var funcArgs:Array<FunctionArg> = [{
-      name: '__depth__',
-      type: macro : Int,
-    }];
+  function firstPass() {
+    //during the first pass we skim all routes to map out their depths and named parameters
+    for (route in routes) {
       
-    var func:Function = 
-      switch f.type.reduce() {
-        case TFun(args, r):
+      function skim(variants:Iterable<Variant>) 
+        for (v in variants) {
           
-          var callArgs = new Array<Expr>();
-          var futures = new Array<Var>();
-          
-          function queryParser(type, e, body) {
-            var parser = QueryParserBuilder.build(type, f.pos, body).toString().asTypePath();
-            return macro @:pos(f.pos) new $parser($e);
+          switch v.path.parts.length {
+            case sup if (sup > depth):
+              depth = sup;
+            default:
           }
           
-          for (a in args)
-            switch a.name {
-              case 'query':
-                
-                if (f.meta.has(':sub'))
-                  f.pos.warning('Relying on query for subrouting risks leading to conflicts with the subroute\'s logic');
-                  
-                callArgs.push(macro ${queryParser(a.t, macro cast query.iterator(), false)}.parse());
-              
-              case 'upload':
-                
-                futures.push({
-                  name: a.name,
-                  type: null,
-                  expr: macro @:pos(f.pos) switch this.request.header.get('content-type') {
-                      case [v] if(StringTools.startsWith(v, 'multipart/form-data')):
-                        this.bodyParts >> function (parts:tink.http.StructuredBody) {
-                          var files = [];
-                          for(part in parts) switch part.value {
-                            case Value(_):
-                            case File(file): files.push(new tink.core.Named.NamedWith(part.name, file));
-                          }
-                          return files;
-                        }
-                      case v:
-                        tink.core.Future.sync(tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, switch v {
-                          case []: 'Unspecified Content-Type';
-                          case [v]: 'Unknown Content-Type ' + v;
-                          case many: 'Duplicate Content-Type headers';
-                        })));
-                  }
-                });
-                callArgs.push(macro @:pos(f.pos) upload);
-              
-              case 'body':
-                
-                if (f.meta.has(':sub'))
-                  f.pos.warning('Relying on body for subrouting risks leading to conflicts with the subroute\'s logic');
-                
-                //TODO: give warnings when verb does not have a body
-                
-                var ct = a.t.toComplex();
-                
-                function fail(msg:String)
-                  return macro tink.core.Future.sync(tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, $v{msg})));
-                
-                futures.push({
-                  name: a.name,
-                  type: null,
-                  expr: 
-                    macro @:pos(f.pos) switch this.request.header.get('content-type') {
-                      case [v] if(StringTools.startsWith(v, 'application/json')):
-                        switch this.request.body {
-                          case Plain(src):
-                            src.all() >> function (body:haxe.io.Bytes) return new tink.json.Parser<$ct>().tryParse(body.toString());                     
-                          default:
-                            ${fail('Invalid JSON')};
-                        }
-                      case [v] if(StringTools.startsWith(v, 'application/x-www-form-urlencoded') || StringTools.startsWith(v, 'multipart/form-data')):
-                        this.bodyParts >> function (parts:tink.http.StructuredBody) return ${queryParser(a.t, macro @:pos(f.pos) parts.iterator(), true)}.tryParse();
-                      case v:
-                        
-                        tink.core.Future.sync(tink.core.Outcome.Failure(new tink.core.Error(UnprocessableEntity, switch v {
-                          case []: 'Unspecified Content-Type';
-                          case [v]: 'Unknown Content-Type ' + v;
-                          case many: 'Duplicate Content-Type headers';
-                        })));
-                        
-                    }
-                });
-                
-                callArgs.push(macro @:pos(f.pos) body);
-                
-              case 'path':
-                
-                callArgs.push(macro @:privateAccess new Path(this.prefix.concat(this.path.slice(0, __depth__))));
-              
-              case 'context':
-                
-                callArgs.push(macro @:pos(f.pos) this);
-                
-              default:
-                
-                callArgs.push(macro @:pos(f.pos) $i{a.name});
-                
-                var ct = a.t.toComplex();
-                
-                switch (macro @:pos(f.pos) ((null : tink.web.Stringly) : $ct)).typeof() {
-                  case Failure(e):
-                    f.pos.error('Routing cannot provide value for function argument ${a.name} of type ${a.t.toString()}');
-                  default:
-                }
-                
-                funcArgs.push({
-                  //type: macro : tink.web.Stringly,
-                  type: ct,
-                  name: a.name,
-                  opt: a.opt,
-                });
-            }
-            
-            
-          var call = macro @:pos(f.pos) this.target.$fName($a{callArgs});
-          
-          if (futures.length > 0) {
-            
-            //call = ret(call, r);
-            
-            call = macro @:pos(call.pos) ${mkResponse(wrap(call, r))};
-            
-            futures.reverse();
-            
-            for (f in futures) {
-              var name = f.name;
-              call = macro @:pos(f.expr.pos) $i{name} >> function ($name) return $call;
-            }
-            
-            futures.reverse();
-            
-            call = macro $restrict.respond(function () {
-              ${EVars(futures).at()};
-              return $call;
-            });
-            
-            call = @:pos(call.pos) macro return $call;
-            
-            {
-              args: funcArgs,
-              ret: null,
-              expr: call,
-            }
-          }
+          for (name in v.path.query.keys())
+            if (!nameIndex.exists(name))
+              nameIndex[name] = named.push(name) - 1;
+        }
+      
+      switch route.kind {
+        case KSub(s):
+          skim(s.variants);
+        case KCall(c):
+          skim(c.variants);
+      }
+      
+    } 
+    
+  }
+  
+  function makeCase(field:String, funcArgs:Array<FunctionArg>, v:Variant, method:Option<Method>):Case {
+    if (v.path.deviation.missing.length > 0)
+      v.path.pos.error('Route does not capture all required variables. See warnings.');
+      
+    var pattern = [
+      switch method {
+        case Some(m): macro $i{m};
+        case None: IGNORE;
+      },
+    ];
+    
+    for (i in 0...depth * 2 + named.length * 2 + 1)
+      pattern.push(IGNORE);
+      
+    for (i in 0...v.path.parts.length)
+      pattern[i + 1 + depth] = macro true;
+      
+    if (v.path.rest == RNotAllowed)
+      pattern[depth + 1 + v.path.parts.length] = macro false;
+      
+    var captured = new Map();
+      
+    function part(p)
+      return switch p {
+        case PConst(v): 
+          macro $v{v.toString()};                
+        case PCapture(name): 
+          captured[name] = true;
+          macro $i{name};
+      }
+      
+    for (i in 0...v.path.parts.length)
+      pattern[i + 1] = part(v.path.parts[i]);
+      
+    for (name in v.path.query.keys()) {
+      
+      var index = nameIndex[name];
+      
+      pattern[index + 2 + depth] = macro true;
+      pattern[index + 2 + depth + named.length] = part(v.path.query[name]);
+    }
+    
+    var callArgs = [for (a in funcArgs) 
+      switch a.name {
+        case '__depth__': 
+          macro $v{v.path.parts.length};
+        case 'user' | 'session': 
+          macro $i{a.name};
+        default:
+          if (a == funcArgs[0] || captured[a.name]) 
+            macro $i{a.name}
           else 
-            {
-              args: funcArgs,
-              ret: null,
-              expr: ret(call, r),
-            }
-        case v:
-          
-          {
-            args: funcArgs,
-            ret: null,
-            expr: ret(macro @:pos(f.pos) this.target.$fName, v),
-          };
-          
-      }  
-          
-    fields.push({
-      name: name,
-      pos: f.pos,
-      kind: FFun(func),
-    });
+            macro null;
+      }
+    ];
     
-    return { func: func, name: name, }
+    return { 
+      values: [pattern.toArray(v.path.pos)],
+      expr: macro @:pos(v.path.pos) this.$field($a{callArgs}),
+    } 
   }  
+
+  function switchTarget() {
+    var ret = [macro ctx.header.method];
+    
+    for (i in 0...depth) 
+      ret.push(macro ctx.part($v { i } ));
+      
+    for (i in 0...depth+1) 
+      ret.push(macro l > $v{i});
+      
+    for (name in named) 
+      ret.push(macro ctx.hasParam($v{name}));
+    
+    for (name in named) 
+      ret.push(macro ctx.param($v{name}));
+      
+    return ret.toArray();
+  }
   
-  function hasRoute(f:ClassField) {
-    for (m in metas.keys())
-      if (f.meta.has(m)) return true;
-    return false;
-  }  
-  
-  function callHandler(verb:Expr, f:ClassField, m:MetadataEntry, handler:Handler, ?withRest = false) {
-    var pos = m.pos;
-    var uri:Url = switch m.params {
-      case null | []: 
-        f.name;
-      case [v]: 
-        pos = v.pos;
-        v.getName().sure();
-      case v: 
-        v[1].reject('Not Implemented');
-    }
-    
-    var parts = uri.path.parts();
-    if (!withRest) {
-      withRest = parts[parts.length - 1] == '*';
-      
-      if (withRest)
-        parts.pop();      
-    }
-    
-    var found = new Map();
-    
-    var patternArgs = [
-      for (p in parts) {
-        var p:String = p;
-        if (p.charAt(0) == '$') {
-          var name = p.substr(1);
-          
-          if (isSpecial(name))
-            pos.error('Cannot use reserved name $name for captured variable');
-            
-          found[name] = true;
-          macro @:pos(m.pos) $i{name}
-        }
-        else
-          macro @:pos(m.pos) $v{p}
-      }
-    ]; 
-    
-    patternArgs.push(
-      if (withRest) macro _
-      else macro null
-    );
-                      
-    var callArgs = [],
-        guard = null;
-    
-    function capture(name:String, opt) {
-      
-      callArgs.push(macro $i{name});
-      
-      if (!opt) {
-        var cond = macro $i{name} != null;
-        
-        guard = switch guard {
-          case null: cond;
-          default: macro $guard && $cond;
-        }
-      }
-    }
-    
-    for (arg in handler.func.args.slice(1))
-      switch [arg.opt == true, found[arg.name] == true] {
-        case [false, false]:
-          pos.error('Route does not capture required variable ${arg.name}');
-        case [true, false]:
-        case [opt, true]:
-          capture(arg.name, opt);
-      }
-      
-    //TODO: find unused captured vars
-    callArgs.unshift(macro @:pos(m.pos) $v{patternArgs.length-1});
-    return {
-      pattern: patternArgs, 
-      expr: macro @:pos(m.pos) $i{handler.name}($a{callArgs}), 
-      guard: guard,
-    }
-  }  
-  
-  function build() {
-    
-    function add(verb:Expr, pattern:Array<Expr>, response:Expr, guard:Expr) {
-      
-      pattern = [verb].concat(pattern);
-      
-      if (pattern.length > max)
-        max = pattern.length;
-      
-      cases.push({
-        pattern: pattern,
-        guard: guard,
-        response: response,
-      });
-    }    
-    
-    var restrict =     
-      switch target {
-        case TInst(_.get().meta => meta, _):
-          getRestriction(meta);
-        default: [];
-      }
-      
-    for (f in target.getFields().sure()) {
-            
-      var meta = f.meta.get();
-      
-      switch [hasRoute(f), [for (m in meta) if (m.name == ':sub') m]] {
-        
-        case [true, []]:
-          
-          var handler = makeHandler(f, restrict);
+  function restrict(meta:Array<MetadataEntry>, e:Expr) 
+    return 
+      switch [meta, auth] {
+        case [[], _]: 
+          e;
+        case [v, None]:
+          v[0].pos.error('restriction cannot be applied because no session handling is provided');
+        case [_, Some(_)]: 
           
           for (m in meta)
-            switch metas[m.name] {
-              
-              case null:
-              case verb:
+            switch m.params {
+              case []:
+                m.pos.error('@:restrict must have one parameter');
+              case [v]:
                 
-                var call = callHandler(verb, f, m, handler);
+                function subst(e:Expr)
+                  return switch e {
+                    case macro this.$field: 
+                      macro @:pos(e.pos) (@:privateAccess this.target.$field);
+                    case macro this: 
+                      macro @:pos(e.pos) (@:privateAccess this.target);
+                    default:
+                      e.map(subst);
+                  }
                 
-                add(verb, call.pattern, call.expr, call.guard);
-                
-            }
-          
-        case [true, v]:
-          
-          f.pos.error('cannot have both routing and subrouting on the same field');
-          
-        case [false, []]:
-          
-        case [false, sub]:
-          
-          var handler = makeHandler(f, restrict, function (e, t) {
-            var subType = switch t {
-              case TAbstract(_.get() => {name: 'Future'}, [TEnum(_.get() => {name: 'Outcome'}, [t, _])])
-              | TEnum(_.get() => {name: 'Outcome'}, [t, _])
-              | TAbstract(_.get() => {name: 'Future'}, [t]): t;
-              default: t;
-            }
-            var path = buildContext(user, subType).path;
-            return macro @:pos(e.pos) SubRoute.of($e).route(function (target) {
-              return new $path(this.session, target, this.request, function (_) return this.fallback(this), this.prefix.length + __depth__).route();
-            });
-          });
-          
-          for (m in sub) {
-            var call = callHandler(macro _, f, m, handler, true);
-            add(macro _, call.pattern, call.expr, call.guard);
-          }
-      }
-      
-    }
-    
-    for (c in cases)
-      while (c.pattern.length < max)
-        c.pattern.push(c.pattern[c.pattern.length - 1]);
-    
-    var switchTarget = [macro this.request.header.method];
-    
-    for (i in 0...max - 1)
-      switchTarget.push(macro this.path[$v{i}]);
-    
-    var body = ESwitch(
-      switchTarget.toArray(),
-      [for (c in cases) {
-        values: [macro @:pos(c.response.pos) $a{c.pattern}],
-        guard: c.guard,
-        expr: c.response,
-      }],
-      {
-        var ret = macro fallback(this);
-        for (c in cases)
-          if (c.guard == null && c.pattern.filter(function (e) return !e.isWildcard()).length == 0) {
-            ret = null;
-            break;
-          }
-        ret;
-      }
-    ).at();  
-    
-    var f = (macro class {
-      
-      public function route():Response 
-        return $body;
-      
-    }).fields;
-    
-    for (f in f)
-      this.fields.push(f);
-  }
-  
-  static public function getTypes(name, length)
-    return 
-      switch Context.getLocalType() {
-        case TInst(_.toString() == name => true, v) if (v.length == length):
-          Success(v);
-        default:
-          Failure('assert');
-      }
-      
-  static public function getType(name) 
-    return getTypes(name, 1).map(function (x) return x[0]);
-      
-  
-  static public function buildContext(user:Type, target:Type):{ type:Type, path:TypePath } {
-    //TODO: add cache
-    var counter = counter++;
-    var name = 'RoutingContext$counter';
-    var decl = {
-      
-      var user = user.toComplex(),
-          target = target.toComplex();
-          
-      macro class $name extends RoutingContext<$user, $target> {
-      }
-    }
-    
-    decl.fields = decl.fields.concat(new Routing(user, target).fields);
-    
-    return {
-      type: declare(decl),
-      path: fullName(name).asTypePath(),
-    }
-  }
-  
-  static function fullName(name:String)
-    return '$PACK.$name';
-  
-  static function declare(t:TypeDefinition):Type {
-    var name = fullName(t.name);
-    Context.defineModule(name, [t]);
-    return Context.getType(name);
-  }
-  
-  static var counter = 0;
-  
-  static function buildRouter():Type {
-    
-    switch getTypes('tink.web.Router', 2) {
-      case Success([user, target]):
-        
-        var counter = counter++;
-        var router = 'Router$counter';
-        
-        var ctx = buildContext(user, target).path;
-        
-        var user = user.toComplex(),
-            target = target.toComplex();
+                e = macro @:pos(v.pos) (${subst(v)} : tink.core.Promise<Bool>).next(
+                  function (authorized)
+                    return 
+                      if (authorized) $e;
+                      else new tink.core.Error(Forbidden, 'forbidden')
+                );
+              case v:
+                v[1].reject('@:restrict must have one parameter');
+            }     
             
-        var cl = macro class $router {
-          
-          public inline function new() this = $v{counter};
-          
-          public function route(session:tink.web.Session<$user>, target:$target, request:Request, ?fallback, depth = 0) 
-            return 
-              new $ctx(session, target, request, fallback, depth).route();
+          macro ctx.user.get().next(function (o) return switch o {
+            case Some(user):
+              $e;
+            case None:
+              new tink.core.Error(Unauthorized, 'not authorized');
+          });
+      }
+  
+  static function allMeta(t:Type):Array<MetaAccess> //TODO: move out
+    return switch t {
+      case TInst(_.get() => { meta: meta }, _),
+           TEnum(_.get() => { meta: meta }, _),
+           TAbstract(_.get() => { meta: meta }, _): 
+        [meta];
+      case TType(_.get() => { meta: meta }, _):
+        [meta].concat(allMeta(t.reduce(true)));
+      case TLazy(f): allMeta(f());
+      default: [];
+    }
+  
+  function generate(name:String, target:Type, pos:Position) {
+    
+    secondPass();
+
+    var theSwitch = ESwitch(
+      switchTarget(), 
+      cases, 
+      macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.uri)
+    ).at(pos);
+    
+    theSwitch = restrict([for (a in allMeta(target)) for (m in a.extract(':restrict')) m], theSwitch);
+      
+    var target = target.toComplex();
+    
+    var ret = 
+      macro class $name {
+        
+        var target:$target;
+        
+        public function new(target) {
+          this.target = target;
         }
         
-        cl.kind = TDAbstract(macro : Int);
+        public function route(ctx:$ctx):tink.core.Promise<tink.http.Response.OutgoingResponse> {
+          var l = ctx.pathLength;
+          return $theSwitch;
+        }
+      };
+    
+    for (f in fields)
+      ret.fields.push(f);
+    
+    return ret;    
+  }
+  
+  function routeMethod(route:Route) {
+    var separate = new Map<ParamLocation, Array<Field>>(),
+        compound = new Map<ParamLocation, Array<Named<Type>>>(),
+        pos = route.field.pos,
+        callArgs = [],
+        funcArgs:Array<FunctionArg> = [{
+          name: 'ctx',
+          type: ctx,
+        }];
         
-        return declare(cl);
-        
-      case v: 
-        
-        v.sure();
-        return null;
+    var field = route.field.name;
+            
+    var beforeBody = [function (e) return restrict(route.field.meta.extract(':restrict'), e)];
+    
+    for (arg in route.signature) {
+      
+      switch arg.kind {
+        case ACapture:
+                      
+          funcArgs.push({
+            name: arg.name,
+            type: macro : tink.Stringly,
+            opt: arg.optional,
+          });
+          
+        case AParam(t, loc, PCompound):
+          
+          if (!compound.exists(loc))
+            compound[loc] = [];
+            
+          compound[loc].push(new Named(arg.name, t));
+          
+        case AParam(t, loc, PSeparate):
+          
+          if (!separate.exists(loc))
+            separate[loc] = [];
+            
+          separate[loc].push({
+            name: arg.name,
+            pos: route.field.pos,
+            kind: FVar(t.toComplex()),
+          });
+          
+        case AUser(u):        
+
+          beforeBody.push(function (e:Expr) {
+            
+            switch u.getID() {
+              case 'haxe.ds.Option':
+              default:
+                e = macro @:pos(e.pos) switch user {
+                  case Some(user): $e;
+                  case None: new tink.core.Error(Unauthorized, 'unauthorized');
+                }
+            }          
+            
+            return macro @:pos(e.pos) ctx.user.get().next(function (user) return $e);
+          });
+        case AContext:
+          var name = arg.name;
+          beforeBody.push(function (e:Expr) return macro @:pos(e.pos) {
+            var $name = ctx;
+            $e;
+          });
+        default:
+          
+          throw 'not implemented: '+arg.kind;
+      }
+      
+      callArgs.push(arg.name.resolve());        
     }
+     
+    var result = macro @:pos(pos) this.target.$field;
+    
+    if (route.field.type.reduce().match(TFun(_, _)))
+      result = macro @:pos(pos) $result($a{callArgs});
+    
+    result = 
+      switch route.kind {
+        case KSub(s):
+          funcArgs.push({
+            name: '__depth__',
+            type: macro : Int,
+          });
+          
+          var target = s.target.toComplex();
+          
+          var router = switch auth {
+            case None:
+              macro @:pos(pos) new tink.web.routing.Router<$target>(__target__);
+            case Some(_.session.toComplex() => s):
+              macro @:pos(pos) new tink.web.routing.Router<$s, $target>(__target__);
+          }
+          
+          macro @:pos(pos) tink.core.Promise.lift($result)
+            .next(function (__target__:$target) 
+              return $router.route(ctx.sub(__depth__))
+            );
+          
+        case KCall(c):
+          switch c.response {
+            case RData(t):
+              var ct = t.toComplex();
+              var formats = [];
+              
+              switch route.field.meta.extract(':html') {
+                case []: 
+                case [{ pos: pos, params: [v] }]:
+                  formats.push(
+                    macro @:pos(pos) if (ctx.accepts('text/html')) 
+                      return tink.core.Promise.lift($v(__data__)).next(
+                        function (d) return tink.web.routing.Response.textual('text/html', d)
+                      )
+                  );
+                case [v]: 
+                  v.pos.error('@:html must have one argument exactly');
+                case v:
+                  v[1].pos.error('Cannot have multiple @:html directives');
+              }
+              
+              for (fmt in route.produces)
+                formats.push(
+                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return tink.web.routing.Response.textual(
+                    $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
+                  )
+                );
+                
+              macro @:pos(pos) tink.core.Promise.lift($result).next(
+                function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
+                  $b{formats};
+                  return new tink.core.Error(UnsupportedMediaType, 'Unsupported Media Type');
+                }
+              );
+              
+            case ROpaque(_.toComplex() => t):
+              macro @:pos(pos) tink.core.Promise.lift($result).next(function (v:$t):tink.web.routing.Response return v);
+          }
+      }
+      
+    for (loc in [PBody, PQuery, PHeader]) {
+      
+      var locName = loc.getName().substr(1).toLowerCase();
+      var locVar = '__${locName}__';
+      
+      result = 
+        switch [loc, RouteSyntax.getPayload(route, loc)] {
+          case [_, Empty]:
+            
+            result;
+            
+          case [PBody, SingleCompound(name, is(_, 'haxe.io.Bytes') => true)]:
+            
+            macro @:pos(pos) 
+              tink.core.Promise.lift(ctx.rawBody.all())
+                .next(function ($name:haxe.io.Bytes) 
+                  return $result
+                );            
+                
+          case [PBody, SingleCompound(name, is(_, 'String') => true)]:
+            
+            macro @:pos(pos) 
+              tink.core.Promise.lift(ctx.rawBody.all())
+                .next(function ($name:haxe.io.Bytes) {
+                  var $name = $i{name}.toString();
+                  return $result;
+                });
+                
+          case [PBody, SingleCompound(name, is(_, 'tink.io.Source') => true)]:
+            
+            macro @:pos(pos) {
+              var $name = ctx.rawBody;
+              $result;
+            }
+            
+          case [_, SingleCompound(name, _.toComplex() => t)]:
+            
+            macro @:pos(pos) return ${parse(loc, route, t)}.next(function ($name) {
+              return $result;
+            });
+            
+          case [_, Mixed(separate, compound, t)]:
+            
+            function dissect() {
+              var target = locVar.resolve();
+              var parts:Array<Var> = [];
+              
+              if (separate != null)
+                for (s in separate)
+                  parts.push({ name: s.name, type: null, expr: target.field(s.name) });
+              
+              for (c in compound) 
+                if (c.name != '')
+                  switch c.value.reduce().toComplex() {//TODO: deduplicate - we're getting this above already
+                    case TAnonymous(fields):
+                      parts.push({ 
+                        name: c.name, 
+                        type: TAnonymous(fields),
+                        expr: EObjectDecl([for (f in fields) {
+                          field: f.name,
+                          expr: target.field(f.name)
+                        }]).at(),
+                      });
+                    case v:
+                      throw 'assert';
+                  };
+                
+              return EVars(parts).at();
+            }  
+            
+            macro @:pos(pos) return ${parse(loc, route, t)}.next(function ($locVar:$t) {
+              ${dissect()};
+              return $result;
+            });
+        }
+        
+      if (loc == PBody) 
+        for (f in beforeBody)
+          result = f(result);
+    }    
+    
+    var f:Function = {
+      args: funcArgs,
+      expr: macro @:pos(result.pos) return $result,
+      ret: null,
+    }
+    
+    fields.push({
+      pos: pos,
+      name: route.field.name,
+      kind: FFun(f),
+    });
+    
+    return funcArgs;
+  }
+  
+  function secondPass() 
+    for (route in routes) {
+      var args = routeMethod(route);
+            
+      switch route.kind {
+        case KCall(c):
+          for (v in c.variants)
+            cases.push(makeCase(route.field.name, args, v, v.method));
+        case KSub(s):
+          for (v in s.variants)  
+            cases.push(makeCase(route.field.name, args, v, None));
+      }
+    }
+  
+  static var IGNORE = macro _;
+  
+  static function is(t:Type, name:String)
+    return Context.getType(name).isSubTypeOf(t).isSuccess();
+    
+  static function parse(loc:ParamLocation, route:Route, payload:ComplexType):Expr 
+    return
+      switch loc {
+        case PBody:
+          
+          bodyParser(payload, route);
+          
+        case PHeader:
+          
+          macro @:pos(route.field.pos) tink.core.Promise.lift(
+            new tink.querystring.Parser<tink.http.Header.HeaderValue->$payload>().tryParse(ctx.headers())
+          );
+          
+        case PQuery:
+          
+          macro @:pos(route.field.pos) tink.core.Promise.lift(
+            new tink.querystring.Parser<$payload>().tryParse(ctx.header.uri.query)
+          );
+      }     
+      
+  static function bodyParser(payload:ComplexType, route:Route) {
+    var cases:Array<Case> = [],
+        structured = [],
+        pos = route.field.pos;
+    
+    for (type in route.consumes) 
+      switch type {
+        case 'application/x-www-form-urlencoded' | 'multipart/form-data': 
+          structured.push(macro @:pos(pos) $v{type});
+        default: 
+          cases.push({ 
+            values: [macro $v{type}],
+            expr: macro @:pos(pos) tink.core.Promise.lift(ctx.rawBody.all()).next(
+              function (b) return ${MimeType.readers.get([type], payload.toType(pos).sure(), pos).generator}(b.toString())
+            )
+          });
+      }
+    
+    switch structured {
+      case []:
+      case v:
+        cases.unshift({ 
+          values: structured, 
+          expr: macro @:pos(pos) ctx.parse().next(function (pairs)
+            return new tink.querystring.Parser<tink.web.forms.FormField->$payload>().tryParse(pairs)
+          ),
+        });
+    }
+    
+    var contentType = macro @:pos(pos) switch ctx.header.contentType() {
+      case Success(v): v.fullType;
+      default: 'application/json';
+    }
+    
+    cases.push({ 
+      values: [macro invalid],
+      expr: macro new tink.core.Error(NotAcceptable, 'Cannot process Content-Type '+invalid),
+    });
+    
+    return macro @:pos(pos) (
+      ${ESwitch(contentType, cases, null).at(pos)} 
+        : 
+      tink.core.Promise<$payload>
+    );  
+  }
+  
+  static function build(ctx:BuildContextN) {
+    
+    var auth = None;
+    
+    var target = switch ctx.types {
+      case []:
+        switch Context.getCallArguments() {
+          case null | []:
+            ctx.pos.error('You must either specify a target type as type parameter or a target object as constructor argument');
+          case [v]:
+            v.typeof().sure();
+          case _:
+            ctx.pos.error('too many arguments - only one expected');
+        }
+      case [t]: t;
+      case [s, t]:
+        var sc = s.toComplex();
+        
+        var user = 
+          (macro @:pos(ctx.pos) {
+            var x:$sc = null;
+            function test<U>(s:tink.web.Session<U>):U {
+              return null;
+            }
+            test(x);
+          }).typeof().sure();
+        
+        auth = Some({ session: s, user: user });
+        t;
+      default:
+        ctx.pos.error('Invalid usage');
+    }
+    
+    return new Routing(
+      RouteSyntax.read(
+        target,
+        ['multipart/form-data', 'application/x-www-form-urlencoded', 'application/json'], 
+        ['application/json']
+      ),
+      auth
+    ).generate(ctx.name, target, ctx.pos);
+  }
+  
+  static function apply() {
+    return BuildCache.getTypeN('tink.web.routing.Router', build);
   }
   
 }
