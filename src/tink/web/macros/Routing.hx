@@ -334,12 +334,18 @@ class Routing {
             case Some(_.session.toComplex() => s):
               macro @:pos(pos) new tink.web.routing.Router<$s, $target>(__target__);
           }
-          
-          macro @:pos(pos) tink.core.Promise.lift($result)
-            .next(function (__target__:$target) 
-              return $router.route(ctx.sub(__depth__))
-            );
-          
+          beforeBody.push(function (e) return macro {
+            var ctx = ctx.sub(__depth__);
+            $e;
+          });
+          //trace(result.toString());
+          macro @:pos(pos) {
+            
+            tink.core.Promise.lift($result)
+              .next(function (__target__:$target) 
+                return $router.route(ctx)
+              );
+          }
         case KCall(c):
           switch c.response {
             case RData(t):

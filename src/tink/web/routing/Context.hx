@@ -22,7 +22,10 @@ abstract Path(Array<Portion>) from Array<Portion> to Array<Portion> {
 class Context {
   
   var request:IncomingRequest;
-  var depth:Int;
+  
+  public var depth(default, null):Int;
+  public var parent(default, null):Context;
+
   var parts:Array<Portion>;
   var params:Map<String, Portion>;
     
@@ -104,7 +107,8 @@ class Context {
   public function param(name:String):Stringly
     return this.params[name];
 
-  function new(accepts, request, depth, parts, params) {
+  function new(parent, accepts, request, depth, parts, params) {
+    this.parent = parent;
     this.accepts = accepts;
     this.request = request;
     this.depth = depth;
@@ -112,11 +116,12 @@ class Context {
     this.params = params;
   }
   
-  public function sub(descend:Int):Context
-    return new Context(this.accepts, this.request, this.depth + descend, this.parts, this.params);
+  public function sub(descend:Int):Context 
+    return new Context(this, this.accepts, this.request, this.depth + descend, this.parts, this.params);
   
   static public function ofRequest(request:IncomingRequest)
     return new Context(
+      null,
       parseAcceptHeader(request.header),
       request, 
       0,
@@ -126,6 +131,7 @@ class Context {
     
   static public function authed<U, S:Session<U>>(request:IncomingRequest, getSession:IncomingRequestHeader->S) 
     return new AuthedContext<U, S>(
+      null,
       parseAcceptHeader(request.header),
       request, 
       0,
@@ -152,7 +158,7 @@ class AuthedContext<U, S:Session<U>> extends Context {
   public var session(default, null):Lazy<S>;
   public var user(default, null):Lazy<Promise<Option<U>>>;
   
-  public function new(accepts, request, depth, parts, params, session, ?user) {
+  function new(parent, accepts, request, depth, parts, params, session, ?user) {
     
     this.session = session;
     this.user = switch user {
@@ -161,11 +167,12 @@ class AuthedContext<U, S:Session<U>> extends Context {
       case v: v;
     }
     
-    super(accepts, request, depth, parts, params);
+    super(parent, accepts, request, depth, parts, params);
   }
   
-  override public function sub(descend:Int):AuthedContext<U, S>
-    return new AuthedContext(accepts, request, depth + descend, parts, params, session, user);
+  override public function sub(descend:Int):AuthedContext<U, S> {
+    return new AuthedContext(this, accepts, request, depth + descend, parts, params, session, user);
+  }
 }
 
 abstract RequestReader<A>(Context->Promise<A>) from Context->Promise<A> {
