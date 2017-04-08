@@ -1,3 +1,4 @@
 -cp tests
--main Run
+-main RunTests
 -lib deep_equal
+-lib tink_unittest
