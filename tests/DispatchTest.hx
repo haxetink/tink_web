@@ -42,7 +42,7 @@ class DispatchTest {
     
   static var f = new Fake();
   
-  static function exec(req, ?session):Promise<OutgoingResponse> {
+  public static function exec(req, ?session):Promise<OutgoingResponse> {
     
     if (session == null)
       session = loggedin(true);
@@ -122,7 +122,7 @@ class DispatchTest {
     return shouldFail(code, req, session);
   
   
-  function expect(value:Dynamic, req, session, ?pos:PosInfos) {
+  static function expect(value:Dynamic, req, session, ?pos:PosInfos) {
     return exec(req, session).next(function (o):Promise<Assertion>
       return if (o.header.statusCode != 200)
         new Assertion(false, 'Request to ${req.header.url} failed because ${o.header.reason}');
@@ -136,7 +136,7 @@ class DispatchTest {
     );
   }
   
-  function shouldFail(code, req, session, ?pos:PosInfos) {
+  static function shouldFail(code, req, session, ?pos:PosInfos) {
     return exec(req, session)
       .map(function(o) return switch o {
         case Success(_): new Assertion(false, 'Expected Failure but got Success', pos);
