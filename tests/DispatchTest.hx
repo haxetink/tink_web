@@ -28,14 +28,15 @@ using tink.io.Source;
 using tink.CoreApi;
 
 @:asserts
+@:allow(tink.unit)
 class DispatchTest {
   
-  public static function loggedin(admin:Bool, id:Int = 1):Session<{ admin: Bool, id:Int }>
+  static function loggedin(admin:Bool, id:Int = 1):Session<{ admin: Bool, id:Int }>
     return {
       getUser: function () return Some({ admin: admin, id:id }),
     }
     
-  public static var anon:Session<{ admin: Bool, id:Int }> = { getUser: function () return None };
+  static var anon:Session<{ admin: Bool, id:Int }> = { getUser: function () return None };
   
   static function logginFail():Session<{ admin: Bool, id:Int }>
     return { getUser: function () return new Error('whoops') };
@@ -127,12 +128,10 @@ class DispatchTest {
       });
   }
   
-  @:exclude
-  public function get(url, ?headers)
+  function get(url, ?headers)
     return req(url, GET, headers);
   
-  @:exclude
-  public function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:IdealSource) {
+  function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:IdealSource) {
     if (headers == null)
       headers = [new HeaderField('accept', 'application/json')];
       
