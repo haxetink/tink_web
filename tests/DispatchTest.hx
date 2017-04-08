@@ -74,34 +74,17 @@ class DispatchTest {
   public function dispatchError(code:Int, req, ?session)
     return shouldFail(code, req, session);
   
-//   function testMultipart() {
-//     //TODO: somehow, posting multipart gets us nowhere
-//     expect({
-//       content: 'GIF87a.............,...........D..;',
-//       name: 'r.gif',
-//     }, req('/upload', POST, [
-//       new HeaderField('Content-Type', 'multipart/form-data; boundary=----------287032381131322'),
-//       new HeaderField('Content-Length', 514),
-//     ], 
-// '------------287032381131322
-// Content-Disposition: form-data; name="datafile1"; filename="r.gif"
-// Content-Type: image/gif
-
-// GIF87a.............,...........D..;
-// ------------287032381131322
-// Content-Disposition: form-data; name="datafile2"; filename="g.gif"
-// Content-Type: image/gif
-
-// GIF87a.............,...........D..;
-// ------------287032381131322
-// Content-Disposition: form-data; name="datafile3"; filename="b.gif"
-// Content-Type: image/gif
-
-// GIF87a.............,...........D..;
-// ------------287032381131322--
-// '));
-
-//   }
+  public function multipart() {
+    return expect({
+      content: 'GIF87a.............,...........D..;',
+      name: 'r.gif',
+    }, req('/upload', POST, [
+      new HeaderField('Content-Type', 'multipart/form-data; boundary=----------287032381131322'),
+      new HeaderField('Content-Length', 514),
+    ], 
+      '------------287032381131322\r\nContent-Disposition: form-data; name="datafile1"; filename="r.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile2"; filename="g.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile3"; filename="b.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322--\r\n')
+    );
+  }
   
   @:variant({ foo: 'bar' }, target.get('/sub/1/2/whatever'))
   @:variant({ id: -1 }, target.get('/anonOrNot'), DispatchTest.anon)
@@ -122,7 +105,7 @@ class DispatchTest {
     return shouldFail(code, req, session);
   
   
-  static function expect(value:Dynamic, req, session, ?pos:PosInfos) {
+  static function expect(value:Dynamic, req, ?session, ?pos:PosInfos) {
     return exec(req, session).next(function (o):Promise<Assertion>
       return if (o.header.statusCode != 200)
         new Assertion(false, 'Request to ${req.header.url} failed because ${o.header.reason}');
