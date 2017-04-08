@@ -1,10 +1,11 @@
 package tink.web.forms;
 
 import haxe.io.Bytes;
-import tink.io.IdealSource.ByteSource;
+import tink.chunk.ByteChunk;
 import tink.json.Representation;
 import tink.http.StructuredBody;
-import tink.io.*;
+
+using tink.io.Source;
 using tink.CoreApi;
 
 typedef JsonFileRep = Representation<{
@@ -17,17 +18,21 @@ typedef JsonFileRep = Representation<{
 abstract FormFile(UploadedFile) {
   
   inline function new(v) this = v;
-  
+
   @:to function toJson():JsonFileRep {
-    var src = this.read();
     return new Representation({
       fileName: this.fileName,
       mimeType: this.mimeType,
-      content: switch Std.instance(src, ByteSource) {
-        case null: 
-          throw new Error(NotImplemented, 'Can only upload files through JSON backed by ByteSources but got a $src');
-        case v:
-          @:privateAccess v.data;
+      content: {
+        var src = this.read();
+        var chunk = null;
+        var write = src.all().handle(function(c) chunk = c.sure());
+        if(chunk != null) 
+          chunk.toBytes();
+        else {
+          write.dissolve();
+          throw new Error(NotImplemented, 'Can only upload files through JSON backed by with sync sources but got a $src');
+        }
       }
     });
   }

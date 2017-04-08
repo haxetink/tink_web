@@ -16,13 +16,13 @@ import tink.web.Session;
 import tink.web.routing.Context;
 import tink.web.routing.Router;
 //import tink.web.helpers.AuthResult;
-import tink.io.IdealSource;
 
 //import tink.web.Request;
 //import tink.web.Response;
 //import tink.web.Router;
 import haxe.ds.Option;
 
+using tink.io.Source;
 using tink.CoreApi;
 
 class DispatchTest extends TestCase {
@@ -58,7 +58,7 @@ class DispatchTest extends TestCase {
         trace(o);
       var o = o.sure();
       if (o.header.statusCode != 200)
-        fail('Request to ${req.header.uri} failed because ${o.header.reason}', pos);
+        fail('Request to ${req.header.url} failed because ${o.header.reason}', pos);
       else
         o.body.all().handle(function (b) {
           structEq(
@@ -154,13 +154,13 @@ GIF87a.............,...........D..;
   function get(url, ?headers)
     return req(url, GET, headers);
   
-  function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:Source) {
+  function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:IdealSource) {
     if (headers == null)
       headers = [new HeaderField('accept', 'application/json')];
       
     if (body == null)
-      body = Empty.instance;
-    return new IncomingRequest('1.2.3.4', new IncomingRequestHeader(method, url, '1.1', headers), Plain(body));
+      body = Source.EMPTY;
+    return new IncomingRequest('1.2.3.4', new IncomingRequestHeader(method, url, '1.1', headers), Plain(cast body));
   }
   
   //TODO: this is a useless duplication with tink_json tests

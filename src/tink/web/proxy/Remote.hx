@@ -7,8 +7,8 @@ import tink.http.*;
 import tink.http.Header;
 import tink.http.Request;
 import tink.http.Response;
-import tink.io.Source;
 
+using tink.io.Source;
 using tink.CoreApi;
 
 @:genericBuild(tink.web.macros.Proxify.remote())
@@ -58,23 +58,24 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
           new OutgoingRequestHeader(method, this.host, uri() , this.headers), 
           body
         )
-      ).flatMap(function (response) return reader.withHeader(response.header)(response.body));
+      ).next(function (response) return reader.withHeader(response.header)(response.body));
 }
 
-abstract ResponseReader<A>(ResponseHeader->Source->Promise<A>) from ResponseHeader->Source->Promise<A> {
+abstract ResponseReader<A>(ResponseHeader->RealSource->Promise<A>) from ResponseHeader->RealSource->Promise<A> {
   
   public function withHeader(header)
     return this.bind(header, _);
         
   @:from static function ofStringReader<A>(read:String->Outcome<A, Error>):ResponseReader<A>
     return 
-      function (header:ResponseHeader, body:Source):Promise<A>
+      function (header:ResponseHeader, body:RealSource):Promise<A>
         return 
-          body.all() >> function (body:Bytes) return
+          body.all().next(function (chunk:Chunk) return
             if (header.statusCode >= 400)
-              Failure(Error.withData(header.statusCode, header.reason, body.toString()));
+              Failure(Error.withData(header.statusCode, header.reason, chunk.toString()));
             else
-              read(body.toString());
+              read(chunk.toString())
+          );
             
   @:from static function ofSafeStringReader<A>(read:String->A):ResponseReader<A>
     return ofStringReader(function (s) return Success(read(s)));

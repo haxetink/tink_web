@@ -1,16 +1,17 @@
 package tink.web.routing;
 
 import haxe.io.Bytes;
+import tink.Chunk;
 import tink.http.Header;
 import tink.http.Request;
 import tink.http.StructuredBody;
-import tink.io.Source;
 import tink.querystring.Pairs;
 import tink.streams.Stream;
 import tink.url.Portion;
 import tink.url.Query;
 import tink.web.forms.FormField;
 
+using tink.io.Source;
 using StringTools;
 using tink.CoreApi;
 
@@ -35,16 +36,19 @@ class Context {
       
   public var accepts(default, null):String->Bool;
   
-      
-  public var rawBody(get, never):Source;
-    inline function get_rawBody():Source
+  
+  public function allRaw():Promise<Chunk>
+    return rawBody.all();
+    
+  public var rawBody(get, never):RealSource;
+    inline function get_rawBody():RealSource
       return switch this.request.body {
         case Plain(s): s;
         default: new Error(NotImplemented, 'not implemented');//TODO: implement
       }
       
   public function headers():Pairs<tink.http.Header.HeaderValue> {
-    return [for (f in header.fields) new Named(toCamelCase(f.name), f.value)];
+    return [for (f in header) new Named(toCamelCase(f.name), f.value)];
   }
       
   static function toCamelCase(header:HeaderName) {//TODO: should go some place else
@@ -79,12 +83,12 @@ class Context {
                 #if busboy
                   new tink.multipart.parsers.BusboyParser(contentType.toString());
                 #else
-                  new tink.multipart.parsers.TinkParser(contentType.extension['boundary']);
+                  new tink.multipart.parsers.TinkParser(contentType.extensions['boundary']);
                 #end
               parser.parse(body).collect().handle(cb);
             });
           case None:
-            (src.all() >> function (bytes:Bytes):Array<Named<FormField>> return [for (part in (bytes.toString() : Query)) new Named(part.name, Value(part.value))]);
+            src.all().next(function (chunk):Array<Named<FormField>> return [for (part in (chunk.toString() : Query)) new Named(part.name, Value(part.value))]);
         }      
     }
       
@@ -125,8 +129,8 @@ class Context {
       parseAcceptHeader(request.header),
       request, 
       0,
-      request.header.uri.path.parts(), 
-      request.header.uri.query
+      request.header.url.path.parts(), 
+      request.header.url.query
     );
     
   static public function authed<U, S:Session<U>>(request:IncomingRequest, getSession:IncomingRequestHeader->S) 
@@ -135,13 +139,13 @@ class Context {
       parseAcceptHeader(request.header),
       request, 
       0,
-      request.header.uri.path.parts(), 
-      request.header.uri.query,
+      request.header.url.path.parts(), 
+      request.header.url.query,
       getSession.bind(request.header)
     );
    
   static function parseAcceptHeader(h:Header)
-    return switch h.get(Accept) {
+    return switch h.get(ACCEPT) {
       case []: acceptsAll;
       case values:
         var accepted = [for (v in values) for (part in v.parse()) part.value => true];
@@ -181,7 +185,7 @@ abstract RequestReader<A>(Context->Promise<A>) from Context->Promise<A> {
     return 
       function (ctx:Context):Promise<A>
         return 
-          ctx.rawBody.all() >> function (body:Bytes) return read(body.toString());
+          ctx.allRaw().next(function (body) return read(body.toString()));
             
   @:from static function ofSafeStringReader<A>(read:String->A):RequestReader<A>
     return ofStringReader(function (s) return Success(read(s)));

@@ -2,8 +2,8 @@ package;
 
 import deepequal.DeepEqual;
 import haxe.unit.TestCase;
-import tink.http.Client;
 import tink.http.Response.OutgoingResponse;
+import tink.http.clients.*;
 import tink.http.containers.LocalContainer;
 import tink.url.Host;
 import tink.web.proxy.Remote;

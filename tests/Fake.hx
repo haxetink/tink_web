@@ -4,9 +4,10 @@ import haxe.ds.Option;
 import haxe.io.Bytes;
 import tink.core.Either;
 import tink.http.Response;
-import tink.io.Source;
 import tink.web.forms.FormFile;
 import tink.web.routing.Response;
+
+using tink.io.Source;
 
 typedef Complex = { 
   foo: Array<{ ?x: String, ?y:Int, z:Float }>
@@ -35,8 +36,8 @@ class Fake {
   @:get public function complex(query: Complex, ?bar:String) 
     return query;
   
-  @:post public function streaming(body:Source)
-    return body.all();
+  // @:post public function streaming(body:RealSource)
+  //   return body.all();
     
   @:post public function buffered(body:Bytes)
     return body;
@@ -64,10 +65,11 @@ class Fake {
   
   @:post 
   public function upload(body: { datafile1: FormFile } ) {
-    return body.datafile1.read().all() >> function (b:Bytes) return {
-      name: body.datafile1.fileName,
-      content: b.toString(),
-    };
+    return body.datafile1.read().all()
+      .next(function (chunk) return {
+        name: body.datafile1.fileName,
+        content: chunk.toString(),
+      });
   }
   
   @:post public function post(body: { foo:String, bar: Int }) 

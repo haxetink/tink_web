@@ -213,7 +213,7 @@ class Routing {
     var theSwitch = ESwitch(
       switchTarget(), 
       cases, 
-      macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.uri)
+      macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.url.pathWithQuery)
     ).at(pos);
     
     theSwitch = restrict([for (a in allMeta(target)) for (m in a.extract(':restrict')) m], theSwitch);
@@ -400,16 +400,16 @@ class Routing {
           case [PBody, SingleCompound(name, is(_, 'haxe.io.Bytes') => true)]:
             
             macro @:pos(pos) 
-              tink.core.Promise.lift(ctx.rawBody.all())
-                .next(function ($name:haxe.io.Bytes) 
+              ctx.allRaw()
+                .next(function ($name:tink.Chunk) 
                   return $result
                 );            
                 
           case [PBody, SingleCompound(name, is(_, 'String') => true)]:
             
             macro @:pos(pos) 
-              tink.core.Promise.lift(ctx.rawBody.all())
-                .next(function ($name:haxe.io.Bytes) {
+              ctx.allRaw()
+                .next(function ($name:tink.Chunk) {
                   var $name = $i{name}.toString();
                   return $result;
                 });
@@ -517,7 +517,7 @@ class Routing {
         case PQuery:
           
           macro @:pos(route.field.pos) tink.core.Promise.lift(
-            new tink.querystring.Parser<$payload>().tryParse(ctx.header.uri.query)
+            new tink.querystring.Parser<$payload>().tryParse(ctx.header.url.query)
           );
       }     
       
@@ -533,7 +533,7 @@ class Routing {
         default: 
           cases.push({ 
             values: [macro $v{type}],
-            expr: macro @:pos(pos) tink.core.Promise.lift(ctx.rawBody.all()).next(
+            expr: macro @:pos(pos) ctx.allRaw().next(
               function (b) return ${MimeType.readers.get([type], payload.toType(pos).sure(), pos).generator}(b.toString())
             )
           });
