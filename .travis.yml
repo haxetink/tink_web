@@ -8,6 +8,7 @@ os:
   - linux
       
 install:
+  - npm install haxeshim -g
   - npm install
   - haxelib install travix
   - haxelib run travix install
