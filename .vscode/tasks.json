@@ -2,7 +2,7 @@
     "version": "0.1.0",
     "command": "npm",
     "isShellCommand": true,
-    "args": ["run","travix","--", "node","-D","busboy"],
+    "args": ["run","travix","--", "node","-D","busboy", "."],
     "problemMatcher": {
         "owner": "haxe",
         "pattern": {
