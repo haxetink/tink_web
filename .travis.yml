@@ -8,18 +8,12 @@ os:
   - linux
       
 install:
-  - npm install haxeshim -g
-  - npm install switchx -g
-  - switchx install
   - npm install
-  - haxelib version
-  - haxelib install travix
-  - haxelib run travix install
 
 script:
-  - haxelib run travix neko
-  - haxelib run travix node
-  - haxelib run travix php
+  - npm run travix neko
+  - npm run travix node
+  - npm run travix php
 
 env:
   - secure: "MamnIjFbl+sRoiwwiy3dcCSX1RuGPh2E1O7YeMIYfr0/MCogWQ2Boeg+Y0R+DCA3+MkfNWqWQzfdECpMVOByyYjWmkVbGZVcORI8Bdz+ICiFUTLdGZ3L3HqRBvtqn0wrFLwDeIGhjlfk+tmUcNDfv+L4ao6flrJ6wy+/GbL4kLQ="

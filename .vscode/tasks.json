@@ -1,7 +1,8 @@
 {
     "version": "0.1.0",
-    "command": "haxelib",
-    "args": ["run","travix","node","-D","busboy"],
+    "command": "npm",
+    "isShellCommand": true,
+    "args": ["run","travix","--", "node","-D","busboy"],
     "problemMatcher": {
         "owner": "haxe",
         "pattern": {
