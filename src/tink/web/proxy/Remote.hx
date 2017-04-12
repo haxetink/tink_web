@@ -55,7 +55,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     return 
       client.request(
         new OutgoingRequest(
-          new OutgoingRequestHeader(method, this.host, uri() , this.headers), 
+          new OutgoingRequestHeader(method, uri(), this.headers), 
           body
         )
       ).next(function (response) return reader.withHeader(response.header)(response.body));

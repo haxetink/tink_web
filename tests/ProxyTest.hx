@@ -15,17 +15,16 @@ class ProxyTest {
   public function new() {}
   
   public function proxy() {
-    // var c = new LocalContainer();
-    // var client = new LocalContainerClient(c);
-    // var f = new Fake();
+    var c = new LocalContainer();
+    var client = new LocalContainerClient(c);
+    var f = new Fake();
     
-    // c.run(function (req) {
-    //   return DispatchTest.exec(req).recover(OutgoingResponse.reportError);
-    // });
+    c.run(function (req) {
+      return DispatchTest.exec(req).recover(OutgoingResponse.reportError);
+    });
     
-    // var p = new tink.web.proxy.Remote<Fake>(client, new RemoteEndpoint(new Host('localhost', 80)));
-    // var c:Fake.Complex = { foo: [ { z: 3, x: '5', y: 6 } ] };
-    // return p.complex(c).map(function (o) return assert(compare(c, o.sure())));
-    return assert(false, 'TODO');
+    var p = new tink.web.proxy.Remote<Fake>(client, new RemoteEndpoint(new Host('localhost', 80)));
+    var c:Fake.Complex = { foo: [ { z: 3, x: '5', y: 6 } ] };
+    return p.complex(c).map(function (o) return assert(compare(c, o.sure())));
   }
 }

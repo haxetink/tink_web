@@ -113,9 +113,9 @@ class DispatchTest {
       else
         o.body.all().next(function (b)
           return if (Std.is(value, String))
-            assert(compare(value, b.toString(), pos), pos)
+            assert(compare(value, b.toString(), pos), null, pos)
           else
-            assert(compare(value, haxe.Json.parse(b.toString()), pos), pos)
+            assert(compare(value, haxe.Json.parse(b.toString()), pos), null, pos)
         )
     );
   }
@@ -124,7 +124,7 @@ class DispatchTest {
     return exec(req, session)
       .map(function(o) return switch o {
         case Success(_): new Assertion(false, 'Expected Failure but got Success', pos);
-        case Failure(e): assert(e.code == code, pos);
+        case Failure(e): assert(e.code == code, null, pos);
       });
   }
   
