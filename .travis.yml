@@ -10,6 +10,7 @@ os:
 install:
   - npm install haxeshim -g
   - npm install
+  - haxelib version
   - haxelib install travix
   - haxelib run travix install
 
