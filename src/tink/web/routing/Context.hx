@@ -74,6 +74,11 @@ class Context {
     return switch this.request.body {
       case Parsed(parts): parts;
       case Plain(src):
+        function parseForm()
+          return 
+            src.all().next(
+              function (chunk):Array<Named<FormField>> return [for (part in (chunk.toString() : Query)) new Named(part.name, Value(part.value))]);
+        #if tink_multipart
         switch tink.multipart.Multipart.check(this.request) {
           case Some(result):
             return Future.async(function(cb:Callback<Outcome<Array<Named<FormField>>, Error>>) {
@@ -88,8 +93,11 @@ class Context {
               parser.parse(body).collect().handle(cb);
             });
           case None:
-            src.all().next(function (chunk):Array<Named<FormField>> return [for (part in (chunk.toString() : Query)) new Named(part.name, Value(part.value))]);
-        }      
+            parseForm();
+        }    
+        #else
+          parseForm();
+        #end  
     }
       
   public var pathLength(get, never):Int;

@@ -1,0 +1,3 @@
+# @install: lix --silent download https://github.com/haxetink/tink_chunk/archive/69a8247941c0135f1b7b2a4f5ce9518932b0d274.tar.gz into tink_chunk/0.1.0/github/69a8247941c0135f1b7b2a4f5ce9518932b0d274
+-D tink_chunk=0.1.0
+-cp ${HAXESHIM_LIBCACHE}/tink_chunk/0.1.0/github/69a8247941c0135f1b7b2a4f5ce9518932b0d274/src

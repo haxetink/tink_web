@@ -1,0 +1,6 @@
+-D tink_web=0.0.0
+-cp src
+
+-lib tink_json
+-lib tink_querystring
+-lib tink_http

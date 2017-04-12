@@ -528,7 +528,7 @@ class Routing {
     
     for (type in route.consumes) 
       switch type {
-        case 'application/x-www-form-urlencoded' | 'multipart/form-data': 
+        case 'application/x-www-form-urlencoded' #if tink_multipart | 'multipart/form-data' #end: 
           structured.push(macro @:pos(pos) $v{type});
         default: 
           cases.push({ 
@@ -603,7 +603,11 @@ class Routing {
     return new Routing(
       RouteSyntax.read(
         target,
-        ['multipart/form-data', 'application/x-www-form-urlencoded', 'application/json'], 
+        [
+          #if tink_multipart 'multipart/form-data', #end
+          'application/x-www-form-urlencoded', 
+          'application/json'
+        ], 
         ['application/json']
       ),
       auth

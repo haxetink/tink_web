@@ -74,7 +74,7 @@ class DispatchTest {
   @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.req('/post', POST, [], 'bar=5&foo=hey'))
   public function dispatchError(code:Int, req, ?session)
     return shouldFail(code, req, session);
-  
+  #if tink_multipart
   public function multipart() {
     return expect({
       content: 'GIF87a.............,...........D..;',
@@ -86,6 +86,7 @@ class DispatchTest {
       '------------287032381131322\r\nContent-Disposition: form-data; name="datafile1"; filename="r.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile2"; filename="g.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile3"; filename="b.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322--\r\n')
     );
   }
+  #end
   
   @:variant({ foo: 'bar' }, target.get('/sub/1/2/whatever'))
   @:variant({ id: -1 }, target.get('/anonOrNot'), DispatchTest.anon)
