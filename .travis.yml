@@ -9,6 +9,8 @@ os:
       
 install:
   - npm install haxeshim -g
+  - npm install switchx -g
+  - switchx install
   - npm install
   - haxelib version
   - haxelib install travix
