@@ -5,8 +5,9 @@
 The following types and their `Future`/`Promise` variants are supported:
 
 - String
-- Http Status Code (using `http-status`)
-- Source
+- Http Status Code (see `http-status`)
+- Source (see `tink_io`)
+- OutgoingResponse (see `tink_http`)
 - Anything else will be serialized to json or querystring (See below)
 
 ## Meta

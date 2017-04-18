@@ -25,9 +25,15 @@ class Api {
   } 
 }
 
-var api = new Api();
-var c:tink.http.Container = /* pick one */;
-c.run(function (req) return tink.Web.route(req, api));
+class Server {
+	static function main() {
+		var router = new Router<Api>(new Api());
+		var c:tink.http.Container = /* pick one */;
+		c.run(function (req) return router.route(Context.ofRequest(req)));
+	}
+}
 ```
 
 Note that POSTing new greetings will have no effect on non-permanent containers.
+
+?> For more infomation about `Container`, head over to the `tink_http` documentation

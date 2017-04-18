@@ -1,11 +1,12 @@
 - **Getting started**
-  - [Quick start](quick-start.md)
+  - [Quick start](getting-started/quick-start.md)
   
 - **Basic Usage**
-  - [Routing](routing.md)
-  - [Parameters](parameters.md)
-  - [Response](response.md)
+  - [Routing](basic/routing.md)
+  - [Parameters](basic/parameters.md)
+  - [Response](basic/response.md)
 
 - **Advanced**
-  - [Access Control](access-control.md)
-  - [Middleware](middleware.md)
+  - [Access Control](advanced/access-control.md)
+  - [Middleware](advanced/middleware.md)
+  - [Remoting](advanced/remoting.md)
