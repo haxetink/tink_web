@@ -74,18 +74,26 @@ class DispatchTest {
   @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.req('/post', POST, [], 'bar=5&foo=hey'))
   public function dispatchError(code:Int, req, ?session)
     return shouldFail(code, req, session);
+  
+  
+  function multipartReq()
+    return req('/upload', POST, [
+      new HeaderField('Content-Type', 'multipart/form-data; boundary=----------287032381131322'),
+      new HeaderField('Content-Length', 514),
+    ], 
+      '------------287032381131322\r\nContent-Disposition: form-data; name="datafile1"; filename="r.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile2"; filename="g.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile3"; filename="b.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322--\r\n'
+    );
+  
   #if tink_multipart
   public function multipart() {
     return expect({
       content: 'GIF87a.............,...........D..;',
       name: 'r.gif',
-    }, req('/upload', POST, [
-      new HeaderField('Content-Type', 'multipart/form-data; boundary=----------287032381131322'),
-      new HeaderField('Content-Length', 514),
-    ], 
-      '------------287032381131322\r\nContent-Disposition: form-data; name="datafile1"; filename="r.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile2"; filename="g.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile3"; filename="b.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322--\r\n')
-    );
+    }, multipartReq());
   }
+  #else
+  public function multipart()
+    return shouldFail(NotAcceptable, multipartReq());
   #end
   
   @:variant({ foo: 'bar' }, target.get('/sub/1/2/whatever'))
@@ -121,7 +129,7 @@ class DispatchTest {
     );
   }
   
-  static function shouldFail(code, req, session, ?pos:PosInfos) {
+  static function shouldFail(code, req, ?session, ?pos:PosInfos) {
     return exec(req, session)
       .map(function(o) return switch o {
         case Success(_): new Assertion(false, 'Expected Failure but got Success', pos);

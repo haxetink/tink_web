@@ -2,3 +2,4 @@
 -main RunTests
 -lib deep_equal
 -lib tink_unittest
+-lib tink_multipart

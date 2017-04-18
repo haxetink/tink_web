@@ -8,7 +8,8 @@
     "postinstall": "lix download"
   },
   "dependencies": {
-    "haxeshim": "0.7.0",
-    "lix.pm": "*"
+    "haxeshim": "^0.7.2",
+    "lix.pm": "^0.5.3",
+    "switchx": "^0.11.2"
   }
 }
