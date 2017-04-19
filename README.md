@@ -3,37 +3,20 @@
 
 In simple terms, `tink_web` is a super-charged router for `tink_http`, that strives to embed the semantics of REST and HTTP into Haxe in a seamless way.
 
-## Basic usage
+**Getting Started**
 
-Let's look at what a hello world app might look like:
+- [Quick Start](getting-started/quick-start.md) - Create your first web server
 
-```haxe
-class Api {
-  
-  var greeting:String = 'hello';
-  
-  public function new() {}
-  
-  @:get('/$who')
-  public function hello(who = 'world') 
-    return '$greeting $who';
-  
-  @:post('/greeting')
-  public function setGreeting(greeting):tink.Url {
-    this.greeting = greeting;
-    return '/';
-  } 
-}
+**Basics**
+- [Routing](basic/routing.md) - Learn how to route paths
+- [Parameters](basic/parameters.md) - Learn how to handle parameters
+- [Response](basic/response.md) - Learn how to produce various responses
 
-class Server {
-	static function main() {
-		var router = new Router<Api>(new Api());
-		var c:tink.http.Container = /* pick one */;
-		c.run(function (req) return router.route(Context.ofRequest(req)));
-	}
-}
-```
+**Advanced**
+- [Access Control](advanced/access-control.md)
+- [Middleware](advanced/middleware.md)
+- [Remoting](advanced/remoting.md)
 
-Note that POSTing new greetings will have no effect on non-permanent containers.
-
-?> For more infomation about `Container`, head over to the `tink_http` documentation
+**API Reference**
+- [Router](api-reference/router.md)
+- [Context](api-reference/context.md)
