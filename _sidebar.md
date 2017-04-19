@@ -2,9 +2,9 @@
   - [Quick start](getting-started/quick-start.md)
   
 - **Basics**
-  - [Routing](basic/routing.md)
-  - [Parameters](basic/parameters.md)
-  - [Response](basic/response.md)
+  - [Routing](basics/routing.md)
+  - [Parameters](basics/parameters.md)
+  - [Response](basics/response.md)
 
 - **Advanced**
   - [Access Control](advanced/access-control.md)
