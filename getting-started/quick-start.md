@@ -31,6 +31,7 @@ class Server {
 class Root {
 	public function new() {}
 	
+	@:get('/')
 	@:get('/$name')
 	public function hello(name = 'World')
 		return 'Hello, $name!';
