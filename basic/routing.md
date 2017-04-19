@@ -1,9 +1,7 @@
 # Routing
 
-## Introduction
-
 `tink_web` utilizes metadata to build the routing scheme at _compile time_
-(compared to _runtime_-built routing scheme as in some popular web frameworks such as Express.js)
+(compared to _runtime_-built routing scheme as in some popular web frameworks such as Express.js).
 Each metadata specifies both the HTTP verb and a path. There is also a special metadata
 which allows sub-routing.
 
@@ -94,10 +92,12 @@ class Root {
 class Bar {
 	public function new() {}
 	
+	// [GET /bar/male] goes here
 	@:get
 	public function male()
 		return 'Martini';
-		
+	
+	// [GET /bar/female] goes here
 	@:get
 	public function female()
 		return 'Sidecar';
@@ -106,14 +106,17 @@ class Bar {
 class Foo {
 	public function new() {}
 	
+	// [GET /foo/lish] goes here
 	@:get
 	public function lish()
 		return 'foolish';
-		
+	
+	// [GET /foo/ter] goes here
 	@:get
 	public function ter()
 		return 'footer';
-		
+	
+	// [GET /foo/tball] goes here
 	@:get
 	public function tball()
 		return 'football';
