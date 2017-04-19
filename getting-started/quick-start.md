@@ -37,4 +37,7 @@ class Root {
 }
 ```
 
-Now navigates to `http://localhost:8080` and you should see `Hello, World!`
+1. Copy the code above and save it as `Server.hx`
+1. Build it with: `haxe -js server.js -lib hxnodejs -lib tink_web -main Server`
+1. Run the server: `node server.js`
+1. Now navigates to `http://localhost:8080` and you should see `Hello, World!`
