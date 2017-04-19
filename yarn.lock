@@ -61,9 +61,9 @@ graceful-fs@^4.1.2:
   version "4.1.11"
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.11.tgz#0e8bdfe4d1ddb8854d64e04ea7c00e2a026e5658"
 
-haxeshim@^0.7.2:
-  version "0.7.2"
-  resolved "https://registry.yarnpkg.com/haxeshim/-/haxeshim-0.7.2.tgz#ee7ca2c2457c0cd2ec56da1304792d8ca207af82"
+haxeshim@0.6.3:
+  version "0.6.3"
+  resolved "https://registry.yarnpkg.com/haxeshim/-/haxeshim-0.6.3.tgz#b4ac4d660e5f3a04793992cc97bf4ecc3919fd94"
 
 inflight@^1.0.4:
   version "1.0.6"
@@ -76,7 +76,7 @@ inherits@2, inherits@~2.0.0:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/inherits/-/inherits-2.0.3.tgz#633c2c83e3da42a502f52466022480f4208261de"
 
-lix.pm@^0.5.3:
+lix.pm@*:
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/lix.pm/-/lix.pm-0.5.3.tgz#0f326d21771a076ac7967a1a7f1a1264064e2f1d"
   dependencies:
@@ -118,13 +118,6 @@ rimraf@2:
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.6.1.tgz#c2338ec643df7a1b7fe5c54fa86f57428a55f33d"
   dependencies:
     glob "^7.0.5"
-
-switchx@^0.11.2:
-  version "0.11.2"
-  resolved "https://registry.yarnpkg.com/switchx/-/switchx-0.11.2.tgz#44752d1d348ca5bdae5330728fc4e41797a18270"
-  dependencies:
-    tar "=2.2.1"
-    yauzl "=2.6.0"
 
 tar@=2.2.1:
   version "2.2.1"

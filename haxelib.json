@@ -19,7 +19,6 @@
   "dependencies": {
     "tink_json": "",
     "tink_querystring": "",
-    "tink_http": "",
-    "tink_multipart": ""
+    "tink_http": ""
   }
 }
