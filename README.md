@@ -4,8 +4,7 @@
 In simple terms, `tink_web` is a super-charged router for [`tink_http`](https://haxetink.github.io/tink_http), that strives to embed the semantics of REST and HTTP into Haxe in a seamless way.
 
 **Getting Started**
-
-- [Quick Start](getting-started/quick-start.md) - Create your first web server
+- [Quick Start](getting-started/quick-start.md) - Create your first web router
 
 **Basics**
 - [Routing](basic/routing.md) - Learn how to route paths
