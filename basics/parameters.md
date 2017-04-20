@@ -2,9 +2,48 @@
 
 In HTTP, there are mainly two places to carry parameters, the query parameter and body parameters.
 
-## Query Parameters
+## Path Parameters
 
-> Also known as Path Parameters
+Path parameters are part of the URL path:
+
+- `/users/haxetink/repos`  
+  In the above url, the part `haxetink` is variable
+- `/users/haxetink/repos/tink_web`  
+  In the above url, the parts `haxetink` and `tink_web` are variables
+
+In `tink_web`, path parameters can be captured by a dollar sign `$` in the path
+
+For example:
+
+```haxe
+@:get('/users/$user/repos')
+public function repos(user:String) {
+	// suppose the path being routed is: `/users/haxetink/repos`
+	trace(user); // traces 'haxetink'
+}
+
+@:get('/users/$user/repos/$repo')
+public function repos(user:String, repo:String) {
+	// suppose the path being routed is: `/users/haxetink/repos/tink_web`
+	trace(user); // traces 'haxetink'
+	trace(repo); // traces 'tink_web'
+}
+```
+
+### Optional parameter
+
+Path parameters can be made optional if a default value is provided:
+
+```haxe
+@:get('/users')
+@:get('/users/$user')
+public function repos(user = 'haxetink') {
+	// suppose the path being routed is: `/users`
+	trace(user); // traces 'haxetink'
+}
+```
+
+## Query Parameters
 
 Query parameters appears in the URL, delimited by the `?` question mark.
 
@@ -45,6 +84,18 @@ public function types(query:{int:Int, bool:Bool, float:Float}) {
 }
 ```
 
+### Optional parameter
+
+Query parameters can be made optional by marking a field as optional:
+
+```haxe
+@:get
+public function types(query:{?int:Int}) {
+	// suppose the path being routed is: `/types`
+	trace(query.int); // traces null
+}
+```
+
 Also see `tink_querystring`
 
 ## Body Parameters
@@ -59,6 +110,17 @@ As the name suggests, body parameters lives in the [request body](#todo-link-to-
 public function createUser(body:{name:String}) {
 	// do some database work here
 	return 'Created User: ${body.name}';
+}
+```
+
+### Optional parameter
+
+Body parameters can be made optional by marking a field as optional:
+
+```haxe
+@:post('/users')
+public function createUser(body:{?name:String}) {
+	// now `body.name` can be null
 }
 ```
 

@@ -7,9 +7,9 @@ In simple terms, `tink_web` is a super-charged router for [`tink_http`](https://
 - [Quick Start](getting-started/quick-start.md) - Create your first web router
 
 **Basics**
-- [Routing](basic/routing.md) - Learn how to route paths
-- [Parameters](basic/parameters.md) - Learn how to handle parameters
-- [Response](basic/response.md) - Learn how to produce various responses
+- [Routing](basics/routing.md) - Learn how to route paths
+- [Parameters](basics/parameters.md) - Learn how to handle parameters
+- [Response](basics/response.md) - Learn how to produce various responses
 
 **Advanced**
 - [Access Control](advanced/access-control.md)
