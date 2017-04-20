@@ -11,21 +11,22 @@ Path parameters are part of the URL path:
 - `/users/haxetink/repos/tink_web`  
   In the above url, the parts `haxetink` and `tink_web` are variables
 
-In `tink_web`, path parameters can be captured by a dollar sign `$` in the path
+In `tink_web`, path parameters can be captured by a dollar sign `$` in the path.
+Also, the parameter will be automatically converted to the specified type (`Int`, `Float`, `Bool`, `String`)
 
 For example:
 
 ```haxe
 @:get('/users/$user/repos')
-public function repos(user:String) {
-	// suppose the path being routed is: `/users/haxetink/repos`
-	trace(user); // traces 'haxetink'
+public function repos(user:Int) {
+	// suppose the path being routed is: `/users/123/repos`
+	trace(user); // traces 123
 }
 
 @:get('/users/$user/repos/$repo')
-public function repos(user:String, repo:String) {
-	// suppose the path being routed is: `/users/haxetink/repos/tink_web`
-	trace(user); // traces 'haxetink'
+public function repos(user:Int, repo:String) {
+	// suppose the path being routed is: `/users/123/repos/tink_web`
+	trace(user); // traces 123
 	trace(repo); // traces 'tink_web'
 }
 ```
