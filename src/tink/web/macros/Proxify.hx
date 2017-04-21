@@ -138,7 +138,14 @@ class Proxify {
                     __body__, 
                     ${switch call.response {
                       case RData(t): MimeType.readers.get(f.produces, t, f.field.pos).generator;
-                      default: macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                      case ROpaque(t):
+                        switch haxe.macro.Context.getType('tink.http.Response.IncomingResponse').isSubTypeOf(t) {
+                          case Success(_):
+                            var ct = t.toComplex();
+                            macro function (header, body):tink.core.Promise<$ct> return (new tink.http.Response.IncomingResponse(header, body):$ct);
+                          default: 
+                            macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                        }
                     }}
                   );
                 };
