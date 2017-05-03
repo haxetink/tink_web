@@ -88,13 +88,13 @@ The parameter of `@:restrict` should resolve to a `Promise<Bool>`.
 
 Behavior of the metadata is as follow:
 
-1. if `@:restrict` exists, the `Context` must contain a user (i.e. `getUser()` in the `Session` must return `Some` user), otherwise the router will return a `Response` with `401 Unauthorized`.
-1. if the expression of `@:restrict` resolves to a `false`, the router will return a `Response` with `403 Forbidden`
+1. if `@:restrict` exists, the `Context` must contain a user (i.e. `getUser()` in the `Session` must return `Some` user), otherwise the router will return a response` with `401 Unauthorized`.
+1. if the expression of `@:restrict` resolves to a `false`, the router will return a response` with `403 Forbidden`
 
-Notes:
+**Notes:**
 
 - Multiple `@:restrict` metadata on a single route is allowed.
-- `@:restrict(true)` means any logged-in user will do.
+- `@:restrict(true)` means "any logged-in user will do".
 - To reference the `User` object of the `Session`, use the `user` identifier (e.g. `@:restrict(user.isAdmin)`)
 - To reference members in the current class (the router), use the `this` keyword. (e.g. `@:restrict(user.id > this.id)`)
 
