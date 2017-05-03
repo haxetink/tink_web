@@ -1,6 +1,10 @@
 # Parameters
 
-In HTTP, there are mainly two places to carry parameters, the query parameter and body parameters.
+In a HTTP request, parameters usually appear in three places:
+
+1. in the path section of the URL
+1. in the query section of the URL
+1. in the request body
 
 ## Path Parameters
 
