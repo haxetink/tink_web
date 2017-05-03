@@ -15,5 +15,6 @@ The following types and their [`Future`](https://haxetink.github.io/tink_core/#/
 !> This section is incomplete, contribute using the button at the bottom of the page
 
 ```haxe
-@:produces('TODO')
+@:produces('application/json')
+@:html(function(o) return '<p>$o</p>')
 ```
