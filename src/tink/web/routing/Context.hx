@@ -83,7 +83,10 @@ class Context {
           case Some(result):
             return Future.async(function(cb:Callback<Outcome<Array<Named<FormField>>, Error>>) {
               var contentType = result.a;
-              var body = result.b.idealize(function(e) cb.invoke(Failure(e)));
+              var body = result.b.idealize(function(e) {
+                cb.invoke(Failure(e));
+                return Source.EMPTY;
+              });
               var parser:tink.multipart.Parser = // TODO: make this configurable
                 #if busboy
                   new tink.multipart.parsers.BusboyParser(contentType.toString());
