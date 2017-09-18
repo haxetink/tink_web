@@ -1,5 +1,12 @@
 # Access Control
 
+Summary to implementing access control:
+
+1. Write a `Session` implementation
+1. Add a type parameter, which is your `Session` implementation, to `Router`
+1. Pass an "authed" `Context` to Router's `route` function
+1. Implement access control logic with the `@:restrict` meta or the special `user` argument
+
 ## Context
 
 A `Router` requires a `Context` to work. A `Context` stores various information related to the current request.
@@ -70,6 +77,10 @@ With this particular `Session` implemention, we can simply use the [constructor]
 ```haxe
 Context.authed(request, Session.new);
 ```
+
+## Router
+
+Add the `Session` implementation type to the type parameter list of the `Router`. For example, from `new Router<Root>(root)` to `new Router<MySession, Root>(root)`
 
 
 ## Meta
