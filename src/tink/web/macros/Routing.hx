@@ -165,18 +165,7 @@ class Routing {
               case []:
                 m.pos.error('@:restrict must have one parameter');
               case [v]:
-                
-                function subst(e:Expr)
-                  return switch e {
-                    case macro this.$field: 
-                      macro @:pos(e.pos) (@:privateAccess this.target.$field);
-                    case macro this: 
-                      macro @:pos(e.pos) (@:privateAccess this.target);
-                    default:
-                      e.map(subst);
-                  }
-                
-                e = macro @:pos(v.pos) (${subst(v)} : tink.core.Promise<Bool>).next(
+                e = macro @:pos(v.pos) (${substituteThis(v)} : tink.core.Promise<Bool>).next(
                   function (authorized)
                     return 
                       if (authorized) $e;
@@ -357,7 +346,7 @@ class Routing {
                 case [{ pos: pos, params: [v] }]:
                   formats.push(
                     macro @:pos(pos) if (ctx.accepts('text/html')) 
-                      return tink.core.Promise.lift($v(__data__)).next(
+                      return tink.core.Promise.lift(${substituteThis(v)}(__data__)).next(
                         function (d) return tink.web.routing.Response.textual('text/html', d)
                       )
                   );
@@ -497,6 +486,17 @@ class Routing {
     }
   
   static var IGNORE = macro _;
+  
+  
+  static function substituteThis(e:Expr)
+    return switch e {
+      case macro this.$field: 
+        macro @:pos(e.pos) (@:privateAccess this.target.$field);
+      case macro this: 
+        macro @:pos(e.pos) (@:privateAccess this.target);
+      default:
+        e.map(substituteThis);
+    }
   
   static function is(t:Type, name:String)
     return Context.getType(name).isSubTypeOf(t).isSuccess();
