@@ -19,6 +19,6 @@
   "dependencies": {
     "tink_json": "",
     "tink_querystring": "",
-    "tink_http": ""
+    "tink_http": "gh:haxetink/tink_http#pure"
   }
 }
