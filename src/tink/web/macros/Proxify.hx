@@ -146,9 +146,8 @@ class Proxify {
                           }
                           macro function(header, body) 
                             return tink.io.Source.RealSourceTools.all(body)
-                              .next(function(chunk) {
-                                return new tink.web.Response(header, ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk));
-                              });
+                              .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
+                              .next(function(parsed) return new tink.web.Response(header, parsed));
                         } else
                           MimeType.readers.get(f.produces, t, f.field.pos).generator;
                       case ROpaque(t):
