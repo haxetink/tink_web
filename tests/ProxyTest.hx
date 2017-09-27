@@ -13,6 +13,7 @@ import tink.unit.Assert.assert;
 
 using tink.CoreApi;
 
+@:asserts
 class ProxyTest {
   
   var container:LocalContainer;
@@ -34,6 +35,16 @@ class ProxyTest {
   public function complex() {
     var c:Fake.Complex = { foo: [ { z: 3, x: '5', y: 6 } ] };
     return proxy.complex(c).map(function (o) return assert(compare(c, o.sure())));
+  }
+  
+  public function typed() {
+    return proxy.typed()
+      .next(function (o) {
+        asserts.assert(o.header.contentType().sure().fullType == 'application/json');
+        asserts.assert(o.body.message == 'This is typed!');
+        asserts.assert((o:{message:String}).message == 'This is typed!');
+        return asserts.done();
+      });
   }
   
   // TODO: failing

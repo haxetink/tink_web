@@ -49,6 +49,13 @@ class Fake {
     return header.accept;
   }    
   
+  @:get public function typed() {
+    return new tink.web.Response(
+      new tink.http.Response.ResponseHeader(200, 'OK', []),
+      {message: 'This is typed!'}
+    );
+  }    
+  
   @:consumes('application/json')
   @:post public function enm(body:{ field: Either<String, String> })
     return 'ok';
