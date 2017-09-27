@@ -138,18 +138,16 @@ class Proxify {
                     __body__, 
                     ${switch call.response {
                       case RData(t):
-                        var isResponse = t.isSubTypeOf(Context.getType('tink.web.Response'), Context.currentPos()).isSuccess();
-                        if(isResponse) {
-                          t = switch t {
-                            case TAbstract(_, [p]): p;
-                            default: throw 'unreachable';
-                          }
-                          macro function(header, body) 
-                            return tink.io.Source.RealSourceTools.all(body)
-                              .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
-                              .next(function(parsed) return new tink.web.Response(header, parsed));
-                        } else
-                          MimeType.readers.get(f.produces, t, f.field.pos).generator;
+                        switch t.isSubTypeOf(Context.getType('tink.web.Response'), f.field.pos) {
+                          case Success(TAbstract(_, [t])):
+                            macro function(header, body) 
+                              return tink.io.Source.RealSourceTools.all(body)
+                                .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
+                                .next(function(parsed) return new tink.web.Response(header, parsed));
+                          case Success(_): throw 'unreachable';
+                          case Failure(_):
+                            MimeType.readers.get(f.produces, t, f.field.pos).generator;
+                        }
                       case ROpaque(t):
                         switch haxe.macro.Context.getType('tink.http.Response.IncomingResponse').isSubTypeOf(t) {
                           case Success(_):

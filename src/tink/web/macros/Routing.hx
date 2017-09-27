@@ -361,22 +361,19 @@ class Routing {
               for (fmt in route.produces) 
                 formats.push(
                   macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
-                    if(isResponse) {
-                      var t = switch t {
-                        case TAbstract(_, [p]): p;
-                        default: throw 'unreachable';
-                      }
-                      macro new tink.http.Response.OutgoingResponse(
-                        __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
-                        ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
-                      );
+                    switch t.isSubTypeOf(Context.getType('tink.web.Response'), pos) {
+                      case Success(TAbstract(_, [t])):
+                        macro new tink.http.Response.OutgoingResponse(
+                          __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
+                          ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
+                        );
+                      case Success(_): throw 'unreachable';
+                      case Failure(_):
+                        macro tink.web.routing.Response.textual(
+                          $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
+                        );
                     }
-                    else
-                      macro tink.web.routing.Response.textual(
-                        $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
-                      )
-                  }
-                );
+                  });
                 
               macro @:pos(pos) tink.core.Promise.lift($result).next(
                 function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
