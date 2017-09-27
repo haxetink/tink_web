@@ -356,11 +356,26 @@ class Routing {
                   v[1].pos.error('Cannot have multiple @:html directives');
               }
               
-              for (fmt in route.produces)
+              var isResponse = t.isSubTypeOf(Context.getType('tink.web.Response'), Context.currentPos()).isSuccess();
+              
+              for (fmt in route.produces) 
                 formats.push(
-                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return tink.web.routing.Response.textual(
-                    $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
-                  )
+                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
+                    if(isResponse) {
+                      var t = switch t {
+                        case TAbstract(_, [p]): p;
+                        default: throw 'unreachable';
+                      }
+                      macro new tink.http.Response.OutgoingResponse(
+                        __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
+                        ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
+                      );
+                    }
+                    else
+                      macro tink.web.routing.Response.textual(
+                        $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
+                      )
+                  }
                 );
                 
               macro @:pos(pos) tink.core.Promise.lift($result).next(
