@@ -42,6 +42,7 @@ class ProxyTest {
       .next(function (o) {
         asserts.assert(o.header.contentType().sure().fullType == 'application/json');
         asserts.assert(o.body.message == 'This is typed!');
+        asserts.assert((o:{message:String}).message == 'This is typed!');
         return asserts.done();
       });
   }
