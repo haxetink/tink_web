@@ -12,7 +12,7 @@ install:
 
 script:
   # - npm run travix neko .
-  - npm run travix node .
+  - npm run travix node
   # - npm run travix php .
 
 env:

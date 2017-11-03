@@ -56,7 +56,8 @@ class DispatchTest {
   public function new() {}
   
   @:variant({ flag: true }, target.get('/flag/'))
-  @:variant({ number: 0 }, target.get('/count/'))
+  @:variant({ number: 123 }, target.get('/count/'))
+  @:variant({ number: 321 }, target.get('/count/321'))
   @:variant({ hello: 'world' }, target.get('/'))
   @:variant('<p>Hello world</p>', target.get('/', []))
   @:variant({ hello: 'haxe' }, target.get('/haxe'))
@@ -71,6 +72,7 @@ class DispatchTest {
     return expect(value, req, session);
   
   
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.get('/count/foo'))
   @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.get('/sub/1/2/test/yo'))
   @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.req('/post', POST, [], 'bar=4'))
   @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'))

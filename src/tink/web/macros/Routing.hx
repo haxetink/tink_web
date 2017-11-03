@@ -246,9 +246,18 @@ class Routing {
     
     for (arg in route.signature) {
       
+      var argExpr = arg.name.resolve();
+
       switch arg.kind {
         case ACapture:
-                      
+
+          var expected = arg.type.toComplex();
+
+          argExpr = macro @:pos(route.field.pos) switch ($argExpr.parse(function (s:tink.Stringly):$expected return s)) {
+            case Success(v): v;
+            case Failure(e): return tink.core.Promise.lift(e);
+          }
+
           funcArgs.push({
             name: arg.name,
             type: macro : tink.Stringly,
@@ -299,12 +308,11 @@ class Routing {
           throw 'not implemented: '+arg.kind;
       }
       
-      var argExpr = arg.name.resolve();
       callArgs.push(
         if (arg.optional) 
-          macro switch ${argExpr} {
+          macro switch $i{arg.name} {
             case null: null;
-            case v: v;
+            default: $argExpr;
           }
         else argExpr
       );        

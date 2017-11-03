@@ -67,7 +67,7 @@ class Fake {
 
   @:get('/count/$number')  
   @:get('/count/')  
-  public function count(?number:Int = 0) 
+  public function count(?number:Int = 123) 
     return { number: number };
 
   @:restrict(true)
