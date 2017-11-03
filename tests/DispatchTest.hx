@@ -55,6 +55,7 @@ class DispatchTest {
   
   public function new() {}
   
+  @:variant({ flag: true }, target.get('/flag/'))
   @:variant({ number: 0 }, target.get('/count/'))
   @:variant({ hello: 'world' }, target.get('/'))
   @:variant('<p>Hello world</p>', target.get('/', []))

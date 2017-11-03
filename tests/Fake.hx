@@ -60,6 +60,11 @@ class Fake {
   @:post public function enm(body:{ field: Either<String, String> })
     return 'ok';
 
+  @:get('/flag/$flag')  
+  @:get('/flag/')  
+  public function flag(?flag:Bool = true) 
+    return { flag: flag };
+
   @:get('/count/$number')  
   @:get('/count/')  
   public function count(?number:Int = 0) 
