@@ -13,9 +13,11 @@ typedef Complex = {
   foo: Array<{ ?x: String, ?y:Int, z:Float }>
 }
 
+
 class Fake {
   
   public function new() {}
+  @:sub('/recurse/$id') public function recurse(id:String) return new Fake();
   
   @:get public function anonOrNot(user:Option<{ id: Int }>) 
     return {
