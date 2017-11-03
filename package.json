@@ -4,8 +4,8 @@
   "description": "",
   "scripts": {
     "haxelib": "haxelib",
-    "travix": "haxe -lib travix --run travix.Travix",
-    "postinstall": "lix download"
+    "travix": "neko travix.n",
+    "postinstall": "lix download && haxe -lib travix -main travix.Travix -neko travix.n"
   },
   "dependencies": {
     "haxeshim": "0.6.3",
