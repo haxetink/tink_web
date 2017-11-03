@@ -59,7 +59,12 @@ class Fake {
   @:consumes('application/json')
   @:post public function enm(body:{ field: Either<String, String> })
     return 'ok';
-  
+
+  @:get('/count/$number')  
+  @:get('/count/')  
+  public function count(?number:Int = 0) 
+    return { number: number };
+
   @:restrict(true)
   @:html(function (o) return '<p>Hello ${o.hello}</p>')
   @:get('/$who')
@@ -69,7 +74,7 @@ class Fake {
       hello: who
     };
   }
-  
+
   @:post 
   public function upload(body: { datafile1: FormFile } ) {
     return body.datafile1.read().all()

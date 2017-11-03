@@ -126,7 +126,7 @@ class Routing {
             macro null;
       }
     ];
-    
+
     return { 
       values: [pattern.toArray(v.path.pos)],
       expr: macro @:pos(v.path.pos) this.$field($a{callArgs}),
@@ -299,7 +299,15 @@ class Routing {
           throw 'not implemented: '+arg.kind;
       }
       
-      callArgs.push(arg.name.resolve());        
+      var argExpr = arg.name.resolve();
+      callArgs.push(
+        if (arg.optional) 
+          macro switch ${argExpr} {
+            case null: null;
+            case v: v;
+          }
+        else argExpr
+      );        
     }
      
     var result = macro @:pos(pos) this.target.$field;
