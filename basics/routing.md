@@ -14,8 +14,12 @@ The following metadata are supported:
 - `@:patch`
 - `@:put`
 - `@:delete`
+- `@:head`
+- `@:options`
 
-and obviously they correspond to the common HTTP verbs: `GET`, `POST`, `PATCH`, `PUT`, `DELETE`.
+and obviously they correspond to the common HTTP verbs: `GET`, `POST`, `PATCH`, `PUT`, `DELETE`, `HEAD` and `OPTIONS`.
+
+If you would like a route to match no matter which method, you can use `@:all`.
 
 ### Path Specified
 
