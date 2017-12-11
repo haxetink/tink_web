@@ -114,6 +114,7 @@ class DispatchTest {
   @:variant(tink.core.Error.ErrorCode.Unauthorized, target.get('/'), DispatchTest.anon)
   @:variant(tink.core.Error.ErrorCode.Unauthorized, target.get('/haxe'), DispatchTest.anon)
   @:variant(tink.core.Error.ErrorCode.Forbidden, target.get('/noaccess'))
+  @:variant(tink.core.Error.ErrorCode.Conflict, target.get('/customForbid'))
   @:variant(tink.core.Error.ErrorCode.Forbidden, target.get('/sub/2/2/'))
   @:variant(tink.core.Error.ErrorCode.Forbidden, target.get('/sub/1/1/whatever'))
   public function authError(code, req, ?session)
