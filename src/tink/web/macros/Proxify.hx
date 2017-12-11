@@ -83,6 +83,7 @@ class Proxify {
       pos: ctx.pos,
       pack: ['tink', 'web'],
       name: ctx.name,
+      meta: [{name: ':pure', pos: ctx.pos}],
       fields: [for (f in routes) {
         pos: f.field.pos,
         name: f.field.name,
