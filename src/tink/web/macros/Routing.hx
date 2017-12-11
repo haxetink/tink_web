@@ -160,19 +160,24 @@ class Routing {
           v[0].pos.error('restriction cannot be applied because no session handling is provided');
         case [_, Some(_)]: 
           
+          function mkCheck(v, err)
+            e = macro @:pos(v.pos) (${substituteThis(v)} : tink.core.Promise<Bool>).next(
+              function (authorized)
+                return 
+                  if (authorized) $e;
+                  else $err
+            );
+            
           for (m in meta)
             switch m.params {
               case []:
-                m.pos.error('@:restrict must have one parameter');
+                m.pos.error('@:restrict must have at least one parameter');
               case [v]:
-                e = macro @:pos(v.pos) (${substituteThis(v)} : tink.core.Promise<Bool>).next(
-                  function (authorized)
-                    return 
-                      if (authorized) $e;
-                      else new tink.core.Error(Forbidden, 'forbidden')
-                );
+                mkCheck(v, macro new tink.core.Error(Forbidden, 'forbidden'));
+              case [v, err]:
+                mkCheck(v, err);
               case v:
-                v[1].reject('@:restrict must have one parameter');
+                v[2].reject('@:restrict must have at most two parameters');
             }     
             
           macro ctx.user.get().next(function (o) return switch o {

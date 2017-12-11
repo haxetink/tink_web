@@ -29,6 +29,7 @@ class Fake {
     return { admin: user.admin };
   
   @:restrict(false) @:get public function noaccess() return 'nope';
+  @:restrict(false, new tink.core.Error(Conflict, 'custom message')) @:get public function customForbid() return 'nope';
 
   @:get public var yo(default, null):String = 'yo';
     
