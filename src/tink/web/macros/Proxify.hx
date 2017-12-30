@@ -21,8 +21,8 @@ class Proxify {
       case SingleCompound(name, type):
         Some(write(macro $i{name}, type.toComplex()));
       case Mixed(sep, com, res):
-        var ret:Array<{ field:String, expr: Expr }> = [];
-        
+        var ret = [];
+        EObjectDecl(ret);//just for type inference
         for (f in sep)
           ret.push({ field: f.name, expr: macro $i{f.name} });
           
