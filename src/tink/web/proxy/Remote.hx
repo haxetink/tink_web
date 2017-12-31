@@ -48,14 +48,14 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
   function uri()       
     return '/' + (switch this.path {
       case null: '';
-      case v: v.join('/');
+      case v: Path.normalize(v.join('/'));
     }) + this.query;
   
   public function request<A>(client:Client, method, body, reader:ResponseReader<A>):Promise<A>
     return 
       client.request(
         new OutgoingRequest(
-          new OutgoingRequestHeader(method, '//' + this.host + uri(), this.headers), 
+          new OutgoingRequestHeader(method, '//' + this.host + uri(), this.headers),//TODO: consider putting protocol here
           body
         )
       ).next(function (response) return reader.withHeader(response.header)(response.body));
