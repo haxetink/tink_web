@@ -135,7 +135,13 @@ public function createUser(body:{?name:String}) {
 
 By default, parsers are generated for both `application/json` and `application/x-www-form-urlencoded`
 
-Use metadata `@:consume` to control that, blah.
+Use metadata `@:consumes` to control that. It works on class and function level also:
+```haxe
+@:consumes('application/json')
+public function createUser(body:{?name:String}) {
+	// now `body.name` can be null
+}
+```
 
 #### `application/json`
 Also see `tink_json`
