@@ -19,7 +19,7 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   #end
   
   @:from static function ofUrl(u:tink.Url):Response {
-    return new OutgoingResponse(new ResponseHeader(Found, Found, [new HeaderField('location', u)]), Chunk.EMPTY);
+    return new OutgoingResponse(new ResponseHeader(TemporaryRedirect, TemporaryRedirect, [new HeaderField('location', u)]), Chunk.EMPTY);
   }
 
   static public function binary(contentType:String, bytes:Bytes):Response {
