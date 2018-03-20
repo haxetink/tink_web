@@ -88,7 +88,7 @@ class Proxify {
         pos: f.field.pos,
         name: f.field.name,
         kind: FFun({
-          args: [for (arg in f.signature) { name: arg.name, type: arg.type.toComplex(), opt: arg.optional }],
+          args: [for (arg in f.signature) if(arg.name != 'user') { name: arg.name, type: arg.type.toComplex(), opt: arg.optional }],
           expr: {
             
             var call = [];

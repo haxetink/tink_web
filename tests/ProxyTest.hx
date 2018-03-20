@@ -46,6 +46,11 @@ class ProxyTest {
       });
   }
   
+  public function ripUserArg() {
+    return proxy.anonOrNot()
+      .next(function (o) return assert(o.id > -2));
+  }
+  
   // TODO: failing
   // public function header() {
   //   var accept = 'application/json';
