@@ -27,8 +27,10 @@ class RawTest {
     });
   }
   
-  public function statusCode() {
-    return client.request(new OutgoingRequest(new OutgoingRequestHeader(POST, '/statusCode', []), ''))
-      .next(function(res) return assert(res.header.statusCode == 201));
+  @:variant(POST, 201)
+  @:variant(GET, 307)
+  public function statusCode(method, code) {
+    return client.request(new OutgoingRequest(new OutgoingRequestHeader(method, '/statusCode', []), ''))
+      .next(function(res) return assert(res.header.statusCode == code));
   }
 }

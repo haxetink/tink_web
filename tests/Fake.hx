@@ -50,6 +50,10 @@ class Fake {
   @:statusCode(201)
   @:post public function statusCode()
     return 'Done';
+    
+  @:statusCode(307)
+  @:get('/statusCode') public function redirectStatusCode()
+    return tink.Url.parse('https://example.com');
   
   @:get public function headers(header: { accept:String } ) {
     return header.accept;
