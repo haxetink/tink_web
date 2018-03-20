@@ -46,6 +46,10 @@ class Fake {
     
   @:post public function textual(body:String)
     return body;
+    
+  @:statusCode(201)
+  @:post public function statusCode()
+    return 'Done';
   
   @:get public function headers(header: { accept:String } ) {
     return header.accept;

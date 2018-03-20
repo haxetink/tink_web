@@ -26,7 +26,6 @@ class ProxyTest {
     client = new LocalContainerClient(container);
     fake = new Fake();
     container.run(function (req:IncomingRequest) {
-      trace(req.header);
       return DispatchTest.exec(req).recover(OutgoingResponse.reportError);
     });
     proxy = new Remote<Fake>(client, new RemoteEndpoint(new Host('localhost', 80)));

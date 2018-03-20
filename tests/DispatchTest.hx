@@ -123,7 +123,7 @@ class DispatchTest {
   static function expect(value:Dynamic, req, ?session, ?pos:PosInfos) {
     return exec(req, session).next(function (o):Promise<Assertion>
       return if (o.header.statusCode != 200)
-        new Assertion(false, 'Request to ${req.header.url} failed because ${o.header.reason}');
+        new Assertion(false, 'Request to ${req.header.url} failed because ${o.header.reason} (${o.header.statusCode.toInt()})');
       else
         o.body.all().next(function (b)
           return if (Std.is(value, String))
