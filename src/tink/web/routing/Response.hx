@@ -22,11 +22,11 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
     return new OutgoingResponse(new ResponseHeader(Found, Found, [new HeaderField('location', u)]), Chunk.EMPTY);
   }
 
-  static public function binary(contentType:String, bytes:Bytes):Response {
+  static public function binary(?code, contentType:String, bytes:Bytes):Response {
     //TODO: calculate ETag
-    return OutgoingResponse.blob(bytes, contentType);
+    return OutgoingResponse.blob(code, bytes, contentType);
   }
     
-  static public function textual(contentType:String, string:String):Response
-    return binary(contentType, Bytes.ofString(string));
+  static public function textual(?code, contentType:String, string:String):Response
+    return binary(code, contentType, Bytes.ofString(string));
 }

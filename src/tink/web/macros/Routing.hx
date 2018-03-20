@@ -352,6 +352,14 @@ class Routing {
               );
           }
         case KCall(c):
+        
+          var statusCode = switch route.field.meta.extract(':statusCode') {
+            case []: macro null;
+            case [{params: [v]}]: v;
+            case [v]: v.pos.error('@:statusCode must have one argument exactly');
+            case v: v[1].pos.error('Cannot have multiple @:statusCode directives');
+          }
+          
           switch c.response {
             case RData(t):
               var ct = t.toComplex();
@@ -386,6 +394,7 @@ class Routing {
                       case Success(_): throw 'unreachable';
                       case Failure(_):
                         macro tink.web.routing.Response.textual(
+                          $statusCode,
                           $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
                         );
                     }
@@ -399,7 +408,17 @@ class Routing {
               );
               
             case ROpaque(_.toComplex() => t):
-              macro @:pos(pos) tink.core.Promise.lift($result).next(function (v:$t):tink.web.routing.Response return v);
+              var e = macro @:pos(pos) tink.core.Promise.lift($result)
+                .next(function (v:$t):tink.web.routing.Response return v);
+              switch statusCode {
+                case macro null: e;
+                case _: // patch status code:
+                  // TODO: better find a way to assign the status code in the first place
+                  macro $e.next(function (res:tink.http.Response.OutgoingResponse) return new tink.http.Response.OutgoingResponse(
+                    new tink.http.Response.ResponseHeader($statusCode, res.header.reason, @:privateAccess res.header.fields, res.header.protocol),
+                    res.body
+                  ));
+              }
           }
       }
       

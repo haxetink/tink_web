@@ -8,6 +8,7 @@ class RunTests {
 		Runner.run(TestBatch.make([
 			new ProxyTest(),
 			new DispatchTest(),
+			new RawTest(),
 		])).handle(Runner.exit);
 	}
 }
