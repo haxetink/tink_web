@@ -129,5 +129,5 @@ public function dashboard(user:User) {
 `user`'s type can either be `User`, or `Option<User>`:
 
 - If it is `User`, the router will return `401 Unauthorized` if there is no user in the current context.
-- If it is `Option<User>`, the router will inject the `None` value to the route, if there is no user in the current context.
+- If it is `Option<User>`, the router will inject the `None` value to the route if there is no user in the current context, otherwise it would be `Some(user)`.
 
