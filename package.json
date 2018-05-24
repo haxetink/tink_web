@@ -3,12 +3,10 @@
   "version": "0.0.0",
   "description": "",
   "scripts": {
-    "haxelib": "haxelib",
-    "travix": "neko travix.n",
-    "postinstall": "lix download && haxe -lib travix -main travix.Travix -neko travix.n"
+    "travix": "haxelib run travix",
+    "postinstall": "lix download"
   },
   "dependencies": {
-    "haxeshim": "0.6.3",
-    "lix.pm": "*"
+    "lix": "=15.1.1"
   }
 }
