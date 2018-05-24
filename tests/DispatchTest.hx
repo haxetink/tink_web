@@ -55,28 +55,28 @@ class DispatchTest {
   
   public function new() {}
   
-  @:variant({ flag: true }, target.get('/flag/'))
-  @:variant({ number: 123 }, target.get('/count/'))
-  @:variant({ number: 321 }, target.get('/count/321'))
-  @:variant({ hello: 'world' }, target.get('/'))
-  @:variant('<p>Hello world</p>', target.get('/', []))
-  @:variant({ hello: 'haxe' }, target.get('/haxe'))
-  @:variant("yo", target.get('/yo'))
-  @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, target.get('/sub/1/2/test/yo?c=3&d=4'))
+  @:variant({ flag: true }, get('/flag/'))
+  @:variant({ number: 123 }, get('/count/'))
+  @:variant({ number: 321 }, get('/count/321'))
+  @:variant({ hello: 'world' }, get('/'))
+  @:variant('<p>Hello world</p>', get('/', []))
+  @:variant({ hello: 'haxe' }, get('/haxe'))
+  @:variant("yo", get('/yo'))
+  @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, get('/sub/1/2/test/yo?c=3&d=4'))
   @:variant({ foo: ([ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ]:Array<Dynamic>) },
-     target.get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
-  @:variant({ foo: 'hey', bar: 4 }, target.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
-  @:variant({ foo: 'hey', bar: 4 }, target.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
-  @:variant('application/json', target.get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json')]))
+     get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
+  @:variant({ foo: 'hey', bar: 4 }, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
+  @:variant({ foo: 'hey', bar: 4 }, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
+  @:variant('application/json', get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json')]))
   public function dispatch(value:Dynamic, req, ?session)
     return expect(value, req, session);
   
   
-  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.get('/count/foo'))
-  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.get('/sub/1/2/test/yo'))
-  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.req('/post', POST, [], 'bar=4'))
-  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'))
-  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, target.req('/post', POST, [], 'bar=5&foo=hey'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, get('/count/foo'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, get('/sub/1/2/test/yo'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=5&foo=hey'))
   public function dispatchError(code:Int, req, ?session)
     return shouldFail(code, req, session);
   
@@ -101,21 +101,21 @@ class DispatchTest {
     return shouldFail(NotAcceptable, multipartReq());
   #end
   
-  @:variant({ foo: 'bar' }, target.get('/sub/1/2/whatever'))
-  @:variant({ id: -1 }, target.get('/anonOrNot'), DispatchTest.anon)
-  @:variant({ id: 1 }, target.get('/anonOrNot'))
-  @:variant({ id: 4 }, target.get('/anonOrNot'), DispatchTest.loggedin(true, 4))
-  @:variant({ admin: true }, target.get('/withUser'))
-  @:variant({ admin: false }, target.get('/withUser'), DispatchTest.loggedin(false, 2))
+  @:variant({ foo: 'bar' }, get('/sub/1/2/whatever'))
+  @:variant({ id: -1 }, get('/anonOrNot'), DispatchTest.anon)
+  @:variant({ id: 1 }, get('/anonOrNot'))
+  @:variant({ id: 4 }, get('/anonOrNot'), DispatchTest.loggedin(true, 4))
+  @:variant({ admin: true }, get('/withUser'))
+  @:variant({ admin: false }, get('/withUser'), DispatchTest.loggedin(false, 2))
   public function auth(value:Dynamic, req, ?session)
     return expect(value, req, session);
   
-  @:variant(tink.core.Error.ErrorCode.Unauthorized, target.get('/withUser'), DispatchTest.anon)
-  @:variant(tink.core.Error.ErrorCode.Unauthorized, target.get('/'), DispatchTest.anon)
-  @:variant(tink.core.Error.ErrorCode.Unauthorized, target.get('/haxe'), DispatchTest.anon)
-  @:variant(tink.core.Error.ErrorCode.Forbidden, target.get('/noaccess'))
-  @:variant(tink.core.Error.ErrorCode.Forbidden, target.get('/sub/2/2/'))
-  @:variant(tink.core.Error.ErrorCode.Forbidden, target.get('/sub/1/1/whatever'))
+  @:variant(tink.core.Error.ErrorCode.Unauthorized, get('/withUser'), DispatchTest.anon)
+  @:variant(tink.core.Error.ErrorCode.Unauthorized, get('/'), DispatchTest.anon)
+  @:variant(tink.core.Error.ErrorCode.Unauthorized, get('/haxe'), DispatchTest.anon)
+  @:variant(tink.core.Error.ErrorCode.Forbidden, get('/noaccess'))
+  @:variant(tink.core.Error.ErrorCode.Forbidden, get('/sub/2/2/'))
+  @:variant(tink.core.Error.ErrorCode.Forbidden, get('/sub/1/1/whatever'))
   public function authError(code, req, ?session)
     return shouldFail(code, req, session);
   
@@ -140,18 +140,6 @@ class DispatchTest {
         case Success(_): new Assertion(false, 'Expected Failure but got Success', pos);
         case Failure(e): assert(e.code == code, null, pos);
       });
-  }
-  
-  function get(url, ?headers)
-    return req(url, GET, headers);
-  
-  function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:IdealSource) {
-    if (headers == null)
-      headers = [new HeaderField('accept', 'application/json')];
-      
-    if (body == null)
-      body = Source.EMPTY;
-    return new IncomingRequest('1.2.3.4', new IncomingRequestHeader(method, url, '1.1', headers), Plain(cast body));
   }
   
 }

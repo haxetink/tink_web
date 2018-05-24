@@ -9,6 +9,7 @@ class RunTests {
 			new ProxyTest(),
 			new DispatchTest(),
 			new RawTest(),
+			new TestRpc(),
 		])).handle(Runner.exit);
 	}
 }
