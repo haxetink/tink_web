@@ -168,6 +168,7 @@ class Context {
   
 }
 
+@:allow(tink.web.routing)
 class AuthedContext<U, S:Session<U>> extends Context {
   
   public var session(default, null):Lazy<S>;
