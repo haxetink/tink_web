@@ -1,1 +1,5 @@
-/bin
+bin
+!bin/node
+bin/node/tests.js
+node_modules
+/travix.n

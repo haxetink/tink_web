@@ -1,0 +1,6 @@
+# @install: lix --silent download "gh://github.com/haxetink/tink_unittest#68da3b6b187181dbc6bb2d2f71c824fbd7a9cf81" into tink_unittest/0.5.5/github/68da3b6b187181dbc6bb2d2f71c824fbd7a9cf81
+-D tink_unittest=0.5.5
+-cp ${HAXE_LIBCACHE}/tink_unittest/0.5.5/github/68da3b6b187181dbc6bb2d2f71c824fbd7a9cf81/src
+--macro tink.unit.AssertionBufferInjector.use()
+-lib tink_syntaxhub
+-lib tink_testrunner

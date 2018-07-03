@@ -4,7 +4,6 @@ import haxe.Constraints.IMap;
 import haxe.PosInfos;
 import haxe.Timer;
 import haxe.io.Bytes;
-import haxe.unit.TestCase;
 import tink.core.Error.ErrorCode;
 import tink.http.Header;
 import tink.http.Header.HeaderField;
@@ -15,17 +14,22 @@ import tink.io.Source;
 import tink.web.Session;
 import tink.web.routing.Context;
 import tink.web.routing.Router;
+import tink.testrunner.*;
+import tink.unit.Assert.*;
+import deepequal.DeepEqual.*;
 //import tink.web.helpers.AuthResult;
-import tink.io.IdealSource;
 
 //import tink.web.Request;
 //import tink.web.Response;
 //import tink.web.Router;
 import haxe.ds.Option;
 
+using tink.io.Source;
 using tink.CoreApi;
 
-class DispatchTest extends TestCase {
+@:asserts
+@:allow(tink.unit)
+class DispatchTest {
   
   static function loggedin(admin:Bool, id:Int = 1):Session<{ admin: Bool, id:Int }>
     return {
@@ -39,7 +43,7 @@ class DispatchTest extends TestCase {
     
   static var f = new Fake();
   
-  static public function exec(req, ?session):Promise<OutgoingResponse> {
+  public static function exec(req, ?session):Promise<OutgoingResponse> {
     
     if (session == null)
       session = loggedin(true);
@@ -49,194 +53,93 @@ class DispatchTest extends TestCase {
         .route(Context.authed(req, function (_) return session));
   }
   
-  function expect<A>(value:A, req, ?session, ?pos) {
-    
-    var succeeded = false;
-    
-    exec(req, session).handle(function (o) {
-      if (!o.isSuccess())
-        trace(o);
-      var o = o.sure();
-      if (o.header.statusCode != 200)
-        fail('Request to ${req.header.uri} failed because ${o.header.reason}', pos);
-      else
-        o.body.all().handle(function (b) {
-          structEq(
-            value, 
-            if (Std.is(value, String)) cast b.toString()
-            else haxe.Json.parse(b.toString()),
-            pos
-          );
-          succeeded = true;
-        });
-    });
-    
-    assertTrue(succeeded);
-  }  
+  public function new() {}
   
-  function shouldFail(e:ErrorCode, req, ?session, ?pos) {
-    var failed = false;
-    
-    exec(req, session).recover(OutgoingResponse.reportError).handle(function (o) {
-      assertEquals(e, o.header.statusCode, pos);  
-      failed = true;
-    });
-    
-    assertTrue(failed);
-  }
+  @:variant({ flag: true }, get('/flag/'))
+  @:variant({ number: 123 }, get('/count/'))
+  @:variant({ number: 321 }, get('/count/321'))
+  @:variant({ hello: 'world' }, get('/'))
+  @:variant('<p>Hello world</p>', get('/', []))
+  @:variant({ hello: 'haxe' }, get('/haxe'))
+  @:variant("yo", get('/yo'))
+  @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, get('/sub/1/2/test/yo?c=3&d=4'))
+  @:variant({ foo: ([ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ]:Array<Dynamic>) },
+     get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
+  @:variant({ foo: 'hey', bar: 4 }, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
+  @:variant({ foo: 'hey', bar: 4 }, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
+  @:variant('application/json', get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json')]))
+  public function dispatch(value:Dynamic, req, ?session)
+    return expect(value, req, session);
   
-  function testDispatch() {
-      
-    expect({ hello: 'world' }, get('/'));
-    expect('<p>Hello world</p>', get('/', []));
-    expect({ hello: 'haxe' }, get('/haxe'));
-    expect("yo", get('/yo'));
-    expect( { a: 1, b: 2, blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, get('/sub/1/2/test/yo?c=3&d=4'));
-    
-    shouldFail(ErrorCode.UnprocessableEntity, get('/sub/1/2/test/yo'));
-    var complex: { foo: Array<{ ?x: String, ?y:Int, z:Float }> } = { foo: [ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ] };
-    expect(complex, get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'));
-    
-    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4'));
-    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'));
-    shouldFail(ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=5&foo=hey'));
-    
-    expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'));
-    expect({ foo: 'hey', bar: 4 }, req('/post', POST, [new HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })));
-    
-  }
   
-  function testMultipart() {
-    //TODO: somehow, posting multipart gets us nowhere
-    expect({
-      content: 'GIF87a.............,...........D..;',
-      name: 'r.gif',
-    }, req('/upload', POST, [
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, get('/count/foo'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, get('/sub/1/2/test/yo'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=4'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'))
+  @:variant(tink.core.Error.ErrorCode.UnprocessableEntity, req('/post', POST, [], 'bar=5&foo=hey'))
+  public function dispatchError(code:Int, req, ?session)
+    return shouldFail(code, req, session);
+  
+  
+  function multipartReq()
+    return req('/upload', POST, [
       new HeaderField('Content-Type', 'multipart/form-data; boundary=----------287032381131322'),
       new HeaderField('Content-Length', 514),
     ], 
-'------------287032381131322
-Content-Disposition: form-data; name="datafile1"; filename="r.gif"
-Content-Type: image/gif
-
-GIF87a.............,...........D..;
-------------287032381131322
-Content-Disposition: form-data; name="datafile2"; filename="g.gif"
-Content-Type: image/gif
-
-GIF87a.............,...........D..;
-------------287032381131322
-Content-Disposition: form-data; name="datafile3"; filename="b.gif"
-Content-Type: image/gif
-
-GIF87a.............,...........D..;
-------------287032381131322--
-'));
-
+      '------------287032381131322\r\nContent-Disposition: form-data; name="datafile1"; filename="r.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile2"; filename="g.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322\r\nContent-Disposition: form-data; name="datafile3"; filename="b.gif"\r\nContent-Type: image/gif\r\n\r\nGIF87a.............,...........D..;\r\n------------287032381131322--\r\n'
+    );
+  
+  #if tink_multipart
+  public function multipart() {
+    return expect({
+      content: 'GIF87a.............,...........D..;',
+      name: 'r.gif',
+    }, multipartReq());
+  }
+  #else
+  public function multipart()
+    return shouldFail(NotAcceptable, multipartReq());
+  #end
+  
+  @:variant({ foo: 'bar' }, get('/sub/1/2/whatever'))
+  @:variant({ id: -1 }, get('/anonOrNot'), DispatchTest.anon)
+  @:variant({ id: 1 }, get('/anonOrNot'))
+  @:variant({ id: 4 }, get('/anonOrNot'), DispatchTest.loggedin(true, 4))
+  @:variant({ admin: true }, get('/withUser'))
+  @:variant({ admin: false }, get('/withUser'), DispatchTest.loggedin(false, 2))
+  public function auth(value:Dynamic, req, ?session)
+    return expect(value, req, session);
+  
+  @:variant(tink.core.Error.ErrorCode.Unauthorized, get('/withUser'), DispatchTest.anon)
+  @:variant(tink.core.Error.ErrorCode.Unauthorized, get('/'), DispatchTest.anon)
+  @:variant(tink.core.Error.ErrorCode.Unauthorized, get('/haxe'), DispatchTest.anon)
+  @:variant(tink.core.Error.ErrorCode.Forbidden, get('/noaccess'))
+  @:variant(tink.core.Error.ErrorCode.Forbidden, get('/sub/2/2/'))
+  @:variant(tink.core.Error.ErrorCode.Forbidden, get('/sub/1/1/whatever'))
+  public function authError(code, req, ?session)
+    return shouldFail(code, req, session);
+  
+  
+  static function expect(value:Dynamic, req, ?session, ?pos:PosInfos) {
+    return exec(req, session).next(function (o):Promise<Assertion>
+      return if (o.header.statusCode != 200)
+        new Assertion(false, 'Request to ${req.header.url} failed because ${o.header.reason} (${o.header.statusCode.toInt()})');
+      else
+        o.body.all().next(function (b)
+          return if (Std.is(value, String))
+            assert(compare(value, b.toString(), pos), null, pos)
+          else
+            assert(compare(value, haxe.Json.parse(b.toString()), pos), null, pos)
+        )
+    );
   }
   
-  function testAuth() {
-    shouldFail(ErrorCode.Unauthorized, get('/withUser'), anon);
-    shouldFail(ErrorCode.Unauthorized, get('/'), anon);
-    shouldFail(ErrorCode.Unauthorized, get('/haxe'), anon);
-    shouldFail(ErrorCode.Forbidden, get('/noaccess'));
-    shouldFail(ErrorCode.Forbidden, get('/sub/2/2/'));
-    shouldFail(ErrorCode.Forbidden, get('/sub/1/1/whatever'));
-    expect({ foo: 'bar' }, get('/sub/1/2/whatever'));
-    
-    expect({ id: -1 }, get('/anonOrNot'), anon);
-    expect({ id: 1 }, get('/anonOrNot'));
-    expect({ id: 4 }, get('/anonOrNot'), loggedin(true, 4));
-    expect({ admin: true }, get('/withUser'));
-    expect({ admin: false }, get('/withUser'), loggedin(false, 2));
+  static function shouldFail(code, req, ?session, ?pos:PosInfos) {
+    return exec(req, session)
+      .map(function(o) return switch o {
+        case Success(_): new Assertion(false, 'Expected Failure but got Success', pos);
+        case Failure(e): assert(e.code == code, null, pos);
+      });
   }
-  
-  function get(url, ?headers)
-    return req(url, GET, headers);
-  
-  function req(url:String, ?method = tink.http.Method.GET, ?headers, ?body:Source) {
-    if (headers == null)
-      headers = [new HeaderField('accept', 'application/json')];
-      
-    if (body == null)
-      body = Empty.instance;
-    return new IncomingRequest('1.2.3.4', new IncomingRequestHeader(method, url, '1.1', headers), Plain(body));
-  }
-  
-  //TODO: this is a useless duplication with tink_json tests
-  function fail( reason:String, ?c : PosInfos ) : Void {
-    currentTest.done = true;
-    currentTest.success = false;
-    currentTest.error   = reason;
-    currentTest.posInfos = c;
-    throw currentTest;
-  }
-  
-  function structEq<T>(expected:T, found:T, ?pos) {
-    
-    currentTest.done = true;
-    
-    if (expected == found) return;
-    
-    var eType = Type.typeof(expected),
-        fType = Type.typeof(found);
-    if (!eType.equals(fType))    
-      fail('$found should be $eType but is $fType', pos);
-    
-    switch eType {
-      case TNull, TInt, TFloat, TBool, TClass(String), TUnknown:
-        assertEquals(expected, found, pos);
-      case TFunction:
-        throw 'not implemented';
-      case TObject:
-        for (name in Reflect.fields(expected)) {
-          structEq(Reflect.field(expected, name), Reflect.field(found, name), pos);
-        }
-      case TClass(Array):
-        var expected:Array<T> = cast expected,
-            found:Array<T> = cast found;
-            
-        if (expected.length != found.length)
-          fail('expected $expected but found $found', pos);
-        
-        for (i in 0...expected.length)
-          structEq(expected[i], found[i], pos);
-          
-      case TClass(_) if (Std.is(expected, IMap)):
-        var expected = cast (expected, IMap<Dynamic, Dynamic>);
-        var found = cast (found, IMap<Dynamic, Dynamic>);
-        
-        for (k in expected.keys()) {
-          structEq(expected.get(k), found.get(k), pos);
-        }
-        
-      case TClass(Date):
-        
-        var expected:Date = cast expected,
-            found:Date = cast found;
-        
-        if (expected.getSeconds() != found.getSeconds() || expected.getMinutes() != found.getMinutes())//python seems to mess up time zones and other stuff too ... -.-
-          fail('expected $expected but found $found', pos);    
-          
-      case TClass(Bytes):
-        
-        var expected = (cast expected : Bytes).toHex(),
-            found = (cast found : Bytes).toHex();
-        
-        if (expected != found)
-          fail('expected $expected but found $found', pos);
-            
-      case TClass(cl):
-        throw 'comparing $cl not implemented';
-        
-      case TEnum(e):
-        
-        var expected:EnumValue = cast expected,
-            found:EnumValue = cast found;
-            
-        assertEquals(Type.enumConstructor(expected), Type.enumConstructor(found), pos);
-        structEq(Type.enumParameters(expected), Type.enumParameters(found), pos);
-    }
-  }  
   
 }

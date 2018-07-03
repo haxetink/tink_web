@@ -21,8 +21,8 @@ class Proxify {
       case SingleCompound(name, type):
         Some(write(macro $i{name}, type.toComplex()));
       case Mixed(sep, com, res):
-        var ret:Array<{ field:String, expr: Expr }> = [];
-        
+        var ret = [];
+        EObjectDecl(ret);//just for type inference
         for (f in sep)
           ret.push({ field: f.name, expr: macro $i{f.name} });
           
@@ -83,11 +83,12 @@ class Proxify {
       pos: ctx.pos,
       pack: ['tink', 'web'],
       name: ctx.name,
+      meta: [{name: ':pure', pos: ctx.pos}],
       fields: [for (f in routes) {
         pos: f.field.pos,
         name: f.field.name,
         kind: FFun({
-          args: [for (arg in f.signature) { name: arg.name, type: arg.type.toComplex(), opt: arg.optional }],
+          args: [for (arg in f.signature) if(arg.name != 'user') { name: arg.name, type: arg.type.toComplex(), opt: arg.optional }],
           expr: {
             
             var call = [];
@@ -125,7 +126,7 @@ class Proxify {
                   case Some(v):
                     endPoint = macro $endPoint.sub({ headers: [
                       new tink.http.Header.HeaderField('content-type', $v{v}),
-                      //new tink.http.Header.HeaderField('content-length', __body__.length),
+                      new tink.http.Header.HeaderField('content-length', (__body__:String).length),
                     ]});
                   case None:
                 }
@@ -137,8 +138,25 @@ class Proxify {
                     cast $v{method}, 
                     __body__, 
                     ${switch call.response {
-                      case RData(t): MimeType.readers.get(f.produces, t, f.field.pos).generator;
-                      default: macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                      case RData(t):
+                        switch t.isSubTypeOf(Context.getType('tink.web.Response'), f.field.pos) {
+                          case Success(TAbstract(_, [t])):
+                            macro function(header, body) 
+                              return tink.io.Source.RealSourceTools.all(body)
+                                .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
+                                .next(function(parsed) return new tink.web.Response(header, parsed));
+                          case Success(_): throw 'unreachable';
+                          case Failure(_):
+                            MimeType.readers.get(f.produces, t, f.field.pos).generator;
+                        }
+                      case ROpaque(t):
+                        switch haxe.macro.Context.getType('tink.http.Response.IncomingResponse').isSubTypeOf(t) {
+                          case Success(_):
+                            var ct = t.toComplex();
+                            macro function (header, body):tink.core.Promise<$ct> return (new tink.http.Response.IncomingResponse(header, body):$ct);
+                          default: 
+                            macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                        }
                     }}
                   );
                 };

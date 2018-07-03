@@ -1,28 +1,19 @@
 sudo: required
 dist: trusty
 
-language: haxe
+language: node_js
+node_js: 6
 
 os:
   - linux
-  - osx
-  
-haxe:
-  - "3.2.1"
-  - development
-  
-matrix:
-  allow_failures:
-    - haxe: development
-    
+      
 install:
-  - haxelib install travix
-  - haxelib run travix install
+  - npm install
 
 script:
-  - haxelib run travix neko
-  - haxelib run travix node
-  - haxelib run travix php
+  # - npm run travix neko .
+  - npm run travix node
+  - npm run travix php
 
 env:
   - secure: "MamnIjFbl+sRoiwwiy3dcCSX1RuGPh2E1O7YeMIYfr0/MCogWQ2Boeg+Y0R+DCA3+MkfNWqWQzfdECpMVOByyYjWmkVbGZVcORI8Bdz+ICiFUTLdGZ3L3HqRBvtqn0wrFLwDeIGhjlfk+tmUcNDfv+L4ao6flrJ6wy+/GbL4kLQ="

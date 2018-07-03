@@ -1,28 +1,59 @@
 package;
 
-import deepequal.DeepEqual;
-import haxe.unit.TestCase;
+import deepequal.DeepEqual.compare;
+import tink.http.Request;
+import tink.http.Response;
 import tink.http.Client;
-import tink.http.Response.OutgoingResponse;
-import tink.http.containers.LocalContainer;
+import tink.http.Container;
+import tink.http.clients.*;
+import tink.http.containers.*;
 import tink.url.Host;
 import tink.web.proxy.Remote;
+import tink.unit.Assert.assert;
 
 using tink.CoreApi;
 
-class ProxyTest extends TestCase {
+@:asserts
+class ProxyTest {
+  
+  var container:LocalContainer;
+  var client:Client;
+  var fake:Fake;
+  var proxy:Remote<Fake>;
 
-  function testProxy() {
-    var c = new LocalContainer();
-    var client = new LocalContainerClient(c);
-    var f = new Fake();
-    
-    c.run(function (req) {
+  public function new() {
+    container = new LocalContainer();
+    client = new LocalContainerClient(container);
+    fake = new Fake();
+    container.run(function (req:IncomingRequest) {
       return DispatchTest.exec(req).recover(OutgoingResponse.reportError);
     });
-    
-    var p = new tink.web.proxy.Remote<Fake>(client, new RemoteEndpoint(new Host('localhost', 80)));
-    var c:Fake.Complex = { foo: [ { z: 3, x: '5', y: 6 } ] };
-    p.complex(c).handle(function (o) assertEquals(Noise, DeepEqual.compare(c, o.sure()).sure()));
+    proxy = new Remote<Fake>(client, new RemoteEndpoint(new Host('localhost', 80)));
   }
+  
+  public function complex() {
+    var c:Fake.Complex = { foo: [ { z: 3, x: '5', y: 6 } ] };
+    return proxy.complex(c).map(function (o) return assert(compare(c, o.sure())));
+  }
+  
+  public function typed() {
+    return proxy.typed()
+      .next(function (o) {
+        asserts.assert(o.header.contentType().sure().fullType == 'application/json');
+        asserts.assert(o.body.message == 'This is typed!');
+        asserts.assert((o:{message:String}).message == 'This is typed!');
+        return asserts.done();
+      });
+  }
+  
+  public function ripUserArg() {
+    return proxy.anonOrNot()
+      .next(function (o) return assert(o.id > -2));
+  }
+  
+  // TODO: failing
+  // public function header() {
+  //   var accept = 'application/json';
+  //   return proxy.headers({accept: accept}).map(function (o) return assert(o.sure() == accept));
+  // }
 }

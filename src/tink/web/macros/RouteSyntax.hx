@@ -160,7 +160,7 @@ class RouteSyntax {
           
           var argsByName = [for (a in args) a.name => { arg: a, special: ACapture } ];
           
-          function addSpecial(pos:Position, name:String, special)
+          function addSpecial(pos:Position, name:String, special:Type->RouteArgKind)
             switch argsByName[name] {
               case null: pos.error('unknown parameter `$name`');
               case v:

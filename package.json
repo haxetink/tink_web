@@ -1,0 +1,12 @@
+{
+  "name": "tink_web",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "travix": "haxelib run travix",
+    "postinstall": "lix download"
+  },
+  "dependencies": {
+    "lix": "=15.1.1"
+  }
+}

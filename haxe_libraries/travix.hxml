@@ -1,0 +1,7 @@
+# @run: haxelib run-dir travix ${HAXE_LIBCACHE}/travix/0.11.3/haxelib
+# @post-install: cd ${HAXE_LIBCACHE}/travix/0.11.3/haxelib && haxe -cp src --run travix.PostDownload
+# @install: lix --silent download "haxelib:travix#0.11.3" into travix/0.11.3/haxelib
+-D travix=0.11.3
+-cp ${HAXE_LIBCACHE}/travix/0.11.3/haxelib/src
+
+-lib tink_cli

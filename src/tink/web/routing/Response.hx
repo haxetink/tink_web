@@ -1,6 +1,7 @@
 package tink.web.routing;
 
 import haxe.io.Bytes;
+import httpstatus.HttpStatusCode;
 import tink.http.Response;
 import tink.http.Header;
 
@@ -18,21 +19,14 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   #end
   
   @:from static function ofUrl(u:tink.Url):Response {
-    return new OutgoingResponse(
-      new ResponseHeader(
-        302,
-        'Temporary Redirect',
-        [new HeaderField('location', u)]
-      ),
-      ''
-    );
+    return new OutgoingResponse(new ResponseHeader(Found, Found, [new HeaderField('location', u)]), Chunk.EMPTY);
   }
 
-  static public function binary(contentType:String, bytes:Bytes):Response {
+  static public function binary(?code, contentType:String, bytes:Bytes):Response {
     //TODO: calculate ETag
-    return OutgoingResponse.blob(bytes, contentType);
+    return OutgoingResponse.blob(code, bytes, contentType);
   }
     
-  static public function textual(contentType:String, string:String):Response
-    return binary(contentType, Bytes.ofString(string));
+  static public function textual(?code, contentType:String, string:String):Response
+    return binary(code, contentType, Bytes.ofString(string));
 }

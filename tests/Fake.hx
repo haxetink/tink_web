@@ -4,17 +4,20 @@ import haxe.ds.Option;
 import haxe.io.Bytes;
 import tink.core.Either;
 import tink.http.Response;
-import tink.io.Source;
 import tink.web.forms.FormFile;
 import tink.web.routing.Response;
+
+using tink.io.Source;
 
 typedef Complex = { 
   foo: Array<{ ?x: String, ?y:Int, z:Float }>
 }
 
+
 class Fake {
   
   public function new() {}
+  @:sub('/recurse/$id') public function recurse(id:String) return new Fake();
   
   @:get public function anonOrNot(user:Option<{ id: Int }>) 
     return {
@@ -35,23 +38,48 @@ class Fake {
   @:get public function complex(query: Complex, ?bar:String) 
     return query;
   
-  @:post public function streaming(body:Source)
-    return body.all();
+  // @:post public function streaming(body:RealSource)
+  //   return body.all();
     
   @:post public function buffered(body:Bytes)
     return body;
     
   @:post public function textual(body:String)
     return body;
+    
+  @:statusCode(201)
+  @:post public function statusCode()
+    return 'Done';
+    
+  @:statusCode(307)
+  @:get('/statusCode') public function redirectStatusCode()
+    return tink.Url.parse('https://example.com');
   
   @:get public function headers(header: { accept:String } ) {
     return header.accept;
   }    
   
+  @:get public function typed() {
+    return new tink.web.Response(
+      new tink.http.Response.ResponseHeader(200, 'OK', []),
+      {message: 'This is typed!'}
+    );
+  }    
+  
   @:consumes('application/json')
   @:post public function enm(body:{ field: Either<String, String> })
     return 'ok';
-  
+
+  @:get('/flag/$flag')  
+  @:get('/flag/')  
+  public function flag(?flag:Bool = true) 
+    return { flag: flag };
+
+  @:get('/count/$number')  
+  @:get('/count/')  
+  public function count(?number:Int = 123) 
+    return { number: number };
+
   @:restrict(true)
   @:html(function (o) return '<p>Hello ${o.hello}</p>')
   @:get('/$who')
@@ -61,13 +89,14 @@ class Fake {
       hello: who
     };
   }
-  
+
   @:post 
   public function upload(body: { datafile1: FormFile } ) {
-    return body.datafile1.read().all() >> function (b:Bytes) return {
-      name: body.datafile1.fileName,
-      content: b.toString(),
-    };
+    return body.datafile1.read().all()
+      .next(function (chunk) return {
+        name: body.datafile1.fileName,
+        content: chunk.toString(),
+      });
   }
   
   @:post public function post(body: { foo:String, bar: Int }) 
