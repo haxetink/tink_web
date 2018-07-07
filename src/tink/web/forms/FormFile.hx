@@ -39,9 +39,9 @@ abstract FormFile(UploadedFile) {
   
   @:from static function ofJson(rep:JsonFileRep):FormFile {
     var data = rep.get();
-    return new FormFile(ofBlob(data.fileName, data.mimeType, data.content));
+    return ofBlob(data.fileName, data.mimeType, data.content);
   }
   
-  static inline public function ofBlob(name:String, type:String, data:Bytes):UploadedFile 
-    return UploadedFile.ofBlob(name, type, data);
+  static inline public function ofBlob(name:String, type:String, data:Bytes):FormFile 
+    return new FormFile(UploadedFile.ofBlob(name, type, data));
 }
