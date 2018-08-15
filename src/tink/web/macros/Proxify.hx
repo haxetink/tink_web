@@ -126,7 +126,7 @@ class Proxify {
                   case Some(v):
                     endPoint = macro $endPoint.sub({ headers: [
                       new tink.http.Header.HeaderField('content-type', $v{v}),
-                      new tink.http.Header.HeaderField('content-length', (__body__:String).length),
+                      new tink.http.Header.HeaderField('content-length', haxe.io.Bytes.ofString(__body__).length),
                     ]});
                   case None:
                 }
