@@ -17,3 +17,14 @@ script:
 
 env:
   - secure: "MamnIjFbl+sRoiwwiy3dcCSX1RuGPh2E1O7YeMIYfr0/MCogWQ2Boeg+Y0R+DCA3+MkfNWqWQzfdECpMVOByyYjWmkVbGZVcORI8Bdz+ICiFUTLdGZ3L3HqRBvtqn0wrFLwDeIGhjlfk+tmUcNDfv+L4ao6flrJ6wy+/GbL4kLQ="
+
+jobs:
+  include:
+    - stage: deploy
+      os: linux
+      haxe: "3.4.7"
+      script: skip
+      after_success:
+        - haxelib install travix
+        - lix run travix install
+        - lix run travix release
