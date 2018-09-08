@@ -1,24 +1,24 @@
 {
-  "name": "tink_web",
-  "license": "MIT",
-  "tags": [
-    "tink",
-    "http",
-    "routing",
-    "dispatch",
-    "api",
-    "rest"
-  ],
-  "classPath": "src",
-  "contributors": [
-    "back2dos"
-  ],
-  "releasenote": "initial release",
-  "version": "0.0.0",
-  "url": "https://github.com/haxetink/tink_web/",
-  "dependencies": {
-    "tink_json": "",
-    "tink_querystring": "",
-    "tink_http": "gh:haxetink/tink_http"
-  }
+	"name": "tink_web",
+	"license": "MIT",
+	"tags": [
+		"tink",
+		"http",
+		"routing",
+		"dispatch",
+		"api",
+		"rest"
+	],
+	"classPath": "src",
+	"contributors": [
+		"back2dos"
+	],
+	"releasenote": "Merged pure branch",
+	"version": "0.1.0",
+	"url": "https://github.com/haxetink/tink_web/",
+	"dependencies": {
+		"tink_http": "gh:haxetink/tink_http",
+		"tink_json": "",
+		"tink_querystring": ""
+	}
 }
