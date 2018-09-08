@@ -1,30 +1,30 @@
 sudo: required
 dist: trusty
 
-language: node_js
-node_js: 6
-
-os:
-  - linux
-      
-install:
-  - npm install
-
-script:
-  # - npm run travix neko .
-  - npm run travix node
-  - npm run travix php
-
 env:
   - secure: "MamnIjFbl+sRoiwwiy3dcCSX1RuGPh2E1O7YeMIYfr0/MCogWQ2Boeg+Y0R+DCA3+MkfNWqWQzfdECpMVOByyYjWmkVbGZVcORI8Bdz+ICiFUTLdGZ3L3HqRBvtqn0wrFLwDeIGhjlfk+tmUcNDfv+L4ao6flrJ6wy+/GbL4kLQ="
 
 jobs:
   include:
+    - stage: test
+      language: node_js
+      node_js: 8
+      os:
+        - linux
+        # - osx
+      install:
+        - npm i -g lix haxe-travix
+        - lix download
+      script:
+        - travix node
+        - travix php
+    
     - stage: deploy
-      os: linux
+      language: haxe
       haxe: "3.4.7"
+      os: linux
       script: skip
       after_success:
         - haxelib install travix
-        - lix run travix install
-        - lix run travix release
+        - haxelib run travix install
+        - haxelib run travix release
