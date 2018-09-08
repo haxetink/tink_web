@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Merged pure branch",
-	"version": "0.1.0",
+	"releasenote": "Add deploy script",
+	"version": "0.1.1",
 	"url": "https://github.com/haxetink/tink_web/",
 	"dependencies": {
 		"tink_http": "gh:haxetink/tink_http",
