@@ -138,6 +138,15 @@ class Proxify {
                     cast $v{method}, 
                     __body__, 
                     ${switch call.response {
+                      case RData(_.reduce() => TEnum(_.get() => {pack: ['tink', 'core'], name: 'Noise'}, _)):
+                        macro function(header, body):tink.core.Promise<tink.core.Noise> {
+                          return 
+                            if(header.statusCode >= 400)  
+                              tink.io.Source.RealSourceTools.all(body)
+                                .next(function(chunk) return new Error(header.statusCode, chunk))
+                            else
+                              tink.core.Promise.NOISE;
+                        }
                       case RData(t):
                         switch t.isSubTypeOf(Context.getType('tink.web.Response'), f.field.pos) {
                           case Success(TAbstract(_, [t])):

@@ -51,6 +51,10 @@ class Fake {
   @:post public function statusCode()
     return 'Done';
     
+  @:params(error in query)
+  @:get public function noise(?error:Bool):Promise<Noise>
+    return error ? new Error('Errored') : Promise.NOISE;
+    
   @:statusCode(307)
   @:get('/statusCode') public function redirectStatusCode()
     return tink.Url.parse('https://example.com');

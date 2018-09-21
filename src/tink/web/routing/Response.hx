@@ -26,6 +26,10 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
     //TODO: calculate ETag
     return OutgoingResponse.blob(code, bytes, contentType);
   }
+  
+  static public function empty(?code = OK):Response {
+    return new OutgoingResponse(new ResponseHeader(code, code, [new HeaderField(CONTENT_LENGTH, '0')]), Chunk.EMPTY);
+  }
     
   static public function textual(?code, contentType:String, string:String):Response
     return binary(code, contentType, Bytes.ofString(string));
