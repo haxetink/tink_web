@@ -51,6 +51,30 @@ class ProxyTest {
       .next(function (o) return assert(o.id > -2));
   }
   
+  public function noise() {
+    proxy.noise()
+      .handle(function (o) switch o {
+        case Success(o):
+          asserts.assert(o == Noise);
+          asserts.done();
+        case Failure(e):
+          asserts.fail('Expected Success(Noise)');
+      });
+    return asserts;
+  }
+  
+  public function noiseWithError() {
+    proxy.noise(true)
+      .handle(function (o) switch o {
+        case Success(_):
+          asserts.fail('Expected Failure(error)');
+        case Failure(e):
+          asserts.assert(e.code == 500);
+          asserts.done();
+      });
+    return asserts;
+  }
+  
   // TODO: failing
   // public function header() {
   //   var accept = 'application/json';

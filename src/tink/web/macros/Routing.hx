@@ -380,25 +380,29 @@ class Routing {
                   v[1].pos.error('Cannot have multiple @:html directives');
               }
               
+              var isNoise = t.isSubTypeOf(Context.getType('tink.core.Noise'), Context.currentPos()).isSuccess();
               var isResponse = t.isSubTypeOf(Context.getType('tink.web.Response'), Context.currentPos()).isSuccess();
               
-              for (fmt in route.produces) 
-                formats.push(
-                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
-                    switch t.isSubTypeOf(Context.getType('tink.web.Response'), pos) {
-                      case Success(TAbstract(_, [t])):
-                        macro new tink.http.Response.OutgoingResponse(
-                          __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
-                          ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
-                        );
-                      case Success(_): throw 'unreachable';
-                      case Failure(_):
-                        macro tink.web.routing.Response.textual(
-                          $statusCode,
-                          $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
-                        );
-                    }
-                  });
+              if(isNoise)
+                formats.push(macro return tink.web.routing.Response.empty());
+              else
+                for (fmt in route.produces) 
+                  formats.push(
+                    macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
+                      switch t.isSubTypeOf(Context.getType('tink.web.Response'), pos) {
+                        case Success(TAbstract(_, [t])):
+                          macro new tink.http.Response.OutgoingResponse(
+                            __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
+                            ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
+                          );
+                        case Success(_): throw 'unreachable';
+                        case Failure(_):
+                          macro tink.web.routing.Response.textual(
+                            $statusCode,
+                            $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
+                          );
+                      }
+                    });
                 
               macro @:pos(pos) tink.core.Promise.lift($result).next(
                 function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {

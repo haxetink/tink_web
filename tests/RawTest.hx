@@ -33,4 +33,30 @@ class RawTest {
     return client.request(new OutgoingRequest(new OutgoingRequestHeader(method, '/statusCode', []), ''))
       .next(function(res) return assert(res.header.statusCode == code));
   }
+  
+  public function noise() {
+    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/noise', []), ''))
+      .next(function(res) {
+        asserts.assert(res.header.statusCode == 200);
+        return res.body.all();
+      })
+      .next(function(chunk) {
+        asserts.assert(chunk.length == 0);
+        return asserts.done();
+      });
+    return asserts;
+  }
+  
+  public function noiseWithError() {
+    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/noise?error=true', []), ''))
+      .next(function(res) {
+        asserts.assert(res.header.statusCode == 500);
+        return res.body.all();
+      })
+      .next(function(chunk) {
+        asserts.assert(chunk.length > 0);
+        return asserts.done();
+      });
+    return asserts;
+  }
 }
