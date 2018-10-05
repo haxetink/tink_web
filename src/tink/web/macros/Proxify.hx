@@ -59,7 +59,6 @@ class Proxify {
     switch combined {
       case Some(v):
         query = macro @:pos(v.pos) $query.concat($v);
-        //trace(v.toString());
       case None:
     }
     
@@ -143,7 +142,7 @@ class Proxify {
                           return 
                             if(header.statusCode >= 400)  
                               tink.io.Source.RealSourceTools.all(body)
-                                .next(function(chunk) return new Error(header.statusCode, chunk))
+                                .next(function(chunk) return new tink.core.Error(header.statusCode, chunk))
                             else
                               tink.core.Promise.NOISE;
                         }
