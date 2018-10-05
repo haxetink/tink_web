@@ -73,6 +73,14 @@ class Fake {
   @:consumes('application/json')
   @:post public function enm(body:{ field: Either<String, String> })
     return 'ok';
+  
+  @:params(v in query)
+  @:get public function enumAbstractString(v:EStr):EStr
+    return v;
+  
+  @:params(v in query)
+  @:get public function enumAbstractInt(v:EInt):EInt
+    return v;
 
   @:get('/flag/$flag')  
   @:get('/flag/')  
@@ -141,4 +149,16 @@ class FakeSub {
   @:get public function whatever() 
     return { foo: 'bar' }
     
+}
+
+@:enum
+abstract EStr(String) {
+  var A = 'a';
+  var B = 'b';
+}
+
+@:enum
+abstract EInt(Int) {
+  var A = 1;
+  var B = 2;
 }

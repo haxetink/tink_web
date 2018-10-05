@@ -75,6 +75,26 @@ class ProxyTest {
     return asserts;
   }
   
+  public function enumAbstractString() {
+    proxy.enumAbstractString(Fake.EStr.A)
+      .next(function (o) {
+        asserts.assert(o == Fake.EStr.A);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function enumAbstractInt() {
+    proxy.enumAbstractInt(Fake.EInt.A)
+      .next(function (o) {
+        asserts.assert(o == Fake.EInt.A);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
   // TODO: failing
   // public function header() {
   //   var accept = 'application/json';
