@@ -311,7 +311,7 @@ class RouteSyntax {
           produces = mimes('produces', produces),
           consumes = mimes('consumes', consumes);
       
-      var result = type.map(function (x) return liftResponse(x.ret, f.pos)),
+      var result:Type = type.map(function (x) return liftResponse(x.ret, f.pos)),
           signature = type.map(function (x) return x.args);
           
       function path(m:MetadataEntry)
