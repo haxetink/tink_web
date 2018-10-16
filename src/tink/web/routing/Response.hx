@@ -11,7 +11,7 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
     return textual('text/plain', s);
   
   @:from static function ofBytes(b:Bytes):Response 
-    return binary('application/octetstream', b);
+    return binary('application/octet-stream', b);
     
   #if tink_template
   @:from static function ofHtml(h:tink.template.Html)
