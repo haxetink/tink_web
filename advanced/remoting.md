@@ -11,7 +11,7 @@
 > it is still advisable to have a separate interface file which will be implemented by the server.
 > So that the client-side code could rely on a clean interface file without server-side specifics which may otherwise be excluded by conditional compilation.
 
-For example, we defined (partially) the API interface of [httpbin.org](http://httpbin.org/) with the following interface.
+For example, we defined (partially) the API of [httpbin.org](http://httpbin.org/) with the following interface file.
 
 ``` haxe
 interface Root {
