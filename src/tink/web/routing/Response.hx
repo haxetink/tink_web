@@ -5,6 +5,7 @@ import httpstatus.HttpStatusCode;
 import tink.http.Response;
 import tink.http.Header;
 
+@:forward
 abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   
   @:from static function ofString(s:String):Response 

@@ -51,6 +51,11 @@ class Fake {
   @:post public function statusCode()
     return 'Done';
     
+  @:header('tink', 'web')
+  @:header('tink_web', 'foobar')
+  @:post public function responseHeader()
+    return 'Done';
+    
   @:params(error in query)
   @:get public function noise(?error:Bool):Promise<Noise>
     return error ? new Error('Errored') : Promise.NOISE;
