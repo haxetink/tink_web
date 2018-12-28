@@ -360,6 +360,13 @@ class Routing {
             case v: v[1].pos.error('Cannot have multiple @:statusCode directives');
           }
           
+          var headers = [for(meta in route.field.meta.extract(':header'))
+            switch meta {
+              case {params: [name, value]}: macro new tink.http.Header.HeaderField($name, $value);
+              case _: meta.pos.error('@:header must have two arguments exactly');
+            }
+          ];
+          
           switch c.response {
             case RData(t):
               var ct = t.toComplex();
@@ -397,10 +404,18 @@ class Routing {
                           );
                         case Success(_): throw 'unreachable';
                         case Failure(_):
-                          macro tink.web.routing.Response.textual(
+                          var e = macro tink.web.routing.Response.textual(
                             $statusCode,
                             $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
                           );
+                          
+                          if(headers.length > 0)
+                            e = macro {
+                              var res = $e;
+                              new tink.http.Response.OutgoingResponse(res.header.concat(${macro $a{headers}}), res.body);
+                            }
+                            
+                          e;
                       }
                     });
                 
@@ -414,12 +429,22 @@ class Routing {
             case ROpaque(_.toComplex() => t):
               var e = macro @:pos(pos) tink.core.Promise.lift($result)
                 .next(function (v:$t):tink.web.routing.Response return v);
-              switch statusCode {
-                case macro null: e;
-                case _: // patch status code:
-                  // TODO: better find a way to assign the status code in the first place
-                  macro $e.next(function (res:tink.http.Response.OutgoingResponse) return new tink.http.Response.OutgoingResponse(
+              switch [statusCode, headers] {
+                case [macro null, []]:
+                  e;
+                case [macro null, _]:
+                  macro $e.next(function(res) return new tink.http.Response.OutgoingResponse(
+                    res.header.concat(${macro $a{headers}}),
+                    res.body
+                  ));
+                case [_, []]:
+                  macro $e.next(function (res) return new tink.http.Response.OutgoingResponse(
                     new tink.http.Response.ResponseHeader($statusCode, res.header.reason, @:privateAccess res.header.fields, res.header.protocol),
+                    res.body
+                  ));
+                case _: 
+                  macro $e.next(function (res) return new tink.http.Response.OutgoingResponse(
+                    new tink.http.Response.ResponseHeader($statusCode, res.header.reason, @:privateAccess res.header.fields.concat(${macro $a{headers}}), res.header.protocol),
                     res.body
                   ));
               }
