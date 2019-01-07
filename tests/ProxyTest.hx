@@ -75,8 +75,8 @@ class ProxyTest {
     return asserts;
   }
   
-  public function enumAbstractString() {
-    proxy.enumAbstractString(Fake.EStr.A)
+  public function enumAbstractStringInQuery() {
+    proxy.enumAbstractStringInQuery(Fake.EStr.A)
       .next(function (o) {
         asserts.assert(o == Fake.EStr.A);
         return Noise;
@@ -85,8 +85,28 @@ class ProxyTest {
     return asserts;
   }
   
-  public function enumAbstractInt() {
-    proxy.enumAbstractInt(Fake.EInt.A)
+  public function enumAbstractIntInQuery() {
+    proxy.enumAbstractIntInQuery(Fake.EInt.A)
+      .next(function (o) {
+        asserts.assert(o == Fake.EInt.A);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function enumAbstractStringInPath() {
+    proxy.enumAbstractStringInPath(Fake.EStr.A)
+      .next(function (o) {
+        asserts.assert(o == Fake.EStr.A);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function enumAbstractIntInPath() {
+    proxy.enumAbstractIntInPath(Fake.EInt.A)
       .next(function (o) {
         asserts.assert(o == Fake.EInt.A);
         return Noise;

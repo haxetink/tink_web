@@ -252,8 +252,33 @@ class Routing {
         case ACapture:
 
           var expected = arg.type.toComplex();
-
-          argExpr = macro @:pos(route.field.pos) switch ($argExpr.parse(function (s:tink.Stringly):$expected return s)) {
+          var enumAbstract = switch arg.type {
+            case TAbstract(_.get() => {module: module, name: name, type: underlying, meta: meta, impl: impl}, _) if(meta.has(':enum')):
+              var path = ('$module.$name').split('.');
+              Some({
+                underlying: underlying, 
+                fields: impl.get().statics.get()
+                  .filter(function(s) return s.meta.has(':enum') && s.meta.has(':impl'))
+                  .map(function(s) return macro $p{path.concat([s.name])})
+                
+              });
+            case _:
+              None;
+          }
+          
+          var parsed = switch enumAbstract {
+            case Some({fields: fields, underlying: underlying}):
+              var ct = underlying.toComplex();
+              ESwitch(
+                macro (s:$ct), 
+                [{expr: macro cast s, values: fields}],
+                macro throw 'Invalid value "' + s + '" for field: ' + $v{arg.name}
+              ).at(route.field.pos);
+            case None:
+              macro @:pos(route.field.pos) s;
+          }
+          
+          argExpr = macro @:pos(route.field.pos) switch $argExpr.parse(function (s:tink.Stringly):$expected return $parsed) {
             case Success(v): v;
             case Failure(e): return tink.core.Promise.lift(e);
           }

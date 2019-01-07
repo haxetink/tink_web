@@ -80,11 +80,17 @@ class Fake {
     return 'ok';
   
   @:params(v in query)
-  @:get public function enumAbstractString(v:EStr):EStr
+  @:get public function enumAbstractStringInQuery(v:EStr):EStr
     return v;
   
   @:params(v in query)
-  @:get public function enumAbstractInt(v:EInt):EInt
+  @:get public function enumAbstractIntInQuery(v:EInt):EInt
+    return v;
+  
+  @:get('enum_abs_str/$v') public function enumAbstractStringInPath(v:EStr):EStr
+    return v;
+  
+  @:get('enum_abs_int/$v') public function enumAbstractIntInPath(v:EInt):EInt
     return v;
 
   @:get('/flag/$flag')  
@@ -160,10 +166,16 @@ class FakeSub {
 abstract EStr(String) {
   var A = 'a';
   var B = 'b';
+  
+  @:to
+  public inline function toStringly():tink.Stringly return this;
 }
 
 @:enum
 abstract EInt(Int) {
   var A = 1;
   var B = 2;
+  
+  @:to
+  public inline function toStringly():tink.Stringly return this;
 }
