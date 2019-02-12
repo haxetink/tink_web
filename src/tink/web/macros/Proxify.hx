@@ -52,19 +52,26 @@ class Proxify {
           macro new tink.CoreApi.NamedWith(${(name:Portion)}, ${val(from.query[name])})
         ].toArray();
         
-    var combined = combine(route.field.pos, RouteSyntax.getPayload(route, PQuery), function (e, t) {
+    var combinedQuery = combine(route.field.pos, RouteSyntax.getPayload(route, PQuery), function (e, t) {
       return macro @:pos(e.pos) new tink.querystring.Builder<$t->tink.web.proxy.Remote.QueryParams>().stringify($e);
     });
     
-    switch combined {
+    switch combinedQuery {
       case Some(v):
         query = macro @:pos(v.pos) $query.concat($v);
       case None:
     }
+        
+    var combinedHeader = combine(route.field.pos, RouteSyntax.getPayload(route, PHeader), function (e, t) {
+      return macro @:pos(e.pos) new tink.querystring.Builder<$t->tink.web.proxy.Remote.HeaderParams>().stringify($e);
+    });
+    
+    var headers = combinedHeader.or(macro null);
     
     return macro this.endpoint.sub({
       path: $a{path},
       query: $query,
+      headers: $headers
     });
   }
   

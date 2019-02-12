@@ -65,7 +65,7 @@ class Fake {
     return tink.Url.parse('https://example.com');
   
   @:get public function headers(header: { accept:String } ) {
-    return header.accept;
+    return {header: header.accept};
   }    
   
   @:get public function typed() {

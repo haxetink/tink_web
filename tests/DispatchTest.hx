@@ -67,7 +67,7 @@ class DispatchTest {
      get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
   @:variant({ foo: 'hey', bar: 4 }, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
   @:variant({ foo: 'hey', bar: 4 }, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
-  @:variant('application/json', get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json')]))
+  @:variant({header: 'application/json'}, get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json')]))
   public function dispatch(value:Dynamic, req, ?session)
     return expect(value, req, session);
   

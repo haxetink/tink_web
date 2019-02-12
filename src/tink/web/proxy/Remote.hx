@@ -110,6 +110,24 @@ abstract QueryParams(Array<NamedWith<Portion, Portion>>) to Array<NamedWith<Port
     }
 }
 
+@:forward
+abstract HeaderParams(Headers) to Headers from Headers {
+  
+  public inline function new() 
+    this = [];
+    
+  public inline function add(name:HeaderName, value:HeaderValue):HeaderParams {
+    this.push(new HeaderField(name, value));
+    return this;
+  }
+    
+  @:to public function flush():HeaderParams
+    return this;
+    
+  @:to public function toString() 
+    return new Header(this).toString();
+}
+
 class RemoteBase<T> {
   
   var client:tink.http.Client;
