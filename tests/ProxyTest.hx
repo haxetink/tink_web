@@ -115,7 +115,6 @@ class ProxyTest {
     return asserts;
   }
   
-  // TODO: failing
   public function header() {
     var accept = 'application/json';
     return proxy.headers({accept: accept}).map(function (o) return assert(o.sure().header == accept));
