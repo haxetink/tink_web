@@ -96,7 +96,7 @@ abstract QueryParams(Array<NamedWith<Portion, Portion>>) to Array<NamedWith<Port
     return this;
   }
     
-  @:to public function flush():QueryParams
+  @:to public inline function flush():QueryParams
     return this;
     
   @:to public function toString() 
@@ -121,7 +121,7 @@ abstract HeaderParams(Headers) to Headers from Headers {
     return this;
   }
     
-  @:to public function flush():HeaderParams
+  @:to public inline function flush():HeaderParams
     return this;
     
   @:to public function toString() 
