@@ -109,8 +109,8 @@ class Routing {
       
       var index = nameIndex[name];
       
-      pattern[index + 2 + depth] = macro true;
-      pattern[index + 2 + depth + named.length] = part(v.path.query[name]);
+      pattern[index + 1 + depth * 2 + named.length * 2] = macro true;
+      pattern[index + 1 + depth * 2 + named.length * 2] = part(v.path.query[name]);
     }
     
     var callArgs = [for (a in funcArgs) 
