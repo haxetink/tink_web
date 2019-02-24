@@ -154,24 +154,22 @@ class Proxify {
                               tink.core.Promise.NOISE;
                         }
                       case RData(t):
-                        switch t.isSubTypeOf(Context.getType('tink.web.Response'), f.field.pos) {
-                          case Success(TAbstract(_, [t])):
+                        switch RouteSyntax.asWebResponse(t) {
+                          case Some(t):
                             macro function(header, body) 
                               return tink.io.Source.RealSourceTools.all(body)
                                 .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
                                 .next(function(parsed) return new tink.web.Response(header, parsed));
-                          case Success(_): throw 'unreachable';
-                          case Failure(_):
-                            MimeType.readers.get(f.produces, t, f.field.pos).generator;
+                            case None:
+                              MimeType.readers.get(f.produces, t, f.field.pos).generator;
                         }
                       case ROpaque(t):
-                        switch haxe.macro.Context.getType('tink.http.Response.IncomingResponse').isSubTypeOf(t) {
-                          case Success(_):
-                            var ct = t.toComplex();
-                            macro function (header, body):tink.core.Promise<$ct> return (new tink.http.Response.IncomingResponse(header, body):$ct);
-                          default: 
-                            macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                        if (Context.getType('tink.http.Response.IncomingResponse').unifiesWith(t)) {
+                          var ct = t.toComplex();
+                          macro function (header, body):tink.core.Promise<$ct> return (new tink.http.Response.IncomingResponse(header, body):$ct);
                         }
+                        else
+                          macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
                     }}
                   );
                 };

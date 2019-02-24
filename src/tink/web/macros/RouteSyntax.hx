@@ -1,5 +1,6 @@
 package tink.web.macros;
 
+import haxe.macro.Context;
 import haxe.macro.Type;
 import haxe.macro.Expr;
 import haxe.ds.Option;
@@ -27,6 +28,17 @@ class RouteSyntax {
     ret;
   }  
   
+  static public function asWebResponse(t:Type) {
+    var res = Context.getType('tink.web.Response');
+    return 
+      if (t.unifiesWith(res)) 
+        switch t.isSubTypeOf(res, (macro null).pos) {
+          case Success(TAbstract(_, [t])): Some(t);
+          default: throw 'assert';
+        }
+      else None;
+  }
+
   static function getCaptured(a:Iterable<RoutePathPart>)
     return [for (p in a) switch p {
       case PConst(_): continue;
@@ -350,10 +362,11 @@ class RouteSyntax {
                 case v: { method: v, path: path(m), }
               }
             ],
-            response: switch result.isSubTypeOf(haxe.macro.Context.getType('tink.web.routing.Response')) {
-              case Success(_): ROpaque(result);
-              default: RData(result);
-            }
+            response: 
+              if (result.unifiesWith(Context.getType('tink.web.routing.Response')))
+                ROpaque(result)
+              else
+                RData(result)
           }));
           
         case [true, v]:

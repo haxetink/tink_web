@@ -412,8 +412,8 @@ class Routing {
                   v[1].pos.error('Cannot have multiple @:html directives');
               }
               
-              var isNoise = t.isSubTypeOf(Context.getType('tink.core.Noise'), Context.currentPos()).isSuccess();
-              var isResponse = t.isSubTypeOf(Context.getType('tink.web.Response'), Context.currentPos()).isSuccess();
+              var isNoise = t.unifiesWith(Context.getType('tink.core.Noise'));
+              // var isResponse = !isNoise && t.unifiesWith(Context.getType('tink.web.Response'));
               
               if(isNoise)
                 formats.push(macro return tink.web.routing.Response.empty());
@@ -421,14 +421,13 @@ class Routing {
                 for (fmt in route.produces) 
                   formats.push(
                     macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
-                      switch t.isSubTypeOf(Context.getType('tink.web.Response'), pos) {
-                        case Success(TAbstract(_, [t])):
+                      switch RouteSyntax.asWebResponse(t) {
+                        case Some(t):
                           macro new tink.http.Response.OutgoingResponse(
                             __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
                             ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
                           );
-                        case Success(_): throw 'unreachable';
-                        case Failure(_):
+                        case None:
                           var e = macro tink.web.routing.Response.textual(
                             $statusCode,
                             $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
@@ -588,7 +587,6 @@ class Routing {
   
   static var IGNORE = macro _;
   
-  
   static function substituteThis(e:Expr)
     return switch e {
       case macro this.$field: 
@@ -600,7 +598,7 @@ class Routing {
     }
   
   static function is(t:Type, name:String)
-    return Context.getType(name).isSubTypeOf(t).isSuccess();
+    return Context.getType(name).unifiesWith(t);//This is odd ... https://github.com/haxetink/tink_web/issues/69
     
   static function parse(loc:ParamLocation, route:Route, payload:ComplexType):Expr 
     return
