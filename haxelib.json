@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Fix for Haxe4p5.",
-	"version": "0.1.4",
+	"releasenote": "Various fixes",
+	"version": "0.1.5",
 	"url": "https://github.com/haxetink/tink_web/",
 	"dependencies": {
 		"tink_http": "",
