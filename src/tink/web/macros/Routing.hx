@@ -422,15 +422,21 @@ class Routing {
                   formats.push(
                     macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
                       switch RouteSyntax.asWebResponse(t) {
-                        case Some(t):
+                        case Some(w):
                           macro new tink.http.Response.OutgoingResponse(
                             __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
-                            ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
+                            ${MimeType.writers.get([fmt], w, pos).generator(macro __data__.body)}
                           );
+                        case None if(t.unifiesWith(Context.getType('tink.io.Source.RealSource'))):
+                          macro new tink.http.Response.OutgoingResponse(
+                            new tink.http.Response.ResponseHeader($statusCode, $statusCode, [new tink.http.Header.HeaderField(CONTENT_TYPE, 'application/octet-stream')]),
+                            tink.io.Source.RealSourceTools.idealize(__data__, function(_) return Source.EMPTY)
+                          );
+                          
                         case None:
                           var e = macro tink.web.routing.Response.textual(
                             $statusCode,
-                            $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
+                            $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator(macro __data__)}
                           );
                           
                           if(headers.length > 0)
@@ -441,7 +447,8 @@ class Routing {
                             
                           e;
                       }
-                    });
+                    }
+                  );
                 
               macro @:pos(pos) tink.core.Promise.lift($result).next(
                 function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
@@ -633,7 +640,7 @@ class Routing {
           cases.push({ 
             values: [macro $v{type}],
             expr: macro @:pos(pos) ctx.allRaw().next(
-              function (b) return ${MimeType.readers.get([type], payload.toType(pos).sure(), pos).generator}(b.toString())
+              function (b) return ${MimeType.readers.get([type], payload.toType(pos).sure(), pos).generator(macro b.toString())}
             )
           });
       }

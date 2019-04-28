@@ -85,7 +85,7 @@ class Proxify {
   
   static function build(ctx:BuildContext):TypeDefinition {
     var routes = RouteSyntax.read(ctx.type, ['application/json'], ['application/json']);
-    return {
+    var t = {
       pos: ctx.pos,
       pack: ['tink', 'web'],
       name: ctx.name,
@@ -96,7 +96,6 @@ class Proxify {
         kind: FFun({
           args: [for (arg in f.signature) if(arg.name != 'user') { name: arg.name, type: arg.type.toComplex(), opt: arg.optional }],
           expr: {
-            
             var call = [];
             
             switch f.kind {
@@ -112,56 +111,59 @@ class Proxify {
                 var contentType = None;
                 
                 var body = combine(f.field.pos, RouteSyntax.getPayload(f, PBody), function (expr, type) {
-                  var writer = 
+                  var ret = 
                     switch f.consumes {
                       case ['application/x-www-form-urlencoded']:
                         contentType = Some('application/x-www-form-urlencoded');
-                        macro new tink.querystring.Builder<$type>().stringify;
+                        macro new tink.querystring.Builder<$type>().stringify(expr);
                       case v: 
                         var w = MimeType.writers.get(v, type.toType().sure(), f.field.pos);
                         contentType = Some(w.type);
-                        w.generator;
+                        w.generator(expr);
                     }
                     
-                  return macro @:pos(expr.pos) ${writer}($expr);
+                  return macro @:pos(expr.pos) $ret;
                 }).or(macro '');
                 
                 var endPoint = makeEndpoint(v.path, f);
                 
                 switch contentType {
                   case Some(v):
-                    endPoint = macro $endPoint.sub({ headers: [
-                      new tink.http.Header.HeaderField('content-type', $v{v}),
-                      new tink.http.Header.HeaderField('content-length', __body__.length),
-                    ]});
+                    var headers = [macro new tink.http.Header.HeaderField('content-type', $v{v})];
+                    if(v != 'application/octet-stream') headers.push(macro new tink.http.Header.HeaderField('content-length', (__body__:Chunk).length));
+                    endPoint = macro $endPoint.sub({ headers: $a{headers} });
                   case None:
                 }
                 
+                var bodyType = contentType == None ? macro:tink.io.RealSource : macro:tink.Chunk;
+                
                 macro @:pos(f.field.pos) {
-                  var __body__:tink.Chunk = $body;
+                  var __body__ = $body;
                   return $endPoint.request(
                     this.client, 
                     cast $v{method}, 
                     __body__, 
                     ${switch call.response {
-                      case RData(_.reduce() => TEnum(_.get() => {pack: ['tink', 'core'], name: 'Noise'}, _)):
-                        macro function(header, body):tink.core.Promise<tink.core.Noise> {
+                      case RData(t) if(t.unifiesWith(Context.getType('tink.io.Source.RealSource'))):
+                        macro function (header, body):tink.core.Promise<tink.io.Source.RealSource> {
                           return 
                             if(header.statusCode >= 400)  
                               tink.io.Source.RealSourceTools.all(body)
                                 .next(function(chunk) return new tink.core.Error(header.statusCode, chunk))
                             else
-                              tink.core.Promise.NOISE;
+                              tink.core.Future.sync(tink.core.Outcome.Success(body));
                         }
+                      case RData(_.reduce() => TEnum(_.get() => {pack: ['tink', 'core'], name: 'Noise'}, _)):
+                        macro function(_) return Noise;
                       case RData(t):
                         switch RouteSyntax.asWebResponse(t) {
                           case Some(t):
                             macro function(header, body) 
                               return tink.io.Source.RealSourceTools.all(body)
-                                .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
+                                .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator(macro chunk)})
                                 .next(function(parsed) return new tink.web.Response(header, parsed));
-                            case None:
-                              MimeType.readers.get(f.produces, t, f.field.pos).generator;
+                          case None:
+                            macro function(e) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator(macro e)};
                         }
                       case ROpaque(t):
                         if (Context.getType('tink.http.Response.IncomingResponse').unifiesWith(t)) {
@@ -188,6 +190,10 @@ class Proxify {
       }],
       kind: TDClass('tink.web.proxy.Remote.RemoteBase'.asTypePath([TPType(ctx.type.toComplex())])),
     }
+    
+    new haxe.macro.Printer().printTypeDefinition(t);
+    return t;
+    
   }
   
   static function remote():Type 

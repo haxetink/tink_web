@@ -56,20 +56,28 @@ abstract MimeType(String) from String to String {
   static public var readers(default, null) = new Registry('reader', [
     'application/json' => function (type:Type, pos:Position) {
       var ct = type.toComplex({ direct: true });
-      return macro @:pos(pos) new tink.json.Parser<$ct>().tryParse;
-    }
+      return function(e) return macro @:pos(pos) new tink.json.Parser<$ct>().tryParse($e);
+    },
   ]);
   static public var writers(default, null) = new Registry('writer', [
     'application/json' => function (type:Type, pos:Position) {
       var ct = type.toComplex( { direct: true } );
-      return macro @:pos(pos) new tink.json.Writer<$ct>().write;
-    }
+      return function(e) return macro @:pos(pos) new tink.json.Writer<$ct>().write($e);
+    },
+    'application/octet-stream' => function (type:Type, pos:Position) {
+      if(type.unifiesWith(Context.getType('tink.io.Source.RealSource')))
+        return function(e) return macro @:pos(pos) tink.io.Source.RealSourceTools.idealize($e, function(_) return tink.io.Source.EMPTY);
+      else if (type.unifiesWith(Context.getType('tink.Chunk')))
+        return function(e) return macro @:pos(pos) ($e:tink.Chunk);
+      else 
+        throw 'Unsupported body type ${type.getID()} for application/octet-stream';
+    },
   ]);
   
 }
 
 private class Registry {
-  var map:Map<MimeType, Type->Position->Expr>;
+  var map:Map<MimeType, Type->Position->(Expr->Expr)>;
   var kind:String;
   
   public function new(kind, map) {

@@ -36,6 +36,10 @@ class ProxyTest {
     return proxy.complex(c).map(function (o) return assert(compare(c, o.sure())));
   }
   
+  public function streaming() {
+    return proxy.streaming('foo').next(function (o) return o.all()).next(o -> return assert(o.toString() == 'foo'));
+  }
+  
   public function typed() {
     return proxy.typed()
       .next(function (o) {

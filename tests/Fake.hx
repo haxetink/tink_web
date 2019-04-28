@@ -38,8 +38,9 @@ class Fake {
   @:get public function complex(query: Complex, ?bar:String) 
     return query;
   
-  // @:post public function streaming(body:RealSource)
-  //   return body.all();
+  @:consumes('application/octet-stream')
+  @:post public function streaming(body:RealSource):RealSource
+    return body;
     
   @:post public function buffered(body:Bytes)
     return body;
