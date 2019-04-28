@@ -37,7 +37,7 @@ class ProxyTest {
   }
   
   public function streaming() {
-    return proxy.streaming('foo').next(function (o) return o.all()).next(o -> return assert(o.toString() == 'foo'));
+    return proxy.streaming('foo').next(function (o) return o.all()).next(function(o) return assert(o.toString() == 'foo'));
   }
   
   public function typed() {
