@@ -59,6 +59,9 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
           body
         )
       ).next(function (response) return reader.withHeader(response.header)(response.body));
+      
+  @:from public static inline function fromHost(host:Host):RemoteEndpoint
+    return new RemoteEndpoint(host);
 }
 
 abstract ResponseReader<A>(ResponseHeader->RealSource->Promise<A>) from ResponseHeader->RealSource->Promise<A> {
