@@ -94,7 +94,14 @@ class Proxify {
         pos: f.field.pos,
         name: f.field.name,
         kind: FFun({
-          args: [for (arg in f.signature) if(arg.name != 'user') { name: arg.name, type: arg.type.toComplex(), opt: arg.optional }],
+          args: {
+            var args = [];
+            for (arg in f.signature) switch arg.kind {
+              case AUser(_) | AContext: // don't generate these args into proxy function signature
+              case _: args.push({ name: arg.name, type: arg.type.toComplex(), opt: arg.optional });
+            }
+            args;
+          },
           expr: {
             
             var call = [];
