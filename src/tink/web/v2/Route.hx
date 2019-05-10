@@ -29,10 +29,10 @@ class Route {
     field = f;
     signature = new RouteSignature(f);
     switch [getCall(f, signature), getSub(f, signature)] {
-      case [Some(_), Some(_)]: f.pos.error('Cannot have both routing and subrouting on the same field');
-      case [Some(call), _]: kind = KCall(call);
-      case [_, Some(sub)]: kind = KSub(sub);
-      case [_, _]: f.pos.error('No routes on this field');
+      case [[], []]: f.pos.error('No routes on this field'); // should not happen actually
+      case [call, []]: kind = KCall(call);
+      case [[], sub]: kind = KSub(sub);
+      case [_, _]: f.pos.error('Cannot have both routing and subrouting on the same field');
     }
     this.consumes = MimeType.fromMeta(f.meta, 'consumes', consumes);
     this.produces = MimeType.fromMeta(f.meta, 'produces', produces);
@@ -97,28 +97,18 @@ class Route {
     return false;
   }
   
-  public static function getCall(f:ClassField, sig:RouteSignature):Option<Array<CallVariant>> {
-    var variants:Array<CallVariant> = [for(m in f.meta.get()) {
+  public static function getCall(f:ClassField, sig):Array<CallVariant> {
+    return [for(m in f.meta.get()) {
         switch metas[m.name] {
           case null: continue;
           case v: { method: v, path: RoutePath.make(f.name, sig, m) }
         }
       }
     ];
-    return 
-      if(variants.length == 0) 
-        None;
-      else
-        Some(variants);
   }
   
-  public static function getSub(f:ClassField, sig:RouteSignature):Option<Array<Variant>> {
-    var variants:Array<Variant> = [for(m in f.meta.extract(':sub')) { path: RoutePath.make(f.name, sig, m) }];
-    return 
-      if(variants.length == 0) 
-        None;
-      else
-        Some(variants);
+  public static function getSub(f:ClassField, sig):Array<Variant> {
+    return [for(m in f.meta.extract(':sub')) { path: RoutePath.make(f.name, sig, m) }];
   }
 }
 
