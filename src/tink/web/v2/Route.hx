@@ -39,12 +39,12 @@ class Route {
             switch field.meta.extract(':statusCode') {
               case []:
                 macro 200;
-              case [{params: [v]}]:\
+              case [{params: [v]}]:
                 v;
-              case [v]:\
+              case [v]:
                 v.pos.error('@:statusCode must have one argument exactly');
-              case v: 
-                [1].pos.error('Cannot have multiple @:statusCode directives');
+              case v:
+                v[1].pos.error('Cannot have multiple @:statusCode directives');
             },
           headers:
             [for(meta in field.meta.extract(':header'))
