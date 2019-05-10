@@ -22,10 +22,10 @@ class Route {
   public var field(default, null):ClassField;
   public var kind(default, null):RouteKind;
   public var signature(default, null):RouteSignature;
-  public var produces(default, null):Array<MimeType>;
   public var consumes(default, null):Array<MimeType>;
+  public var produces(default, null):Array<MimeType>;
   
-  public function new(f:ClassField, produces, consumes) {
+  public function new(f:ClassField, consumes, produces) {
     field = f;
     signature = new RouteSignature(f);
     switch [getCall(f, signature), getSub(f, signature)] {
@@ -34,8 +34,8 @@ class Route {
       case [_, Some(sub)]: kind = KSub(sub);
       case [_, _]: f.pos.error('No routes on this field');
     }
-    this.produces = MimeType.fromMeta(f.meta, 'produces', produces);
     this.consumes = MimeType.fromMeta(f.meta, 'consumes', consumes);
+    this.produces = MimeType.fromMeta(f.meta, 'produces', produces);
   }
   
   public function getPayload(loc:ParamLocation):RoutePayload {

@@ -6,8 +6,12 @@ import haxe.macro.Type;
 import haxe.macro.Expr;
 import tink.macro.BuildCache;
 import tink.http.Method;
-import tink.web.macros.v1.Route;
-import tink.web.macros.v1.RouteSyntax;
+import tink.web.v2.Route;
+import tink.web.v2.RouteCollection;
+import tink.web.v2.RoutePath;
+import tink.web.v2.RouteSignature;
+import tink.web.v2.Variant;
+import tink.web.v2.MimeType;
 import tink.web.routing.Response;
 
 using tink.MacroApi;
@@ -16,7 +20,7 @@ using Lambda;
 
 class Routing { 
   
-  var routes:Array<Route>;
+  var routes:RouteCollection;
   var auth:Option<{ user: Type, session: Type }>;
   
   var cases:Array<Case> = [];
@@ -62,10 +66,10 @@ class Routing {
         }
       
       switch route.kind {
-        case KSub(s):
-          skim(s.variants);
-        case KCall(c):
-          skim(c.variants);
+        case KSub(variants):
+          skim(variants);
+        case KCall(variants):
+          skim(variants);
       }
       
     } 
@@ -245,7 +249,7 @@ class Routing {
             
     var beforeBody = [function (e) return restrict(route.field.meta.extract(':restrict'), e)];
     
-    for (arg in route.signature) {
+    for (arg in route.signature.args) {
       
       var argExpr = arg.name.resolve();
 
@@ -357,7 +361,7 @@ class Routing {
             type: macro : Int,
           });
           
-          var target = s.target.toComplex();
+          var target = route.signature.result.asSubTarget().toComplex();
           
           var router = switch auth {
             case None:
@@ -393,7 +397,13 @@ class Routing {
             }
           ];
           
-          switch c.response {
+          switch route.signature.result.asCallResponse() {
+            case RNoise:
+              macro @:pos(pos) tink.core.Promise.lift($result).next(
+                function (_):tink.core.Promise<tink.web.routing.Response> {
+                  return tink.web.routing.Response.empty();
+                }
+              );
             case RData(t):
               var ct = t.toComplex();
               var formats = [];
@@ -413,36 +423,60 @@ class Routing {
                   v[1].pos.error('Cannot have multiple @:html directives');
               }
               
-              var isNoise = t.unifiesWith(Context.getType('tink.core.Noise'));
               // var isResponse = !isNoise && t.unifiesWith(Context.getType('tink.web.Response'));
               
-              if(isNoise)
-                formats.push(macro return tink.web.routing.Response.empty());
-              else
-                for (fmt in route.produces) 
-                  formats.push(
-                    macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
-                      switch RouteSyntax.asWebResponse(t) {
-                        case Some(t):
-                          macro new tink.http.Response.OutgoingResponse(
-                            __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
-                            ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
-                          );
-                        case None:
-                          var e = macro tink.web.routing.Response.textual(
-                            $statusCode,
-                            $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
-                          );
-                          
-                          if(headers.length > 0)
-                            e = macro {
-                              var res = $e;
-                              new tink.http.Response.OutgoingResponse(res.header.concat(${macro $a{headers}}), res.body);
-                            }
-                            
-                          e;
+              for (fmt in route.produces) 
+                formats.push(
+                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${{
+                    var e = macro tink.web.routing.Response.textual(
+                      $statusCode,
+                      $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
+                    );
+                    
+                    if(headers.length > 0)
+                      e = macro {
+                        var res = $e;
+                        new tink.http.Response.OutgoingResponse(res.header.concat(${macro $a{headers}}), res.body);
                       }
-                    });
+                    e;
+                  }});
+                
+              macro @:pos(pos) tink.core.Promise.lift($result).next(
+                function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
+                  $b{formats};
+                  return new tink.core.Error(UnsupportedMediaType, 'Unsupported Media Type');
+                }
+              );
+            
+            case ROpaque(OParsed(res, t)):
+              var ct = res.toComplex();
+              var formats = [];
+              
+              switch route.field.meta.extract(':html') {
+                case []: 
+                case [{ pos: pos, params: [v] }]:
+                  formats.push(
+                    macro @:pos(pos) if (ctx.accepts('text/html')) 
+                      return tink.core.Promise.lift(${substituteThis(v)}(__data__)).next(
+                        function (d) return tink.web.routing.Response.textual('text/html', d)
+                      )
+                  );
+                case [v]: 
+                  v.pos.error('@:html must have one argument exactly');
+                case v:
+                  v[1].pos.error('Cannot have multiple @:html directives');
+              }
+              
+              // var isResponse = !isNoise && t.unifiesWith(Context.getType('tink.web.Response'));
+              
+              for (fmt in route.produces) 
+                formats.push(
+                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${{
+                    macro new tink.http.Response.OutgoingResponse(
+                      __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
+                      ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
+                    );
+                  }});
                 
               macro @:pos(pos) tink.core.Promise.lift($result).next(
                 function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
@@ -451,7 +485,7 @@ class Routing {
                 }
               );
               
-            case ROpaque(_.toComplex() => t):
+            case ROpaque(ORaw(_.toComplex() => t)):
               var e = macro @:pos(pos) tink.core.Promise.lift($result)
                 .next(function (v:$t):tink.web.routing.Response return v);
               switch [statusCode, headers] {
@@ -482,7 +516,7 @@ class Routing {
       var locVar = '__${locName}__';
       
       result = 
-        switch [loc, RouteSyntax.getPayload(route, loc)] {
+        switch [loc, route.getPayload(loc)] {
           case [_, Empty]:
             
             result;
@@ -577,11 +611,11 @@ class Routing {
       var args = routeMethod(route);
             
       switch route.kind {
-        case KCall(c):
-          for (v in c.variants)
+        case KCall(variants):
+          for (v in variants)
             cases.push(makeCase(route.field.name, args, v, v.method));
-        case KSub(s):
-          for (v in s.variants)  
+        case KSub(variants):
+          for (v in variants)  
             cases.push(makeCase(route.field.name, args, v, None));
       }
     }
@@ -701,7 +735,7 @@ class Routing {
     }
     
     return new Routing(
-      RouteSyntax.read(
+      new RouteCollection(
         target,
         [
           #if tink_multipart 'multipart/form-data', #end

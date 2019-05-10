@@ -9,6 +9,7 @@ import tink.url.Portion;
 import tink.web.v2.Route;
 import tink.web.v2.RoutePath;
 import tink.web.v2.Variant;
+import tink.web.v2.MimeType;
 import tink.web.v2.RouteSignature;
 
 using tink.CoreApi;
@@ -113,17 +114,9 @@ class Proxify {
                 var contentType = None;
                 
                 var body = combine(f.field.pos, f.getPayload(PBody), function (expr, type) {
-                  var writer = 
-                    switch f.consumes {
-                      case ['application/x-www-form-urlencoded']:
-                        contentType = Some('application/x-www-form-urlencoded');
-                        macro new tink.querystring.Builder<$type>().stringify;
-                      case v: 
-                        var w = MimeType.writers.get(v, type.toType().sure(), f.field.pos);
-                        contentType = Some(w.type);
-                        w.generator;
-                    }
-                    
+                  var w = MimeType.writers.get(f.consumes, type.toType().sure(), f.field.pos);
+                  contentType = Some(w.type);
+                  var writer = w.generator;
                   return macro @:pos(expr.pos) ${writer}($expr);
                 }).or(macro '');
                 
