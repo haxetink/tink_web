@@ -68,7 +68,7 @@ class Routing {
       switch route.kind {
         case KSub(variants):
           skim(variants);
-        case KCall(variants):
+        case KCall(variants, _, _):
           skim(variants);
       }
       
@@ -369,22 +369,8 @@ class Routing {
                 return $router.route(ctx)
               );
           }
-        case KCall(c):
-        
-          var statusCode = switch route.field.meta.extract(':statusCode') {
-            case []: macro null;
-            case [{params: [v]}]: v;
-            case [v]: v.pos.error('@:statusCode must have one argument exactly');
-            case v: v[1].pos.error('Cannot have multiple @:statusCode directives');
-          }
-          
-          var headers = [for(meta in route.field.meta.extract(':header'))
-            switch meta {
-              case {params: [name, value]}: macro new tink.http.Header.HeaderField($name, $value);
-              case _: meta.pos.error('@:header must have two arguments exactly');
-            }
-          ];
-          
+        case KCall(c, statusCode, headers):
+          var headers = [for(h in headers) macro new tink.http.Header.HeaderField(${h.name}, ${h.value})];
           switch route.signature.result.asCallResponse() {
             case RNoise:
               macro @:pos(pos) tink.core.Promise.lift($result).next(
@@ -599,7 +585,7 @@ class Routing {
       var args = routeMethod(route);
             
       switch route.kind {
-        case KCall(variants):
+        case KCall(variants, _, _):
           for (v in variants)
             cases.push(makeCase(route.field.name, args, v, v.method));
         case KSub(variants):

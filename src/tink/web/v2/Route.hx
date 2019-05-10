@@ -29,10 +29,26 @@ class Route {
     field = f;
     signature = new RouteSignature(f);
     switch [getCall(f, signature), getSub(f, signature)] {
-      case [[], []]: f.pos.error('No routes on this field'); // should not happen actually
-      case [call, []]: kind = KCall(call);
-      case [[], sub]: kind = KSub(sub);
-      case [_, _]: f.pos.error('Cannot have both routing and subrouting on the same field');
+      case [[], []]:
+        f.pos.error('No routes on this field'); // should not happen actually
+      case [call, []]:
+        var statusCode = switch field.meta.extract(':statusCode') {
+          case []: macro null;
+          case [{params: [v]}]: v;
+          case [v]: v.pos.error('@:statusCode must have one argument exactly');
+          case v: v[1].pos.error('Cannot have multiple @:statusCode directives');
+        }
+        var headers = [for(meta in field.meta.extract(':header'))
+          switch meta {
+            case {params: [name, value]}: new NamedWith(name, value);
+            case _: meta.pos.error('@:header must have two arguments exactly');
+          }
+        ];
+        kind = KCall(call, statusCode, headers);
+      case [[], sub]:
+        kind = KSub(sub);
+      case [_, _]:
+        f.pos.error('Cannot have both routing and subrouting on the same field');
     }
     this.consumes = MimeType.fromMeta(f.meta, 'consumes', consumes);
     this.produces = MimeType.fromMeta(f.meta, 'produces', produces);
@@ -114,7 +130,7 @@ class Route {
 
 enum RouteKind {
   KSub(variants:Array<Variant>);
-  KCall(variants:Array<CallVariant>);
+  KCall(variants:Array<CallVariant>, statusCode:Expr, headers:Array<NamedWith<Expr, Expr>>);
 }
 
 enum RoutePayload {
