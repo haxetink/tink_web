@@ -5,9 +5,12 @@ import haxe.macro.Type;
 import haxe.macro.Context;
 import tink.macro.BuildCache;
 import tink.http.Method;
-import tink.web.macros.Route;
 import tink.url.Portion;
-import tink.web.macros.RouteSyntax;
+import tink.web.macros.Route;
+import tink.web.macros.RoutePath;
+import tink.web.macros.Variant;
+import tink.web.macros.MimeType;
+import tink.web.macros.RouteSignature;
 
 using tink.CoreApi;
 using tink.MacroApi;
@@ -52,7 +55,7 @@ class Proxify {
           macro new tink.CoreApi.NamedWith(${(name:Portion)}, ${val(from.query[name])})
         ].toArray();
         
-    var combinedQuery = combine(route.field.pos, RouteSyntax.getPayload(route, PQuery), function (e, t) {
+    var combinedQuery = combine(route.field.pos, route.getPayload(PQuery), function (e, t) {
       return macro @:pos(e.pos) new tink.querystring.Builder<$t->tink.web.proxy.Remote.QueryParams>().stringify($e);
     });
     
@@ -62,7 +65,7 @@ class Proxify {
       case None:
     }
         
-    var combinedHeader = combine(route.field.pos, RouteSyntax.getPayload(route, PHeader), function (e, t) {
+    var combinedHeader = combine(route.field.pos, route.getPayload(PHeader), function (e, t) {
       return macro @:pos(e.pos) new tink.querystring.Builder<$t->tink.web.proxy.Remote.HeaderParams>().stringify($e);
     });
     
@@ -75,16 +78,8 @@ class Proxify {
     });
   }
   
-  static function seekVariant<V:Variant>(variants:Array<V>, pos:Position) {
-    for (v in variants)
-      if (v.path.deviation.surplus.length == 0)
-        return v;
-        
-    return pos.error('Cannot process route. See warnings.');
-  }
-  
   static function build(ctx:BuildContext):TypeDefinition {
-    var routes = RouteSyntax.read(ctx.type, ['application/json'], ['application/json']);
+    var routes = new RouteCollection(ctx.type, ['application/json'], ['application/json']);
     return {
       pos: ctx.pos,
       pack: ['tink', 'web'],
@@ -96,7 +91,7 @@ class Proxify {
         kind: FFun({
           args: {
             var args = [];
-            for (arg in f.signature) switch arg.kind {
+            for (arg in f.signature.args) switch arg.kind {
               case AUser(_) | AContext: // don't generate these args into proxy function signature
               case _: args.push({ name: arg.name, type: arg.type.toComplex(), opt: arg.optional });
             }
@@ -107,9 +102,9 @@ class Proxify {
             var call = [];
             
             switch f.kind {
-              case KCall(call):
+              case KCall(c):
                 
-                var v = seekVariant(call.variants, f.field.pos);
+                var v = Variant.seek(c.variants, f.field.pos);
                 
                 var method = switch v.method {
                   case Some(m): m;
@@ -118,18 +113,10 @@ class Proxify {
                 
                 var contentType = None;
                 
-                var body = combine(f.field.pos, RouteSyntax.getPayload(f, PBody), function (expr, type) {
-                  var writer = 
-                    switch f.consumes {
-                      case ['application/x-www-form-urlencoded']:
-                        contentType = Some('application/x-www-form-urlencoded');
-                        macro new tink.querystring.Builder<$type>().stringify;
-                      case v: 
-                        var w = MimeType.writers.get(v, type.toType().sure(), f.field.pos);
-                        contentType = Some(w.type);
-                        w.generator;
-                    }
-                    
+                var body = combine(f.field.pos, f.getPayload(PBody), function (expr, type) {
+                  var w = MimeType.writers.get(f.consumes, type.toType().sure(), f.field.pos);
+                  contentType = Some(w.type);
+                  var writer = w.generator;
                   return macro @:pos(expr.pos) ${writer}($expr);
                 }).or(macro '');
                 
@@ -150,8 +137,8 @@ class Proxify {
                     this.client, 
                     cast $v{method}, 
                     __body__, 
-                    ${switch call.response {
-                      case RData(_.reduce() => TEnum(_.get() => {pack: ['tink', 'core'], name: 'Noise'}, _)):
+                    ${switch f.signature.result.asCallResponse() {
+                      case RNoise:
                         macro function(header, body):tink.core.Promise<tink.core.Noise> {
                           return 
                             if(header.statusCode >= 400)  
@@ -161,30 +148,31 @@ class Proxify {
                               tink.core.Promise.NOISE;
                         }
                       case RData(t):
-                        switch RouteSyntax.asWebResponse(t) {
-                          case Some(t):
-                            macro function(header, body) 
-                              return tink.io.Source.RealSourceTools.all(body)
-                                .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
-                                .next(function(parsed) return new tink.web.Response(header, parsed));
-                            case None:
-                              MimeType.readers.get(f.produces, t, f.field.pos).generator;
-                        }
-                      case ROpaque(t):
+                        MimeType.readers.get(f.produces, t, f.field.pos).generator;
+                        
+                      case ROpaque(OParsed(res, t)):
+                        var ct = res.toComplex();
+                        macro function(header, body) 
+                          return tink.io.Source.RealSourceTools.all(body)
+                            .next(function(chunk) return ${MimeType.readers.get(f.produces, t, f.field.pos).generator}(chunk))
+                            .next(function(parsed):$ct return new tink.web.Response(header, parsed));
+                      
+                      case ROpaque(ORaw(t)):
                         if (Context.getType('tink.http.Response.IncomingResponse').unifiesWith(t)) {
                           var ct = t.toComplex();
                           macro function (header, body):tink.core.Promise<$ct> return (new tink.http.Response.IncomingResponse(header, body):$ct);
                         }
                         else
                           macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                      
                     }}
                   );
                 };
                 
-              case KSub(sub):
+              case KSub(variants):
                 
-                var target = sub.target.toComplex(),
-                    v = seekVariant(sub.variants, f.field.pos);
+                var target = f.signature.result.asSubTarget().toComplex(),
+                    v = Variant.seek(variants, f.field.pos);
                 
                 macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.client, ${makeEndpoint(v.path, f)});
             }

@@ -115,6 +115,18 @@ class ProxyTest {
     return asserts;
   }
   
+  // @:include
+  // public function paramKey() {
+  //   proxy.paramKey('bar')
+  //     .next(function (o) {
+  //       asserts.assert(o.parsed == 'bar');
+  //       asserts.assert(o.raw == 'foo=bar');
+  //       return Noise;
+  //     })
+  //     .handle(asserts.handle);
+  //   return asserts;
+  // }
+  
   public function header() {
     var accept = 'application/json';
     return proxy.headers({accept: accept}).map(function (o) return assert(o.sure().header == accept));

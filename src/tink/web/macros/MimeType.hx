@@ -57,13 +57,17 @@ abstract MimeType(String) from String to String {
     'application/json' => function (type:Type, pos:Position) {
       var ct = type.toComplex({ direct: true });
       return macro @:pos(pos) new tink.json.Parser<$ct>().tryParse;
-    }
+    },
   ]);
   static public var writers(default, null) = new Registry('writer', [
     'application/json' => function (type:Type, pos:Position) {
       var ct = type.toComplex( { direct: true } );
       return macro @:pos(pos) new tink.json.Writer<$ct>().write;
-    }
+    },
+    'application/x-www-form-urlencoded' => function (type:Type, pos:Position) {
+      var ct = type.toComplex( { direct: true } );
+      return macro @:pos(pos) new tink.querystring.Builder<$ct>().stringify;
+    },
   ]);
   
 }

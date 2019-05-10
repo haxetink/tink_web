@@ -4,9 +4,14 @@ import haxe.ds.Option;
 import haxe.macro.Context;
 import haxe.macro.Type;
 import haxe.macro.Expr;
-import tink.web.macros.Route;
 import tink.macro.BuildCache;
 import tink.http.Method;
+import tink.web.macros.Route;
+import tink.web.macros.RouteCollection;
+import tink.web.macros.RoutePath;
+import tink.web.macros.RouteSignature;
+import tink.web.macros.Variant;
+import tink.web.macros.MimeType;
 import tink.web.routing.Response;
 
 using tink.MacroApi;
@@ -15,7 +20,7 @@ using Lambda;
 
 class Routing { 
   
-  var routes:Array<Route>;
+  var routes:RouteCollection;
   var auth:Option<{ user: Type, session: Type }>;
   
   var cases:Array<Case> = [];
@@ -61,8 +66,8 @@ class Routing {
         }
       
       switch route.kind {
-        case KSub(s):
-          skim(s.variants);
+        case KSub(variants):
+          skim(variants);
         case KCall(c):
           skim(c.variants);
       }
@@ -151,29 +156,22 @@ class Routing {
     return ret.toArray();
   }
   
-  function restrict(meta:Array<MetadataEntry>, e:Expr) 
+  function restrict(restricts:Array<Expr>, e:Expr) 
     return 
-      switch [meta, auth] {
+      switch [restricts, auth] {
         case [[], _]: 
           e;
         case [v, None]:
           v[0].pos.error('restriction cannot be applied because no session handling is provided');
-        case [_, Some(_)]: 
+        case [restricts, Some(_)]: 
           
-          for (m in meta)
-            switch m.params {
-              case []:
-                m.pos.error('@:restrict must have one parameter');
-              case [v]:
-                e = macro @:pos(v.pos) (${substituteThis(v)} : tink.core.Promise<Bool>).next(
-                  function (authorized)
-                    return 
-                      if (authorized) $e;
-                      else new tink.core.Error(Forbidden, 'forbidden')
-                );
-              case v:
-                v[1].reject('@:restrict must have one parameter');
-            }     
+          for (v in restricts)
+            e = macro @:pos(v.pos) (${substituteThis(v)} : tink.core.Promise<Bool>).next(
+              function (authorized)
+                return 
+                  if (authorized) $e;
+                  else new tink.core.Error(Forbidden, 'forbidden')
+            );    
             
           macro ctx.user.get().next(function (o) return switch o {
             case Some(user):
@@ -183,19 +181,7 @@ class Routing {
           });
       }
   
-  static function allMeta(t:Type):Array<MetaAccess> //TODO: move out
-    return switch t {
-      case TInst(_.get() => { meta: meta }, _),
-           TEnum(_.get() => { meta: meta }, _),
-           TAbstract(_.get() => { meta: meta }, _): 
-        [meta];
-      case TType(_.get() => { meta: meta }, _):
-        [meta].concat(allMeta(t.reduce(true)));
-      case TLazy(f): allMeta(f());
-      default: [];
-    }
-  
-  function generate(name:String, target:Type, pos:Position) {
+  function generate(name:String, pos:Position) {
     
     secondPass();
 
@@ -205,9 +191,9 @@ class Routing {
       macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.url.pathWithQuery)
     ).at(pos);
     
-    theSwitch = restrict([for (a in allMeta(target)) for (m in a.extract(':restrict')) m], theSwitch);
+    theSwitch = restrict(routes.restricts, theSwitch);
       
-    var target = target.toComplex();
+    var target = routes.type.toComplex();
     
     var ret = 
       macro class $name {
@@ -242,9 +228,9 @@ class Routing {
         
     var field = route.field.name;
             
-    var beforeBody = [function (e) return restrict(route.field.meta.extract(':restrict'), e)];
+    var beforeBody = [function (e) return restrict(route.restricts, e)];
     
-    for (arg in route.signature) {
+    for (arg in route.signature.args) {
       
       var argExpr = arg.name.resolve();
 
@@ -260,7 +246,6 @@ class Routing {
                 fields: impl.get().statics.get()
                   .filter(function(s) return s.meta.has(':enum') && s.meta.has(':impl'))
                   .map(function(s) return macro $p{path.concat([s.name])})
-                
               });
             case _:
               None;
@@ -356,7 +341,7 @@ class Routing {
             type: macro : Int,
           });
           
-          var target = s.target.toComplex();
+          var target = route.signature.result.asSubTarget().toComplex();
           
           var router = switch auth {
             case None:
@@ -376,72 +361,72 @@ class Routing {
                 return $router.route(ctx)
               );
           }
-        case KCall(c):
-        
-          var statusCode = switch route.field.meta.extract(':statusCode') {
-            case []: macro null;
-            case [{params: [v]}]: v;
-            case [v]: v.pos.error('@:statusCode must have one argument exactly');
-            case v: v[1].pos.error('Cannot have multiple @:statusCode directives');
-          }
-          
-          var headers = [for(meta in route.field.meta.extract(':header'))
-            switch meta {
-              case {params: [name, value]}: macro new tink.http.Header.HeaderField($name, $value);
-              case _: meta.pos.error('@:header must have two arguments exactly');
-            }
-          ];
-          
-          switch c.response {
+        case KCall({variants: c, statusCode: statusCode, headers: headers, html: html}):
+          var headers = [for(h in headers) macro new tink.http.Header.HeaderField(${h.name}, ${h.value})];
+          switch route.signature.result.asCallResponse() {
+            case RNoise:
+              macro @:pos(pos) tink.core.Promise.lift($result).next(
+                function (_):tink.core.Promise<tink.web.routing.Response> {
+                  return tink.web.routing.Response.empty();
+                }
+              );
             case RData(t):
               var ct = t.toComplex();
               var formats = [];
               
-              switch route.field.meta.extract(':html') {
-                case []: 
-                case [{ pos: pos, params: [v] }]:
+              switch html {
+                case Some(v):
                   formats.push(
-                    macro @:pos(pos) if (ctx.accepts('text/html')) 
+                    macro @:pos(v.pos) if (ctx.accepts('text/html')) 
                       return tink.core.Promise.lift(${substituteThis(v)}(__data__)).next(
                         function (d) return tink.web.routing.Response.textual('text/html', d)
                       )
                   );
-                case [v]: 
-                  v.pos.error('@:html must have one argument exactly');
-                case v:
-                  v[1].pos.error('Cannot have multiple @:html directives');
+                case None:
               }
               
-              var isNoise = t.unifiesWith(Context.getType('tink.core.Noise'));
-              // var isResponse = !isNoise && t.unifiesWith(Context.getType('tink.web.Response'));
+              for (fmt in route.produces) 
+                formats.push(
+                  macro @:pos(pos) if (ctx.accepts($v{fmt}))
+                    return tink.web.routing.Response.textual(
+                      $statusCode,
+                      $v{fmt},
+                      ${MimeType.writers.get([fmt], t, pos).generator}(__data__),
+                      $a{headers}
+                    )
+                );
+                
+              macro @:pos(pos) tink.core.Promise.lift($result).next(
+                function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
+                  $b{formats};
+                  return new tink.core.Error(UnsupportedMediaType, 'Unsupported Media Type');
+                }
+              );
+            
+            case ROpaque(OParsed(res, t)):
+              // @:statusCode and @:header is ignored here, we should probably error/warn
+              var ct = res.toComplex();
+              var formats = [];
               
-              if(isNoise)
-                formats.push(macro return tink.web.routing.Response.empty());
-              else
-                for (fmt in route.produces) 
+              switch html {
+                case Some(v):
                   formats.push(
-                    macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${
-                      switch RouteSyntax.asWebResponse(t) {
-                        case Some(t):
-                          macro new tink.http.Response.OutgoingResponse(
-                            __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
-                            ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
-                          );
-                        case None:
-                          var e = macro tink.web.routing.Response.textual(
-                            $statusCode,
-                            $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
-                          );
-                          
-                          if(headers.length > 0)
-                            e = macro {
-                              var res = $e;
-                              new tink.http.Response.OutgoingResponse(res.header.concat(${macro $a{headers}}), res.body);
-                            }
-                            
-                          e;
-                      }
-                    });
+                    macro @:pos(v.pos) if (ctx.accepts('text/html')) 
+                      return tink.core.Promise.lift(${substituteThis(v)}(__data__)).next(
+                        function (d) return tink.web.routing.Response.textual('text/html', d)
+                      )
+                  );
+                case None:
+              }
+              
+              for (fmt in route.produces) 
+                formats.push(
+                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${{
+                    macro new tink.http.Response.OutgoingResponse(
+                      __data__.header.concat([new tink.http.Header.HeaderField(CONTENT_TYPE, $v{fmt})]),
+                      ${MimeType.writers.get([fmt], t, pos).generator}(__data__.body)
+                    );
+                  }});
                 
               macro @:pos(pos) tink.core.Promise.lift($result).next(
                 function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
@@ -450,25 +435,25 @@ class Routing {
                 }
               );
               
-            case ROpaque(_.toComplex() => t):
+            case ROpaque(ORaw(_.toComplex() => t)):
               var e = macro @:pos(pos) tink.core.Promise.lift($result)
                 .next(function (v:$t):tink.web.routing.Response return v);
               switch [statusCode, headers] {
-                case [macro null, []]:
+                case [macro 200, []]:
                   e;
-                case [macro null, _]:
+                case [macro 200, _]:
                   macro $e.next(function(res) return new tink.http.Response.OutgoingResponse(
                     res.header.concat(${macro $a{headers}}),
                     res.body
                   ));
                 case [_, []]:
                   macro $e.next(function (res) return new tink.http.Response.OutgoingResponse(
-                    new tink.http.Response.ResponseHeader($statusCode, res.header.reason, @:privateAccess res.header.fields, res.header.protocol),
+                    new tink.http.Response.ResponseHeader($statusCode, $statusCode, @:privateAccess res.header.fields, res.header.protocol),
                     res.body
                   ));
                 case _: 
                   macro $e.next(function (res) return new tink.http.Response.OutgoingResponse(
-                    new tink.http.Response.ResponseHeader($statusCode, res.header.reason, @:privateAccess res.header.fields.concat(${macro $a{headers}}), res.header.protocol),
+                    new tink.http.Response.ResponseHeader($statusCode, $statusCode, @:privateAccess res.header.fields.concat(${macro $a{headers}}), res.header.protocol),
                     res.body
                   ));
               }
@@ -481,7 +466,7 @@ class Routing {
       var locVar = '__${locName}__';
       
       result = 
-        switch [loc, RouteSyntax.getPayload(route, loc)] {
+        switch [loc, route.getPayload(loc)] {
           case [_, Empty]:
             
             result;
@@ -579,8 +564,8 @@ class Routing {
         case KCall(c):
           for (v in c.variants)
             cases.push(makeCase(route.field.name, args, v, v.method));
-        case KSub(s):
-          for (v in s.variants)  
+        case KSub(variants):
+          for (v in variants)  
             cases.push(makeCase(route.field.name, args, v, None));
       }
     }
@@ -700,7 +685,7 @@ class Routing {
     }
     
     return new Routing(
-      RouteSyntax.read(
+      new RouteCollection(
         target,
         [
           #if tink_multipart 'multipart/form-data', #end
@@ -710,7 +695,7 @@ class Routing {
         ['application/json']
       ),
       auth
-    ).generate(ctx.name, target, ctx.pos);
+    ).generate(ctx.name, ctx.pos);
   }
   
   static function apply() {
