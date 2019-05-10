@@ -33,16 +33,6 @@ class RouteResult {
   
   public inline function asSubTarget() return type;
   public inline function asCallResponse() return call.get();
-  public function asWebResponse() {
-    var res = Context.getType('tink.web.Response');
-    return 
-      if (type.unifiesWith(res)) 
-        switch type.isSubTypeOf(res, type.getPosition().sure()) {
-          case Success(TAbstract(_, [t])): Some(t);
-          default: throw 'assert';
-        }
-      else None;
-  }
 }
 
 enum CallResponse {

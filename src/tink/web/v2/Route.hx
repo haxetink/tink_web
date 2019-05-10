@@ -25,7 +25,7 @@ class Route {
   public var consumes(default, null):Array<MimeType>;
   public var produces(default, null):Array<MimeType>;
   
-  public function new(f:ClassField, consumes, produces) {
+  public function new(f, consumes, produces) {
     field = f;
     signature = new RouteSignature(f);
     switch [getCall(f, signature), getSub(f, signature)] {

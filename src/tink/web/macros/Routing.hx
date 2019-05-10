@@ -188,18 +188,6 @@ class Routing {
           });
       }
   
-  static function allMeta(t:Type):Array<MetaAccess> //TODO: move out
-    return switch t {
-      case TInst(_.get() => { meta: meta }, _),
-           TEnum(_.get() => { meta: meta }, _),
-           TAbstract(_.get() => { meta: meta }, _): 
-        [meta];
-      case TType(_.get() => { meta: meta }, _):
-        [meta].concat(allMeta(t.reduce(true)));
-      case TLazy(f): allMeta(f());
-      default: [];
-    }
-  
   function generate(name:String, target:Type, pos:Position) {
     
     secondPass();
@@ -210,7 +198,7 @@ class Routing {
       macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.url.pathWithQuery)
     ).at(pos);
     
-    theSwitch = restrict([for (a in allMeta(target)) for (m in a.extract(':restrict')) m], theSwitch);
+    theSwitch = restrict([for (a in target.getMeta()) for (m in a.extract(':restrict')) m], theSwitch);
       
     var target = target.toComplex();
     
