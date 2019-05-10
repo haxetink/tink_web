@@ -24,7 +24,7 @@ class RouteCollection {
       if(Route.hasWebMeta(f)) routes.push(new Route(f, consumes, produces));
     }
     
-    restricts = Route.restrict(type.getMeta());
+    restricts = Route.getRestricts(type.getMeta());
   }
   
   public inline function iterator() return routes.iterator();

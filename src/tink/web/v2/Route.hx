@@ -67,7 +67,7 @@ class Route {
     this.consumes = MimeType.fromMeta(f.meta, 'consumes', consumes);
     this.produces = MimeType.fromMeta(f.meta, 'produces', produces);
     
-    restricts = restrict([field.meta]);
+    restricts = getRestricts([field.meta]);
   }
   
   public function getPayload(loc:ParamLocation):RoutePayload {
@@ -144,28 +144,16 @@ class Route {
   }
   
   // TODO: move this to somewhere
-  public static function restrict(meta:Array<MetaAccess>):Array<Expr> {
+  public static function getRestricts(meta:Array<MetaAccess>):Array<Expr> {
     return [for(meta in meta) for (m in meta.extract(':restrict'))
       switch m.params {
-        case []:
-          m.pos.error('@:restrict must have one parameter');
         case [v]:
           v;
-        case v:
-          v[1].reject('@:restrict must have one parameter');
+        case _:
+          m.pos.error('@:restrict must have one parameter');
       }
     ];
   }
-  
-  static function substituteThis(e:Expr)
-    return switch e {
-      case macro this.$field: 
-        macro @:pos(e.pos) (@:privateAccess this.target.$field);
-      case macro this: 
-        macro @:pos(e.pos) (@:privateAccess this.target);
-      default:
-        e.map(substituteThis);
-    }
 }
 
 enum RouteKind {
