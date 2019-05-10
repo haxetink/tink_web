@@ -37,23 +37,31 @@ class Route {
           variants: call,
           statusCode: 
             switch field.meta.extract(':statusCode') {
-              case []: macro 200;
-              case [{params: [v]}]: v;
-              case [v]: v.pos.error('@:statusCode must have one argument exactly');
-              case v: v[1].pos.error('Cannot have multiple @:statusCode directives');
+              case []:
+                macro 200;
+              case [{params: [v]}]:\
+                v;
+              case [v]:\
+                v.pos.error('@:statusCode must have one argument exactly');
+              case v: 
+                [1].pos.error('Cannot have multiple @:statusCode directives');
             },
           headers:
             [for(meta in field.meta.extract(':header'))
               switch meta {
-                case {params: [name, value]}: new NamedWith(name, value);
-                case _: meta.pos.error('@:header must have two arguments exactly');
+                case {params: [name, value]}:
+                  new NamedWith(name, value);
+                case _:
+                  meta.pos.error('@:header must have two arguments exactly');
               }
             ],
           html: 
             switch field.meta.extract(':html') {
-              case []: None;
-              case [{ pos: pos, params: [v] }]: Some(v);
-              case [v]: 
+              case []:
+                None;
+              case [{ pos: pos, params: [v] }]:
+                Some(v);
+              case [v]:
                 v.pos.error('@:html must have one argument exactly');
               case v:
                 v[1].pos.error('Cannot have multiple @:html directives');
