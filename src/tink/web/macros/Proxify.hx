@@ -102,9 +102,9 @@ class Proxify {
             var call = [];
             
             switch f.kind {
-              case KCall(variants, _, _):
+              case KCall(c):
                 
-                var v = tink.web.v2.Variant.seek(variants, f.field.pos);
+                var v = tink.web.v2.Variant.seek(c.variants, f.field.pos);
                 
                 var method = switch v.method {
                   case Some(m): m;
