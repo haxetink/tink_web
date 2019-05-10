@@ -1,0 +1,134 @@
+package tink.web.v2;
+
+import tink.http.Method;
+import tink.web.v2.Variant;
+import tink.web.v2.RouteSignature;
+import tink.web.v2.RouteResult;
+import haxe.ds.Option;
+import haxe.macro.Type;
+import haxe.macro.Expr;
+
+using tink.CoreApi;
+using tink.MacroApi;
+
+class Route {
+  
+  public static var metas = {
+    var ret = [for (m in [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]) ':$m'.toLowerCase() => Some(m)];
+    ret[':all'] = None;
+    ret;
+  }  
+  
+  public var field(default, null):ClassField;
+  public var kind(default, null):RouteKind;
+  public var signature(default, null):RouteSignature;
+  public var produces(default, null):Array<MimeType>;
+  public var consumes(default, null):Array<MimeType>;
+  
+  public function new(f:ClassField, produces, consumes) {
+    field = f;
+    signature = new RouteSignature(f);
+    switch [getCall(f, signature), getSub(f, signature)] {
+      case [Some(_), Some(_)]: f.pos.error('Cannot have both routing and subrouting on the same field');
+      case [Some(call), _]: kind = KCall(call);
+      case [_, Some(sub)]: kind = KSub(sub);
+      case [_, _]: f.pos.error('No routes on this field');
+    }
+    this.produces = MimeType.fromMeta(f.meta, 'produces', produces);
+    this.consumes = MimeType.fromMeta(f.meta, 'consumes', consumes);
+  }
+  
+  public function getPayload(loc:ParamLocation):RoutePayload {
+    var compound = new Array<Named<Type>>(),
+        separate = new Array<Field>();
+        
+    for (arg in signature.args) 
+      switch arg.kind {
+        case AParam(t, _ == loc => true, kind):
+          switch kind {
+            case PCompound:
+              compound.push(new Named(arg.name, t));
+            case PSeparate:
+              separate.push({
+                name: arg.name,
+                pos: field.pos,
+                kind: FVar(t.toComplex()),
+              });     
+          }
+        default:
+    }
+    
+    var locName = loc.getName().substr(1).toLowerCase();    
+    
+    return 
+      switch [compound, separate] {
+        case [[], []]: 
+          
+          Empty;
+          
+        case [[v], []]: 
+          
+          SingleCompound(v.name, v.value);
+          
+        case [[], v]: 
+        
+          Mixed(separate, compound, TAnonymous(separate));
+          
+        default:
+          //trace(TAnonymous(separate).toString());
+          var fields = separate.copy();
+          
+          for (t in compound)
+            switch t.value.reduce().toComplex() {
+              case TAnonymous(f):
+                for (f in f)
+                  fields.push(f);
+              default:
+                field.pos.error('If multiple types are defined for $locName then all must be anonymous objects');
+            }          
+            
+          Mixed(separate, compound, TAnonymous(fields));
+      }
+  }
+  
+  public static function hasWebMeta(f:ClassField) {
+    if (f.meta.has(':sub')) return true;
+    for (m in metas.keys()) if (f.meta.has(m)) return true;
+    return false;
+  }
+  
+  public static function getCall(f:ClassField, sig:RouteSignature):Option<Array<CallVariant>> {
+    var variants:Array<CallVariant> = [for(m in f.meta.get()) {
+        switch metas[m.name] {
+          case null: continue;
+          case v: { method: v, path: RoutePath.make(f.name, sig, m) }
+        }
+      }
+    ];
+    return 
+      if(variants.length == 0) 
+        None;
+      else
+        Some(variants);
+  }
+  
+  public static function getSub(f:ClassField, sig:RouteSignature):Option<Array<Variant>> {
+    var variants:Array<Variant> = [for(m in f.meta.extract(':sub')) { path: RoutePath.make(f.name, sig, m) }];
+    return 
+      if(variants.length == 0) 
+        None;
+      else
+        Some(variants);
+  }
+}
+
+enum RouteKind {
+  KSub(variants:Array<Variant>);
+  KCall(variants:Array<CallVariant>);
+}
+
+enum RoutePayload {
+  Empty;
+  Mixed(separate:Array<Field>, compound:Array<Named<Type>>, sum:ComplexType);
+  SingleCompound(name:String, type:Type);
+}

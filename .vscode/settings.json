@@ -7,5 +7,7 @@
         "windows": {
             "haxePath": "node_modules\\.bin\\haxe.cmd"
         }
-    }
+    },
+    "editor.useTabStops": false,
+    "editor.tabSize": 2
 }

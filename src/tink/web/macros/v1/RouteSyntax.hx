@@ -1,4 +1,4 @@
-package tink.web.macros;
+package tink.web.macros.v1;
 
 import haxe.macro.Context;
 import haxe.macro.Type;
@@ -6,7 +6,7 @@ import haxe.macro.Expr;
 import haxe.ds.Option;
 import tink.url.Portion;
 import tink.http.Method;
-import tink.web.macros.Route;
+import tink.web.macros.v1.Route;
 
 using tink.MacroApi;
 using tink.CoreApi;

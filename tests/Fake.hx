@@ -88,13 +88,13 @@ class Fake {
   @:get public function enumAbstractIntInQuery(v:EInt):EInt
     return v;
   
-  @:params(v = query['foo'])
-  @:get public function paramKey(v:String, ctx:Context):{parsed:String, raw:String}  {
-    return {
-      parsed: v,
-      raw: @:privateAccess ctx.request.header.url.query,
-    }
-  }
+  // @:params(v = query['foo'])
+  // @:get public function paramKey(v:String, ctx:Context):{parsed:String, raw:String}  {
+  //   return {
+  //     parsed: v,
+  //     raw: @:privateAccess ctx.request.header.url.query,
+  //   }
+  // }
   
   @:get('enum_abs_str/$v') public function enumAbstractStringInPath(v:EStr):EStr
     return v;

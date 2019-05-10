@@ -1,4 +1,4 @@
-package tink.web.macros;
+package tink.web.macros.v1;
 
 import tink.http.Method;
 import haxe.ds.Option;
