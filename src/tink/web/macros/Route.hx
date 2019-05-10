@@ -1,9 +1,9 @@
-package tink.web.v2;
+package tink.web.macros;
 
 import tink.http.Method;
-import tink.web.v2.Variant;
-import tink.web.v2.RouteSignature;
-import tink.web.v2.RouteResult;
+import tink.web.macros.Variant;
+import tink.web.macros.RouteSignature;
+import tink.web.macros.RouteResult;
 import haxe.ds.Option;
 import haxe.macro.Type;
 import haxe.macro.Expr;

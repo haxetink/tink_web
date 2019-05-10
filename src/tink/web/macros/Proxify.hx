@@ -6,11 +6,11 @@ import haxe.macro.Context;
 import tink.macro.BuildCache;
 import tink.http.Method;
 import tink.url.Portion;
-import tink.web.v2.Route;
-import tink.web.v2.RoutePath;
-import tink.web.v2.Variant;
-import tink.web.v2.MimeType;
-import tink.web.v2.RouteSignature;
+import tink.web.macros.Route;
+import tink.web.macros.RoutePath;
+import tink.web.macros.Variant;
+import tink.web.macros.MimeType;
+import tink.web.macros.RouteSignature;
 
 using tink.CoreApi;
 using tink.MacroApi;
@@ -79,7 +79,7 @@ class Proxify {
   }
   
   static function build(ctx:BuildContext):TypeDefinition {
-    var routes = new tink.web.v2.RouteCollection(ctx.type, ['application/json'], ['application/json']);
+    var routes = new RouteCollection(ctx.type, ['application/json'], ['application/json']);
     return {
       pos: ctx.pos,
       pack: ['tink', 'web'],
@@ -104,7 +104,7 @@ class Proxify {
             switch f.kind {
               case KCall(c):
                 
-                var v = tink.web.v2.Variant.seek(c.variants, f.field.pos);
+                var v = Variant.seek(c.variants, f.field.pos);
                 
                 var method = switch v.method {
                   case Some(m): m;
@@ -172,7 +172,7 @@ class Proxify {
               case KSub(variants):
                 
                 var target = f.signature.result.asSubTarget().toComplex(),
-                    v = tink.web.v2.Variant.seek(variants, f.field.pos);
+                    v = Variant.seek(variants, f.field.pos);
                 
                 macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.client, ${makeEndpoint(v.path, f)});
             }

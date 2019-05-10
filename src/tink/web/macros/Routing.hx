@@ -6,12 +6,12 @@ import haxe.macro.Type;
 import haxe.macro.Expr;
 import tink.macro.BuildCache;
 import tink.http.Method;
-import tink.web.v2.Route;
-import tink.web.v2.RouteCollection;
-import tink.web.v2.RoutePath;
-import tink.web.v2.RouteSignature;
-import tink.web.v2.Variant;
-import tink.web.v2.MimeType;
+import tink.web.macros.Route;
+import tink.web.macros.RouteCollection;
+import tink.web.macros.RoutePath;
+import tink.web.macros.RouteSignature;
+import tink.web.macros.Variant;
+import tink.web.macros.MimeType;
 import tink.web.routing.Response;
 
 using tink.MacroApi;

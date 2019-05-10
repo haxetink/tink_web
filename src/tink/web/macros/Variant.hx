@@ -1,4 +1,4 @@
-package tink.web.v2;
+package tink.web.macros;
 
 import haxe.macro.Expr;
 import tink.http.Method;
