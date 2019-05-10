@@ -23,15 +23,15 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
     return new OutgoingResponse(new ResponseHeader(Found, Found, [new HeaderField('location', u)]), Chunk.EMPTY);
   }
 
-  static public function binary(?code, contentType:String, bytes:Bytes):Response {
+  static public function binary(?code, contentType:String, bytes:Bytes, ?headers):Response {
     //TODO: calculate ETag
-    return OutgoingResponse.blob(code, bytes, contentType);
+    return OutgoingResponse.blob(code, bytes, contentType, headers);
   }
   
   static public function empty(?code = OK):Response {
     return new OutgoingResponse(new ResponseHeader(code, code, [new HeaderField(CONTENT_LENGTH, '0')]), Chunk.EMPTY);
   }
     
-  static public function textual(?code, contentType:String, string:String):Response
-    return binary(code, contentType, Bytes.ofString(string));
+  static public function textual(?code, contentType:String, string:String, ?headers):Response
+    return binary(code, contentType, Bytes.ofString(string), headers);
 }

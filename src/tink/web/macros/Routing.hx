@@ -385,23 +385,16 @@ class Routing {
                 case None:
               }
               
-              // var isResponse = !isNoise && t.unifiesWith(Context.getType('tink.web.Response'));
-              
               for (fmt in route.produces) 
                 formats.push(
-                  macro @:pos(pos) if (ctx.accepts($v{fmt})) return ${{
-                    var e = macro tink.web.routing.Response.textual(
+                  macro @:pos(pos) if (ctx.accepts($v{fmt}))
+                    return tink.web.routing.Response.textual(
                       $statusCode,
-                      $v{fmt}, ${MimeType.writers.get([fmt], t, pos).generator}(__data__)
-                    );
-                    
-                    if(headers.length > 0)
-                      e = macro {
-                        var res = $e;
-                        new tink.http.Response.OutgoingResponse(res.header.concat(${macro $a{headers}}), res.body);
-                      }
-                    e;
-                  }});
+                      $v{fmt},
+                      ${MimeType.writers.get([fmt], t, pos).generator}(__data__),
+                      $a{headers}
+                    )
+                );
                 
               macro @:pos(pos) tink.core.Promise.lift($result).next(
                 function (__data__:$ct):tink.core.Promise<tink.web.routing.Response> {
@@ -411,6 +404,7 @@ class Routing {
               );
             
             case ROpaque(OParsed(res, t)):
+              // @:statusCode and @:header is ignored here, we should probably error/warn
               var ct = res.toComplex();
               var formats = [];
               
@@ -424,8 +418,6 @@ class Routing {
                   );
                 case None:
               }
-              
-              // var isResponse = !isNoise && t.unifiesWith(Context.getType('tink.web.Response'));
               
               for (fmt in route.produces) 
                 formats.push(
@@ -447,21 +439,21 @@ class Routing {
               var e = macro @:pos(pos) tink.core.Promise.lift($result)
                 .next(function (v:$t):tink.web.routing.Response return v);
               switch [statusCode, headers] {
-                case [macro null, []]:
+                case [macro 200, []]:
                   e;
-                case [macro null, _]:
+                case [macro 200, _]:
                   macro $e.next(function(res) return new tink.http.Response.OutgoingResponse(
                     res.header.concat(${macro $a{headers}}),
                     res.body
                   ));
                 case [_, []]:
                   macro $e.next(function (res) return new tink.http.Response.OutgoingResponse(
-                    new tink.http.Response.ResponseHeader($statusCode, res.header.reason, @:privateAccess res.header.fields, res.header.protocol),
+                    new tink.http.Response.ResponseHeader($statusCode, $statusCode, @:privateAccess res.header.fields, res.header.protocol),
                     res.body
                   ));
                 case _: 
                   macro $e.next(function (res) return new tink.http.Response.OutgoingResponse(
-                    new tink.http.Response.ResponseHeader($statusCode, res.header.reason, @:privateAccess res.header.fields.concat(${macro $a{headers}}), res.header.protocol),
+                    new tink.http.Response.ResponseHeader($statusCode, $statusCode, @:privateAccess res.header.fields.concat(${macro $a{headers}}), res.header.protocol),
                     res.body
                   ));
               }
