@@ -250,20 +250,24 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
     var arr = this.b;
     
     for(item in arr) {
+      function add(to, expr) {
+        EObjectDecl(to); // type inference
+        to.push({field: '_${item.id}', expr: expr});
+      }
       switch [item.access, item.kind] {
         case [_, PKBody(None)]:
         case [Plain(name), PKBody(Some(_))]:
-          body.push({field: '_${item.id}', expr: macro $i{name}});
+          add(body, macro $i{name});
         case [Plain(name), PKQuery(_)]:
-          query.push({field: '_${item.id}', expr: macro $i{name}});
+          add(query, macro $i{name});
         case [Plain(name), PKHeader(_)]:
-          header.push({field: '_${item.id}', expr: macro $i{name}});
+          add(header, macro $i{name});
         case [Drill(name, field), PKBody(Some(_))]:
-          body.push({field: '_${item.id}', expr: macro $p{[name, field]}});
+          add(body, macro $p{[name, field]});
         case [Drill(name, field), PKQuery(_)]:
-          query.push({field: '_${item.id}', expr: macro $p{[name, field]}});
+          add(query, macro $p{[name, field]});
         case [Drill(name, field), PKHeader(_)]:
-          header.push({field: '_${item.id}', expr: macro $p{[name, field]}});
+          add(header, macro $p{[name, field]});
       }
     }
     
