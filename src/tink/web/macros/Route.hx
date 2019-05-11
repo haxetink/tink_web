@@ -197,7 +197,8 @@ enum RoutePayload {
 
 abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind2}>>) {
   public inline function new(pos, arr) this = new Pair(pos, arr);
-  public function group() {
+  
+  public function toTypes() {
     var flat = null;
     var body:Array<Field> = [];
     var query:Array<Field> = [];
@@ -241,7 +242,7 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
     }
   }
     
-  public function toObjectDecl() {
+  public function toObjectDecls() {
     var body = []; var bodyObj = EObjectDecl(body);
     var query = []; var queryObj = EObjectDecl(query);
     var header = []; var headerObj = EObjectDecl(header);

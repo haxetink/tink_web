@@ -527,9 +527,9 @@ class Routing {
     
       
     // parse params
-      var grouped = payload.group();
+      var types = payload.toTypes();
       
-      result = switch grouped.body {
+      result = switch types.body {
         case Flat(Plain(name), t) if(is(t, 'haxe.io.Bytes')):
           macro @:pos(pos) ctx.allRaw().next(function ($name:tink.Chunk) return $result);
         
@@ -552,7 +552,7 @@ class Routing {
       for (f in beforeBody)
         result = f(result);
       
-      result = switch grouped.query {
+      result = switch types.query {
         case TAnonymous([]):
           result;
           
@@ -561,7 +561,7 @@ class Routing {
               .next(function(__query__) return $result);
       }
       
-      result = switch grouped.header {
+      result = switch types.header {
         case TAnonymous([]):
           result;
           

@@ -52,17 +52,17 @@ class Proxify {
       }
       
     var payload = route.getPayload();
-    var group = payload.group();
-    var decls = payload.toObjectDecl();
+    var types = payload.toTypes();
+    var decls = payload.toObjectDecls();
       
     var path = from.parts.map(val);
     
-    var ct = group.query;
+    var ct = types.query;
     var query = [for (name in from.query.keys()) 
       macro new tink.CoreApi.NamedWith(${(name:Portion)}, ${val(from.query[name])})
     ].toArray();
     
-    switch group.query {
+    switch types.query {
       case TAnonymous([]): // skip
       case ct: 
         query = macro $query.concat(
@@ -71,7 +71,7 @@ class Proxify {
         );
     }
     
-    var headers = switch group.header {
+    var headers = switch types.header {
       case TAnonymous([]):
         macro null;
       case ct: 
@@ -119,7 +119,7 @@ class Proxify {
                 
                 var payload = f.getPayload();
                 
-                var body = switch payload.group().body {
+                var body = switch payload.toTypes().body {
                   case Flat(Plain(name), type):
                     var w = MimeType.writers.get(f.consumes, type, f.field.pos);
                     contentType = Some(w.type);
@@ -133,7 +133,7 @@ class Proxify {
                     macro '';
                     
                   case Object(_.toType().sure() => type):
-                    var decl = payload.toObjectDecl().body;
+                    var decl = payload.toObjectDecls().body;
                     var w = MimeType.writers.get(f.consumes, type, f.field.pos);
                     contentType = Some(w.type);
                     var writer = w.generator;
