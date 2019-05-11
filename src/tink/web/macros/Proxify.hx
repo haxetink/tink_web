@@ -16,30 +16,6 @@ using tink.CoreApi;
 using tink.MacroApi;
 
 class Proxify { 
-  
-  static function combine(pos:Position, payload:RoutePayload, write:Expr->ComplexType->Expr) 
-    return switch payload {
-      case Empty: 
-        None;
-      case SingleCompound(name, type):
-        Some(write(macro $i{name}, type.toComplex()));
-      case Mixed(sep, com, res):
-        var ret = [];
-        EObjectDecl(ret);//just for type inference
-        for (f in sep)
-          ret.push({ field: f.name, expr: macro $i{f.name} });
-          
-        for (c in com)
-          switch c.value.reduce() {
-            case TAnonymous(_.get() => { fields: fields } ):
-              for (f in fields)
-                ret.push({ field: f.name, expr: [c.name, f.name].drill() });
-            default:
-              throw 'assert';
-          }
-        Some(write(EObjectDecl(ret).at(pos), res));
-    }
-  
   static function makeEndpoint(from:Path, route:Route):Expr {
     
     var sig = route.signature;
