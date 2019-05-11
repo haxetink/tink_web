@@ -2,8 +2,10 @@ package tink.web.macros;
 
 import tink.http.Method;
 import tink.web.macros.Variant;
-import tink.web.macros.RouteSignature;
-import tink.web.macros.RouteResult;
+import tink.web.macros.Signature;
+import tink.web.macros.Arguments;
+import tink.web.macros.Parameters;
+import tink.web.macros.Result;
 import haxe.ds.Option;
 import haxe.macro.Type;
 import haxe.macro.Expr;
@@ -21,14 +23,14 @@ class Route {
   
   public var field(default, null):ClassField;
   public var kind(default, null):RouteKind;
-  public var signature(default, null):RouteSignature;
+  public var signature(default, null):Signature;
   public var consumes(default, null):Array<MimeType>;
   public var produces(default, null):Array<MimeType>;
   public var restricts(default, null):Array<Expr>;
   
   public function new(f, consumes, produces) {
     field = f;
-    signature = new RouteSignature(f);
+    signature = new Signature(f);
     switch [hasCall(f), hasSub(f)] {
       case [false, false]:
         f.pos.error('No routes on this field'); // should not happen actually
@@ -81,7 +83,7 @@ class Route {
   public function getPayload():Payload {
     var payload = [];
     var i = 0;
-    for(arg in signature.args2) {
+    for(arg in signature.args) {
       switch arg.kind {
         case AKSingle(ATParam(kind)):
           payload.push({id: i++, access: Plain(arg.name), type: arg.type, kind: kind});
@@ -195,7 +197,7 @@ enum RoutePayload {
 }
 
 
-abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind2}>>) {
+abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind}>>) {
   public inline function new(pos, arr) this = new Pair(pos, arr);
   
   public function toTypes() {

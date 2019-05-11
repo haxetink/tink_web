@@ -9,7 +9,7 @@ import tink.http.Method;
 import tink.web.macros.Route;
 import tink.web.macros.Paths;
 import tink.web.macros.RouteCollection;
-import tink.web.macros.RouteSignature;
+import tink.web.macros.Signature;
 import tink.web.macros.Variant;
 import tink.web.macros.MimeType;
 import tink.web.routing.Response;
@@ -220,9 +220,7 @@ class Routing {
   }
   
   function routeMethod(route:Route) {
-    var separate = new Map<ParamLocation, Array<Field>>(),
-        compound = new Map<ParamLocation, Array<Named<Type>>>(),
-        pos = route.field.pos,
+    var pos = route.field.pos,
         callArgs = [],
         funcArgs:Array<FunctionArg> = [{
           name: 'ctx',
@@ -233,7 +231,7 @@ class Routing {
             
     var beforeBody = [function (e) return restrict(route.restricts, e)];
     
-    for (arg in route.signature.args2) {
+    for (arg in route.signature.args) {
       
       var argExpr = arg.name.resolve();
 

@@ -10,7 +10,7 @@ import tink.web.macros.Route;
 import tink.web.macros.Paths;
 import tink.web.macros.Variant;
 import tink.web.macros.MimeType;
-import tink.web.macros.RouteSignature;
+import tink.web.macros.Signature;
 
 using tink.CoreApi;
 using tink.MacroApi;
@@ -97,7 +97,7 @@ class Proxify {
         pos: f.field.pos,
         name: f.field.name,
         kind: FFun({
-          args: [for (arg in f.signature.args2) switch arg.kind {
+          args: [for (arg in f.signature.args) switch arg.kind {
             case AKSingle(ATUser(_) | ATContext): continue;
             case _: { name: arg.name, type: arg.type.toComplex(), opt: arg.optional };
           }],

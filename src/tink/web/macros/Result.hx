@@ -6,7 +6,7 @@ import haxe.macro.Context;
 using tink.CoreApi;
 using tink.MacroApi;
 
-class RouteResult {
+class Result {
   
   var call:Lazy<CallResponse>;
   var type:Type;
