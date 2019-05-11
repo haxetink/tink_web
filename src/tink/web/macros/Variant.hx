@@ -2,13 +2,14 @@ package tink.web.macros;
 
 import haxe.macro.Expr;
 import tink.http.Method;
+import tink.web.macros.Paths;
 
 using tink.CoreApi;
 using tink.MacroApi;
 
 @:structInit
 class Variant {
-  public var path(default, null):RoutePath;
+  public var path(default, null):Path;
 	
   public static function checkVariants<V:Variant>(pos:Position, variants:Iterable<V>) {
     function warn(prefix, pos:Position, args:Array<String>) {

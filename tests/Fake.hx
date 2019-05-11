@@ -38,6 +38,10 @@ class Fake {
   @:params(bar in query)
   @:get public function complex(query: Complex, ?bar:String) 
     return query;
+    
+  @:params(bar.foo in query)
+  @:get public function temp(bar:{foo:String}) 
+    return bar;
   
   // @:post public function streaming(body:RealSource)
   //   return body.all();
@@ -88,13 +92,13 @@ class Fake {
   @:get public function enumAbstractIntInQuery(v:EInt):EInt
     return v;
   
-  // @:params(v = query['foo'])
-  // @:get public function paramKey(v:String, ctx:Context):{parsed:String, raw:String}  {
-  //   return {
-  //     parsed: v,
-  //     raw: @:privateAccess ctx.request.header.url.query,
-  //   }
-  // }
+  @:params(v = query['foo'])
+  @:get public function alias(v:String, ctx:Context):{parsed:String, raw:String}  {
+    return {
+      parsed: v,
+      raw: @:privateAccess ctx.request.header.url.query,
+    }
+  }
   
   @:get('enum_abs_str/$v') public function enumAbstractStringInPath(v:EStr):EStr
     return v;

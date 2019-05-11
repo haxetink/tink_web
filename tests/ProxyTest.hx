@@ -116,8 +116,8 @@ class ProxyTest {
   }
   
   // @:include
-  // public function paramKey() {
-  //   proxy.paramKey('bar')
+  // public function alias() {
+  //   proxy.alias('bar')
   //     .next(function (o) {
   //       asserts.assert(o.parsed == 'bar');
   //       asserts.assert(o.raw == 'foo=bar');
