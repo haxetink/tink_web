@@ -88,7 +88,7 @@ class Proxify {
   
   static function build(ctx:BuildContext):TypeDefinition {
     var routes = new RouteCollection(ctx.type, ['application/json'], ['application/json']);
-    var def = {
+    return {
       pos: ctx.pos,
       pack: ['tink', 'web'],
       name: ctx.name,
@@ -203,8 +203,6 @@ class Proxify {
       }],
       kind: TDClass('tink.web.proxy.Remote.RemoteBase'.asTypePath([TPType(ctx.type.toComplex())])),
     }
-    trace(new haxe.macro.Printer().printTypeDefinition(def));
-    return def;
   }
   
   static function remote():Type 
