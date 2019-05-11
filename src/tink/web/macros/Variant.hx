@@ -35,10 +35,10 @@ class Variant {
       
   }
   
-  public static function seek<V:Variant>(variants:Array<V>, pos:Position) {
-    for (v in variants)
-      if (v.path.deviation.surplus.length == 0)
-        return v;
+  public static function seek(paths:Paths, pos:Position) {
+    for (path in paths)
+      if (path.deviation.surplus.length == 0)
+        return path;
         
     return pos.error('Cannot process route. See warnings.');
   }

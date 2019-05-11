@@ -7,7 +7,7 @@ import tink.macro.BuildCache;
 import tink.http.Method;
 import tink.url.Portion;
 import tink.web.macros.Route;
-import tink.web.macros.RoutePath;
+import tink.web.macros.Paths;
 import tink.web.macros.Variant;
 import tink.web.macros.MimeType;
 import tink.web.macros.RouteSignature;
@@ -40,37 +40,45 @@ class Proxify {
         Some(write(EObjectDecl(ret).at(pos), res));
     }
   
-  static function makeEndpoint(from:RoutePath, route:Route):Expr {
+  static function makeEndpoint(from:Path, route:Route):Expr {
     
     var sig = route.signature;
     
-    function val(p:RoutePathPart)
+    function val(p:PathPart)
       return switch p {
-        case PCapture(name): macro (($i{name} : tink.Stringly) : tink.url.Portion);
+        case PCapture(Plain(name)): macro (($i{name} : tink.Stringly) : tink.url.Portion);
+        case PCapture(Drill(name, field)): throw 'TODO';
         case PConst(s): macro $s;
       }
       
-    var path = from.parts.map(val),
-        query = [for (name in from.query.keys()) 
-          macro new tink.CoreApi.NamedWith(${(name:Portion)}, ${val(from.query[name])})
-        ].toArray();
-        
-    var combinedQuery = combine(route.field.pos, route.getPayload(PQuery), function (e, t) {
-      return macro @:pos(e.pos) new tink.querystring.Builder<$t->tink.web.proxy.Remote.QueryParams>().stringify($e);
-    });
+    var payload = route.getPayload();
+    var group = payload.group();
+    var decls = payload.toObjectDecl();
+      
+    var path = from.parts.map(val);
     
-    switch combinedQuery {
-      case Some(v):
-        query = macro @:pos(v.pos) $query.concat($v);
-      case None:
+    var ct = group.query;
+    var query = [for (name in from.query.keys()) 
+      macro new tink.CoreApi.NamedWith(${(name:Portion)}, ${val(from.query[name])})
+    ].toArray();
+    
+    switch group.query {
+      case TAnonymous([]): // skip
+      case ct: 
+        query = macro $query.concat(
+          new tink.querystring.Builder<$ct->tink.web.proxy.Remote.QueryParams>()
+            .stringify(${decls.query.at()})
+        );
+    }
+    
+    var headers = switch group.header {
+      case TAnonymous([]):
+        macro null;
+      case ct: 
+        macro new tink.querystring.Builder<$ct->tink.web.proxy.Remote.HeaderParams>()
+          .stringify(${decls.header.at()});
     }
         
-    var combinedHeader = combine(route.field.pos, route.getPayload(PHeader), function (e, t) {
-      return macro @:pos(e.pos) new tink.querystring.Builder<$t->tink.web.proxy.Remote.HeaderParams>().stringify($e);
-    });
-    
-    var headers = combinedHeader.or(macro null);
-    
     return macro this.endpoint.sub({
       path: $a{path},
       query: $query,
@@ -80,7 +88,7 @@ class Proxify {
   
   static function build(ctx:BuildContext):TypeDefinition {
     var routes = new RouteCollection(ctx.type, ['application/json'], ['application/json']);
-    return {
+    var def = {
       pos: ctx.pos,
       pack: ['tink', 'web'],
       name: ctx.name,
@@ -89,14 +97,10 @@ class Proxify {
         pos: f.field.pos,
         name: f.field.name,
         kind: FFun({
-          args: {
-            var args = [];
-            for (arg in f.signature.args) switch arg.kind {
-              case AUser(_) | AContext: // don't generate these args into proxy function signature
-              case _: args.push({ name: arg.name, type: arg.type.toComplex(), opt: arg.optional });
-            }
-            args;
-          },
+          args: [for (arg in f.signature.args2) switch arg.kind {
+            case AKSingle(ATUser(_) | ATContext): continue;
+            case _: { name: arg.name, type: arg.type.toComplex(), opt: arg.optional };
+          }],
           expr: {
             
             var call = [];
@@ -104,23 +108,39 @@ class Proxify {
             switch f.kind {
               case KCall(c):
                 
-                var v = Variant.seek(c.variants, f.field.pos);
+                var path = Variant.seek(f.signature.paths, f.field.pos);
                 
-                var method = switch v.method {
-                  case Some(m): m;
-                  default: GET;
+                var method = switch path.kind {
+                  case Call(Some(m)): m;
+                  case _: GET;
                 }
                 
                 var contentType = None;
                 
-                var body = combine(f.field.pos, f.getPayload(PBody), function (expr, type) {
-                  var w = MimeType.writers.get(f.consumes, type.toType().sure(), f.field.pos);
-                  contentType = Some(w.type);
-                  var writer = w.generator;
-                  return macro @:pos(expr.pos) ${writer}($expr);
-                }).or(macro '');
+                var payload = f.getPayload();
                 
-                var endPoint = makeEndpoint(v.path, f);
+                var body = switch payload.group().body {
+                  case Flat(Plain(name), type):
+                    var w = MimeType.writers.get(f.consumes, type, f.field.pos);
+                    contentType = Some(w.type);
+                    var writer = w.generator;
+                    macro ${writer}($i{name});
+                    
+                  case Flat(Drill(name, field), type):
+                    throw "TODO";
+                    
+                  case Object(TAnonymous([])):
+                    macro '';
+                    
+                  case Object(_.toType().sure() => type):
+                    var decl = payload.toObjectDecl().body;
+                    var w = MimeType.writers.get(f.consumes, type, f.field.pos);
+                    contentType = Some(w.type);
+                    var writer = w.generator;
+                    macro ${writer}(${decl.at()});
+                }
+                
+                var endPoint = makeEndpoint(path, f);
                 
                 switch contentType {
                   case Some(v):
@@ -169,12 +189,12 @@ class Proxify {
                   );
                 };
                 
-              case KSub(variants):
+              case KSub:
                 
                 var target = f.signature.result.asSubTarget().toComplex(),
-                    v = Variant.seek(variants, f.field.pos);
+                    path = Variant.seek(f.signature.paths, f.field.pos);
                 
-                macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.client, ${makeEndpoint(v.path, f)});
+                macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.client, ${makeEndpoint(path, f)});
             }
           },
           ret: null,
@@ -183,6 +203,8 @@ class Proxify {
       }],
       kind: TDClass('tink.web.proxy.Remote.RemoteBase'.asTypePath([TPType(ctx.type.toComplex())])),
     }
+    trace(new haxe.macro.Printer().printTypeDefinition(def));
+    return def;
   }
   
   static function remote():Type 

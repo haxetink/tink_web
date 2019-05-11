@@ -115,17 +115,16 @@ class ProxyTest {
     return asserts;
   }
   
-  // @:include
-  // public function alias() {
-  //   proxy.alias('bar')
-  //     .next(function (o) {
-  //       asserts.assert(o.parsed == 'bar');
-  //       asserts.assert(o.raw == 'foo=bar');
-  //       return Noise;
-  //     })
-  //     .handle(asserts.handle);
-  //   return asserts;
-  // }
+  public function alias() {
+    proxy.alias('bar')
+      .next(function (o) {
+        asserts.assert(o.parsed == 'bar');
+        asserts.assert(o.raw == 'foo=bar');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
   
   public function header() {
     var accept = 'application/json';

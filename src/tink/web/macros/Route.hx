@@ -240,6 +240,39 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
       header: TAnonymous(header),
     }
   }
+    
+  public function toObjectDecl() {
+    var body = []; var bodyObj = EObjectDecl(body);
+    var query = []; var queryObj = EObjectDecl(query);
+    var header = []; var headerObj = EObjectDecl(header);
+    
+    var pos = this.a;
+    var arr = this.b;
+    
+    for(item in arr) {
+      switch [item.access, item.kind] {
+        case [_, PKBody(None)]:
+        case [Plain(name), PKBody(Some(_))]:
+          body.push({field: '_${item.id}', expr: macro $i{name}});
+        case [Plain(name), PKQuery(_)]:
+          query.push({field: '_${item.id}', expr: macro $i{name}});
+        case [Plain(name), PKHeader(_)]:
+          header.push({field: '_${item.id}', expr: macro $i{name}});
+        case [Drill(name, field), PKBody(Some(_))]:
+          body.push({field: '_${item.id}', expr: macro $p{[name, field]}});
+        case [Drill(name, field), PKQuery(_)]:
+          query.push({field: '_${item.id}', expr: macro $p{[name, field]}});
+        case [Drill(name, field), PKHeader(_)]:
+          header.push({field: '_${item.id}', expr: macro $p{[name, field]}});
+      }
+    }
+    
+    return {
+      body: bodyObj,
+      query: queryObj,
+      header: headerObj,
+    }
+  }
   
   public inline function iterator() return this.b.iterator();
 }
