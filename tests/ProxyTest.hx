@@ -140,7 +140,13 @@ class ProxyTest {
   }
   
   public function header() {
-    var accept = 'application/json';
-    return proxy.headers({accept: accept}).map(function (o) return assert(o.sure().header == accept));
+    proxy.headers({accept: 'application/json', bar: 'bar'})
+      .next(function (o) {
+        asserts.assert(o.accept == 'application/json');
+        asserts.assert(o.bar == 'bar');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
   }
 }

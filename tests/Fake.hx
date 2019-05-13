@@ -69,8 +69,8 @@ class Fake {
   @:get('/statusCode') public function redirectStatusCode()
     return tink.Url.parse('https://example.com');
   
-  @:get public function headers(header: { accept:String } ) {
-    return {header: header.accept};
+  @:get public function headers(header: { var accept:String; @:name('x-bar') var bar:String; } ) {
+    return header;
   }    
   
   @:get public function typed() {

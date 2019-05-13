@@ -76,7 +76,11 @@ class Arguments {
         AKObject([for(field in fields) {
           name: field.name,
           type: field.type,
-          target: factory(field.name), // TODO: support meta to alter the native name
+          target: factory(switch field.meta.extract(':name') {
+            case [{params: [macro $v{(name:String)}]}]: name;
+            case [{params: _, pos: pos}]: pos.error('@:name meta should contain exactly one string literal parameter');
+            case _: field.name;
+          }), // TODO: support meta to alter the native name
         }]);
       case _:
         throw 'unreachable';
