@@ -80,7 +80,7 @@ class Arguments {
             case [{params: [macro $v{(name:String)}]}]: name;
             case [{params: _, pos: pos}]: pos.error('@:name meta should contain exactly one string literal parameter');
             case _: field.name;
-          }), // TODO: support meta to alter the native name
+          }),
         }]);
       case _:
         throw 'unreachable';
