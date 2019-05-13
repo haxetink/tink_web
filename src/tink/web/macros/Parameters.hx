@@ -46,7 +46,7 @@ class Parameters {
             validate(name);
             switch types[name].reduce() {
               case TAnonymous(_.get() => {fields: fields}):
-                for(field in fields) add(Drill(name, field.name), LOCATION_FACTORY[pos](field.name));
+                for(field in fields) add(Drill(name, field.name), LOCATION_FACTORY[pos](getParamName(field)));
               case _:
                 p.reject('`$name` should be anonymous structure');
             }
@@ -131,6 +131,14 @@ class Parameters {
     return switch name {
       case 'user' | 'query' | 'header' | 'body': true;
       case _: false;
+    }
+  }
+  
+  public static function getParamName(field:ClassField) {
+    return switch field.meta.extract(':name') {
+      case [{params: [macro $v{(name:String)}]}]: name;
+      case [{params: _, pos: pos}]: pos.error('@:name meta should contain exactly one string literal parameter');
+      case _: field.name;
     }
   }
 }
