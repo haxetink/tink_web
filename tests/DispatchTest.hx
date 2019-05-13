@@ -62,8 +62,8 @@ class DispatchTest {
   @:variant('<p>Hello world</p>',         get('/', []))
   @:variant({ hello: 'haxe' },            get('/haxe'))
   @:variant("yo",                         get('/yo'))
-  @:variant({ parsed: 'bar', raw: 'foo=bar'}, 
-     get('/alias?foo=bar'))
+  @:variant({ foo: 'f', baz: 'b', raw: 'foo=f&baz=b'}, 
+     get('/alias?foo=f&baz=b'))
   @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
   @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
   @:variant({header: 'application/json'}, get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json')]))

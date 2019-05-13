@@ -468,7 +468,7 @@ class Routing {
           }
       }
     
-    var payload = route.getPayload();
+    var payload = route.payload;
     
     // map params into correct arg access
     var objects = new Map();

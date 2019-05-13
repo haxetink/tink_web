@@ -27,6 +27,9 @@ class Route {
   public var consumes(default, null):Array<MimeType>;
   public var produces(default, null):Array<MimeType>;
   public var restricts(default, null):Array<Expr>;
+  public var payload(get, null):Payload;
+  
+  static var id:Int = 0; // use global id counter to dodge https://github.com/haxetink/tink_macro/issues/25, but renders BuildCache useless
   
   public function new(f, consumes, produces) {
     field = f;
@@ -80,78 +83,28 @@ class Route {
   }
   
   
-  public function getPayload():Payload {
-    var payload = [];
-    var i = 0;
-    for(arg in signature.args) {
-      switch arg.kind {
-        case AKSingle(ATParam(kind)):
-          payload.push({id: i++, access: Plain(arg.name), type: arg.type, kind: kind});
-        case AKObject(fields):
-          for(field in fields)
-            switch field.target {
-              case ATParam(kind):
-                payload.push({id: i++, access: Drill(arg.name, field.name), type: field.type, kind: kind});
-              case _: // skip
-            }
-        case _: // skip
+  function get_payload():Payload {
+    if(payload == null) {
+      var arr = [];
+      // var id = 0; // see https://github.com/haxetink/tink_macro/issues/25
+      for(arg in signature.args) {
+        switch arg.kind {
+          case AKSingle(ATParam(kind)):
+            arr.push({id: id++, access: Plain(arg.name), type: arg.type, kind: kind});
+          case AKObject(fields):
+            for(field in fields)
+              switch field.target {
+                case ATParam(kind):
+                  arr.push({id: id++, access: Drill(arg.name, field.name), type: field.type, kind: kind});
+                case _: // skip
+              }
+          case _: // skip
+        }
       }
+      payload = new Payload(field.pos, arr);
     }
-    return new Payload(field.pos, payload);
+    return payload;
   }
-  // public function getPayload():RoutePayload {
-  //   var compound = new Array<Named<Type>>(),
-  //       separate = new Array<Field>();
-        
-        
-  //   for (arg in signature.args) 
-  //     switch arg.kind {
-  //       case AKParam(t, _ == loc => true, kind):
-  //         switch kind {
-  //           case PCompound:
-  //             compound.push(new Named(arg.name, t));
-  //           case PSeparate:
-  //             separate.push({
-  //               name: arg.name,
-  //               pos: field.pos,
-  //               kind: FVar(t.toComplex()),
-  //             });     
-  //         }
-  //       default:
-  //   }
-    
-  //   var locName = loc.getName().substr(1).toLowerCase();    
-    
-  //   return 
-  //     switch [compound, separate] {
-  //       case [[], []]: 
-          
-  //         Empty;
-          
-  //       case [[v], []]: 
-          
-  //         SingleCompound(v.name, v.value);
-          
-  //       case [[], v]: 
-        
-  //         Mixed(separate, compound, TAnonymous(separate));
-          
-  //       default:
-  //         //trace(TAnonymous(separate).toString());
-  //         var fields = separate.copy();
-          
-  //         for (t in compound)
-  //           switch t.value.reduce().toComplex() {
-  //             case TAnonymous(f):
-  //               for (f in f)
-  //                 fields.push(f);
-  //             default:
-  //               field.pos.error('If multiple types are defined for $locName then all must be anonymous objects');
-  //           }          
-            
-  //         Mixed(separate, compound, TAnonymous(fields));
-  //     }
-  // }
   
   public static function hasWebMeta(f:ClassField) {
     return hasSub(f) || hasCall(f);

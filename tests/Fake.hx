@@ -92,10 +92,12 @@ class Fake {
   @:get public function enumAbstractIntInQuery(v:EInt):EInt
     return v;
   
-  @:params(v = query['foo'])
-  @:get public function alias(v:String, ctx:Context):{parsed:String, raw:String}  {
+  @:params(notfoo = query['foo'])
+  @:params(bar.baz = query['baz'])
+  @:get public function alias(notfoo:String, bar:{baz:String}, ctx:Context):{foo:String, baz:String, raw:String}  {
     return {
-      parsed: v,
+      foo: notfoo,
+      baz: bar.baz,
       raw: @:privateAccess ctx.request.header.url.query,
     }
   }

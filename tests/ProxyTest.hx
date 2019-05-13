@@ -116,10 +116,11 @@ class ProxyTest {
   }
   
   public function alias() {
-    proxy.alias('bar')
+    proxy.alias('f', {baz: 'b'})
       .next(function (o) {
-        asserts.assert(o.parsed == 'bar');
-        asserts.assert(o.raw == 'foo=bar');
+        asserts.assert(o.foo == 'f');
+        asserts.assert(o.baz == 'b');
+        asserts.assert(o.raw == 'foo=f&baz=b');
         return Noise;
       })
       .handle(asserts.handle);

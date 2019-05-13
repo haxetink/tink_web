@@ -27,7 +27,7 @@ class Proxify {
         case PConst(s): macro $s;
       }
       
-    var payload = route.getPayload();
+    var payload = route.payload;
     var types = payload.toTypes();
     var decls = payload.toObjectDecls();
       
@@ -93,7 +93,7 @@ class Proxify {
                 
                 var contentType = None;
                 
-                var payload = f.getPayload();
+                var payload = f.payload;
                 
                 var body = switch payload.toTypes().body {
                   case Flat(Plain(name), type):
