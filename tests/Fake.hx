@@ -94,12 +94,19 @@ class Fake {
   
   @:params(notfoo = query['foo'])
   @:params(bar.baz = query['baz'])
-  @:get public function alias(notfoo:String, bar:{baz:String}, ctx:Context):{foo:String, baz:String, raw:String}  {
+  @:get public function alias(notfoo:String, bar:{baz:String}, ctx:Context):{foo:String, baz:String, query:String}  {
     return {
       foo: notfoo,
       baz: bar.baz,
-      raw: @:privateAccess ctx.request.header.url.query,
+      query: @:privateAccess ctx.request.header.url.query,
     }
+  }
+  
+  @:params(obj.foo = query['foo'])
+  @:params(obj.bar = header['x-bar'])
+  @:params(obj.baz = body['baz'])
+  @:get public function merged(obj:{foo:String, bar:String,baz:String}):{foo:String, bar:String, baz:String} {
+    return obj;
   }
   
   @:get('enum_abs_str/$v') public function enumAbstractStringInPath(v:EStr):EStr

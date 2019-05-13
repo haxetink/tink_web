@@ -120,7 +120,19 @@ class ProxyTest {
       .next(function (o) {
         asserts.assert(o.foo == 'f');
         asserts.assert(o.baz == 'b');
-        asserts.assert(o.raw == 'foo=f&baz=b');
+        asserts.assert(o.query == 'foo=f&baz=b');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function merged() {
+    proxy.merged({foo: 'foo', bar: 'bar', baz: 'baz'})
+      .next(function (o) {
+        asserts.assert(o.foo == 'foo');
+        asserts.assert(o.bar == 'bar');
+        asserts.assert(o.baz == 'baz');
         return Noise;
       })
       .handle(asserts.handle);
