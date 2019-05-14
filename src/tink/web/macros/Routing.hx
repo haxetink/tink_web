@@ -215,6 +215,8 @@ class Routing {
     
     for (f in fields)
       ret.fields.push(f);
+      
+    ret.pack = ['tink', 'web'];
     
     return ret;    
   }
