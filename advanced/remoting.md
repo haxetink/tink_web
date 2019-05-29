@@ -49,6 +49,8 @@ import tink.http.clients.*;
 import tink.web.proxy.Remote;
 import tink.url.Host;
 
+using tink.CoreApi;
+
 class Client {
 	static function main() {
 		var remote = new Remote<Root>(new JsClient(), new RemoteEndpoint(new Host('httpbin.org', 80)));
