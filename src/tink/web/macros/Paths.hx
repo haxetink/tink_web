@@ -101,7 +101,7 @@ class Path {
               RNotAllowed;
           }
           
-          
+        // TODO: is this still needed?
         // if (!Route.metas.exists(m.name)) {
         //   switch rest {
         //     case RCapture(_):
@@ -124,7 +124,9 @@ class Path {
           
         var parts = [for (p in parts) part(p)],
             query = [for (q in url.query) q.name => part(q.value)];    
-            
+         
+         
+        // TODO: is this still needed?
         // var optional = new Map();
         // var captured = [for (a in sig.args) switch a.kind {
         //   case ACapture: 
@@ -135,9 +137,9 @@ class Path {
         //     continue;
         // }];
         
+        // TODO:
         // var surplus = [for (c in getCaptured(parts).concat(getCaptured(query))) if (!captured.remove(c)) c];
         // var missing = [for (c in captured) if (!optional[c]) c];
-        
         var surplus = [];
         var missing = [];
         
@@ -146,7 +148,7 @@ class Path {
           pos: v.pos,
           parts: parts,
           query: query,
-          deviation: { surplus: surplus, missing: missing, },
+          deviation: { surplus: surplus, missing: missing },
           rest: rest,
         }
         
@@ -180,5 +182,5 @@ enum PathRest {
 enum PathPart {
   PConst(s:Portion);
   PCapture(access:ArgAccess);
-  // PMixed(arr:Array<PathPart>);
+  // PMixed(arr:Array<PathPart>); // TODO: support some kind of mixed/advanced capture, see https://github.com/haxetink/tink_web/issues/26
 }
