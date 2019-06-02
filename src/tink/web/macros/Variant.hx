@@ -2,13 +2,14 @@ package tink.web.macros;
 
 import haxe.macro.Expr;
 import tink.http.Method;
+import tink.web.macros.Paths;
 
 using tink.CoreApi;
 using tink.MacroApi;
 
 @:structInit
 class Variant {
-  public var path(default, null):RoutePath;
+  public var path(default, null):Path;
 	
   public static function checkVariants<V:Variant>(pos:Position, variants:Iterable<V>) {
     function warn(prefix, pos:Position, args:Array<String>) {
@@ -34,10 +35,10 @@ class Variant {
       
   }
   
-  public static function seek<V:Variant>(variants:Array<V>, pos:Position) {
-    for (v in variants)
-      if (v.path.deviation.surplus.length == 0)
-        return v;
+  public static function seek(paths:Paths, pos:Position) {
+    for (path in paths)
+      if (path.deviation.surplus.length == 0)
+        return path;
         
     return pos.error('Cannot process route. See warnings.');
   }

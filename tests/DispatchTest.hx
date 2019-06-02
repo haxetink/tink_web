@@ -62,9 +62,14 @@ class DispatchTest {
   @:variant('<p>Hello world</p>',         get('/', []))
   @:variant({ hello: 'haxe' },            get('/haxe'))
   @:variant("yo",                         get('/yo'))
+  @:variant({ foo: 'f', baz: 'b', query: 'foo=f&baz=b'}, 
+     get('/alias?foo=f&baz=b'))
+  @:variant({ foo: 'foo', bar: 'bar', baz: 'baz'}, 
+     req('/merged?foo=foo', GET, [new HeaderField('x-bar', 'bar')], '{"baz":"baz"}'))
   @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
   @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
-  @:variant({header: 'application/json'}, get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json')]))
+  @:variant({ accept: 'application/json', bar: 'bar' },
+     get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json'), new tink.http.Header.HeaderField('x-bar', 'bar')]))
   @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, 
      get('/sub/1/2/test/yo?c=3&d=4'))
   @:variant({ foo: ([ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ]:Array<Dynamic>) },

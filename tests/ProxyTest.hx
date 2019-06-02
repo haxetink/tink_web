@@ -115,20 +115,38 @@ class ProxyTest {
     return asserts;
   }
   
-  // @:include
-  // public function paramKey() {
-  //   proxy.paramKey('bar')
-  //     .next(function (o) {
-  //       asserts.assert(o.parsed == 'bar');
-  //       asserts.assert(o.raw == 'foo=bar');
-  //       return Noise;
-  //     })
-  //     .handle(asserts.handle);
-  //   return asserts;
-  // }
+  public function alias() {
+    proxy.alias('f', {baz: 'b'})
+      .next(function (o) {
+        asserts.assert(o.foo == 'f');
+        asserts.assert(o.baz == 'b');
+        asserts.assert(o.query == 'foo=f&baz=b');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function merged() {
+    proxy.merged({foo: 'foo', bar: 'bar', baz: 'baz'})
+      .next(function (o) {
+        asserts.assert(o.foo == 'foo');
+        asserts.assert(o.bar == 'bar');
+        asserts.assert(o.baz == 'baz');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
   
   public function header() {
-    var accept = 'application/json';
-    return proxy.headers({accept: accept}).map(function (o) return assert(o.sure().header == accept));
+    proxy.headers({accept: 'application/json', bar: 'bar'})
+      .next(function (o) {
+        asserts.assert(o.accept == 'application/json');
+        asserts.assert(o.bar == 'bar');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
   }
 }

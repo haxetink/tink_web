@@ -48,7 +48,7 @@ class Context {
       }
       
   public function headers():Pairs<tink.http.Header.HeaderValue> {
-    return [for (f in header) new Named(toCamelCase(f.name), f.value)];
+    return [for (f in header) new Named(f.name, f.value)];
   }
       
   static function toCamelCase(header:HeaderName) {//TODO: should go some place else

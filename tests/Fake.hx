@@ -38,6 +38,10 @@ class Fake {
   @:params(bar in query)
   @:get public function complex(query: Complex, ?bar:String) 
     return query;
+    
+  @:params(bar.foo in query)
+  @:get public function temp(bar:{foo:String}) 
+    return bar;
   
   // @:post public function streaming(body:RealSource)
   //   return body.all();
@@ -65,8 +69,8 @@ class Fake {
   @:get('/statusCode') public function redirectStatusCode()
     return tink.Url.parse('https://example.com');
   
-  @:get public function headers(header: { accept:String } ) {
-    return {header: header.accept};
+  @:get public function headers(header: { var accept:String; @:name('x-bar') var bar:String; } ) {
+    return header;
   }    
   
   @:get public function typed() {
@@ -88,13 +92,22 @@ class Fake {
   @:get public function enumAbstractIntInQuery(v:EInt):EInt
     return v;
   
-  // @:params(v = query['foo'])
-  // @:get public function paramKey(v:String, ctx:Context):{parsed:String, raw:String}  {
-  //   return {
-  //     parsed: v,
-  //     raw: @:privateAccess ctx.request.header.url.query,
-  //   }
-  // }
+  @:params(notfoo = query['foo'])
+  @:params(bar.baz = query['baz'])
+  @:get public function alias(notfoo:String, bar:{baz:String}, ctx:Context):{foo:String, baz:String, query:String}  {
+    return {
+      foo: notfoo,
+      baz: bar.baz,
+      query: @:privateAccess ctx.request.header.url.query,
+    }
+  }
+  
+  @:params(obj.foo = query['foo'])
+  @:params(obj.bar = header['x-bar'])
+  @:params(obj.baz = body['baz'])
+  @:get public function merged(obj:{foo:String, bar:String,baz:String}):{foo:String, bar:String, baz:String} {
+    return obj;
+  }
   
   @:get('enum_abs_str/$v') public function enumAbstractStringInPath(v:EStr):EStr
     return v;

@@ -2,8 +2,10 @@ package tink.web.macros;
 
 import tink.http.Method;
 import tink.web.macros.Variant;
-import tink.web.macros.RouteSignature;
-import tink.web.macros.RouteResult;
+import tink.web.macros.Signature;
+import tink.web.macros.Arguments;
+import tink.web.macros.Parameters;
+import tink.web.macros.Result;
 import haxe.ds.Option;
 import haxe.macro.Type;
 import haxe.macro.Expr;
@@ -21,20 +23,22 @@ class Route {
   
   public var field(default, null):ClassField;
   public var kind(default, null):RouteKind;
-  public var signature(default, null):RouteSignature;
+  public var signature(default, null):Signature;
   public var consumes(default, null):Array<MimeType>;
   public var produces(default, null):Array<MimeType>;
   public var restricts(default, null):Array<Expr>;
+  public var payload(get, null):Payload;
+  
+  static var id:Int = 0; // use global id counter to dodge https://github.com/haxetink/tink_macro/issues/25, but renders BuildCache useless
   
   public function new(f, consumes, produces) {
     field = f;
-    signature = new RouteSignature(f);
-    switch [getCall(f, signature), getSub(f, signature)] {
-      case [[], []]:
+    signature = new Signature(f);
+    switch [hasCall(f), hasSub(f)] {
+      case [false, false]:
         f.pos.error('No routes on this field'); // should not happen actually
-      case [call, []]:
+      case [true, false]:
         kind = KCall({
-          variants: call,
           statusCode: 
             switch field.meta.extract(':statusCode') {
               case []:
@@ -67,9 +71,9 @@ class Route {
                 v[1].pos.error('Cannot have multiple @:html directives');
             }
         });
-      case [[], sub]:
-        kind = KSub(sub);
-      case [_, _]:
+      case [false, true]:
+        kind = KSub;
+      case [true, true]:
         f.pos.error('Cannot have both routing and subrouting on the same field');
     }
     this.consumes = MimeType.fromMeta(f.meta, 'consumes', consumes);
@@ -78,77 +82,41 @@ class Route {
     restricts = getRestricts([field.meta]);
   }
   
-  public function getPayload(loc:ParamLocation):RoutePayload {
-    var compound = new Array<Named<Type>>(),
-        separate = new Array<Field>();
-        
-    for (arg in signature.args) 
-      switch arg.kind {
-        case AParam(t, _ == loc => true, kind):
-          switch kind {
-            case PCompound:
-              compound.push(new Named(arg.name, t));
-            case PSeparate:
-              separate.push({
-                name: arg.name,
-                pos: field.pos,
-                kind: FVar(t.toComplex()),
-              });     
-          }
-        default:
-    }
-    
-    var locName = loc.getName().substr(1).toLowerCase();    
-    
-    return 
-      switch [compound, separate] {
-        case [[], []]: 
-          
-          Empty;
-          
-        case [[v], []]: 
-          
-          SingleCompound(v.name, v.value);
-          
-        case [[], v]: 
-        
-          Mixed(separate, compound, TAnonymous(separate));
-          
-        default:
-          //trace(TAnonymous(separate).toString());
-          var fields = separate.copy();
-          
-          for (t in compound)
-            switch t.value.reduce().toComplex() {
-              case TAnonymous(f):
-                for (f in f)
-                  fields.push(f);
-              default:
-                field.pos.error('If multiple types are defined for $locName then all must be anonymous objects');
-            }          
-            
-          Mixed(separate, compound, TAnonymous(fields));
+  
+  function get_payload():Payload {
+    if(payload == null) {
+      var arr = [];
+      // var id = 0; // see https://github.com/haxetink/tink_macro/issues/25
+      for(arg in signature.args) {
+        switch arg.kind {
+          case AKSingle(ATParam(kind)):
+            arr.push({id: id++, access: Plain(arg.name), type: arg.type, kind: kind});
+          case AKObject(fields):
+            for(field in fields)
+              switch field.target {
+                case ATParam(kind):
+                  arr.push({id: id++, access: Drill(arg.name, field.name), type: field.type, kind: kind});
+                case _: // skip
+              }
+          case _: // skip
+        }
       }
+      payload = new Payload(field.pos, arr);
+    }
+    return payload;
   }
   
   public static function hasWebMeta(f:ClassField) {
-    if (f.meta.has(':sub')) return true;
+    return hasSub(f) || hasCall(f);
+  }
+  
+  public static function hasCall(f:ClassField) {
     for (m in metas.keys()) if (f.meta.has(m)) return true;
     return false;
   }
   
-  public static function getCall(f:ClassField, sig):Array<CallVariant> {
-    return [for(m in f.meta.get()) {
-        switch metas[m.name] {
-          case null: continue;
-          case v: { method: v, path: RoutePath.make(f.name, sig, m) }
-        }
-      }
-    ];
-  }
-  
-  public static function getSub(f:ClassField, sig):Array<Variant> {
-    return [for(m in f.meta.extract(':sub')) { path: RoutePath.make(f.name, sig, m) }];
+  public static function hasSub(f:ClassField) {
+    return f.meta.has(':sub');
   }
   
   // TODO: move this to somewhere
@@ -165,12 +133,11 @@ class Route {
 }
 
 enum RouteKind {
-  KSub(variants:Array<Variant>);
+  KSub;
   KCall(call:Call);
 }
 
 typedef Call = {
-  variants:Array<CallVariant>,
   statusCode:Expr,
   headers:Array<NamedWith<Expr, Expr>>,
   html:Option<Expr>,
@@ -180,4 +147,97 @@ enum RoutePayload {
   Empty;
   Mixed(separate:Array<Field>, compound:Array<Named<Type>>, sum:ComplexType);
   SingleCompound(name:String, type:Type);
+}
+
+
+abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind}>>) {
+  public inline function new(pos, arr) this = new Pair(pos, arr);
+  
+  public function toTypes() {
+    var flat = null;
+    var body:Array<Field> = [];
+    var query:Array<Field> = [];
+    var header:Array<Field> = [];
+    
+    var pos = this.a;
+    var arr = this.b;
+    
+    for(item in arr) {
+      function add(to:Array<Field>, name:String) {
+        to.push({
+          name: '_${item.id}',
+          access: [],
+          meta: [
+            {name: ':json', params: [macro $v{name}], pos: pos},
+            {name: ':formField', params: [macro $v{name}], pos: pos},
+          ],
+          kind: FVar(item.type.toComplex(), null),
+          pos: pos,
+        });
+      }
+        
+      switch item.kind {
+        case PKBody(None):
+          if(body.length > 0) pos.error('Body appeared more than once');
+          flat = new Pair(item.access, item.type);
+        case PKBody(Some(name)):
+          if(flat != null) pos.error('Body appeared more than once');
+          add(body, name);
+        case PKQuery(name):
+          add(query, name);
+        case PKHeader(name):
+          add(header, name);
+      }
+    }
+    
+    return {
+      body: flat != null ? Flat(flat.a, flat.b) : Object(TAnonymous(body)),
+      query: TAnonymous(query),
+      header: TAnonymous(header),
+    }
+  }
+    
+  public function toObjectDecls() {
+    var body = []; var bodyObj = EObjectDecl(body);
+    var query = []; var queryObj = EObjectDecl(query);
+    var header = []; var headerObj = EObjectDecl(header);
+    
+    var pos = this.a;
+    var arr = this.b;
+    
+    for(item in arr) {
+      function add(to, expr) {
+        EObjectDecl(to); // type inference
+        to.push({field: '_${item.id}', expr: expr});
+      }
+      switch [item.access, item.kind] {
+        case [_, PKBody(None)]:
+        case [Plain(name), PKBody(Some(_))]:
+          add(body, macro $i{name});
+        case [Plain(name), PKQuery(_)]:
+          add(query, macro $i{name});
+        case [Plain(name), PKHeader(_)]:
+          add(header, macro $i{name});
+        case [Drill(name, field), PKBody(Some(_))]:
+          add(body, macro $p{[name, field]});
+        case [Drill(name, field), PKQuery(_)]:
+          add(query, macro $p{[name, field]});
+        case [Drill(name, field), PKHeader(_)]:
+          add(header, macro $p{[name, field]});
+      }
+    }
+    
+    return {
+      body: bodyObj,
+      query: queryObj,
+      header: headerObj,
+    }
+  }
+  
+  public inline function iterator() return this.b.iterator();
+}
+
+enum BodyType {
+  Flat(access:ArgAccess, type:Type);
+  Object(type:ComplexType);
 }
