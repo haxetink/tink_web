@@ -256,9 +256,10 @@ class Routing {
           
           var parsed = switch enumAbstract {
             case Some({fields: fields, underlying: underlying}):
-              var ct = underlying.toComplex();
+              var underlyingCt = underlying.toComplex();
+              var abstractCt = arg.type.toComplex();
               ESwitch(
-                macro (s:$ct), 
+                macro (cast (s:$underlyingCt):$abstractCt), 
                 [{expr: macro cast s, values: fields}],
                 macro throw 'Invalid value "' + s + '" for field: ' + $v{arg.name}
               ).at(route.field.pos);
