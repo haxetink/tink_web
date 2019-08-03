@@ -5,7 +5,9 @@ import httpstatus.HttpStatusCode;
 import tink.http.Response;
 import tink.http.Header;
 
-@:forward
+using tink.io.Source;
+
+@:forward @:allow(tink.web)
 abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   
   @:from static function ofString(s:String):Response 
@@ -13,6 +15,12 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   
   @:from static function ofBytes(b:Bytes):Response 
     return binary('application/octet-stream', b);
+  
+  @:from static function ofRealSource(source:RealSource):Response 
+    return new OutgoingResponse(new ResponseHeader(OK, OK, [new HeaderField(CONTENT_TYPE, 'application/octet-stream')]), source.idealize(_ -> Source.EMPTY));
+    
+  @:from static function ofIdealSource(source:IdealSource):Response 
+    return new OutgoingResponse(new ResponseHeader(OK, OK, [new HeaderField(CONTENT_TYPE, 'application/octet-stream')]), source);
     
   #if tink_template
   @:from static function ofHtml(h:tink.template.Html)

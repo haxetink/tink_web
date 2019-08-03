@@ -43,8 +43,8 @@ class Fake {
   @:get public function temp(bar:{foo:String}) 
     return bar;
   
-  // @:post public function streaming(body:RealSource)
-  //   return body.all();
+  @:post public function streaming(body:RealSource)
+    return body;
     
   @:post public function buffered(body:Bytes)
     return body;

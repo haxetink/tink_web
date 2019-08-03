@@ -445,9 +445,20 @@ class Routing {
                 }
               );
               
-            case ROpaque(ORaw(_.toComplex() => t)):
-              var e = macro @:pos(pos) tink.core.Promise.lift($result)
-                .next(function (v:$t):tink.web.routing.Response return v);
+            case ROpaque(ORaw(t)):
+              var ct = t.toComplex();
+              var e = 
+                if(t.unifiesWith(Context.getType('String')))
+                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofString($result));
+                else if(t.unifiesWith(Context.getType('haxe.io.Bytes')))
+                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofBytes($result));
+                else if(t.unifiesWith(Context.getType('tink.io.Source.RealSource')))
+                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofRealSource($result));
+                else if(t.unifiesWith(Context.getType('tink.io.Source.IdealSource')))
+                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofIdealSource($result));
+                else
+                  macro @:pos(pos) tink.core.Promise.lift($result)
+                    .next(function (v:$ct):tink.web.routing.Response return v);
               switch [statusCode, headers] {
                 case [macro 200, []]:
                   e;
@@ -534,7 +545,7 @@ class Routing {
           macro @:pos(pos) ctx.allRaw().next(function ($name:tink.Chunk) return $result);
         
         case Flat(Plain(name), t) if(is(t, 'String')):
-          macro @:pos(pos) ctx.allRaw().next(function ($name:tink.Chunk) {var name = $i{name}.toString(); return $result;});
+          macro @:pos(pos) ctx.allRaw().next(function ($name:tink.Chunk) {var $name = $i{name}.toString(); return $result;});
         
         case Flat(Plain(name), t) if(is(t, 'tink.io.Source')):
           macro @:pos(pos) {var $name = ctx.rawBody; $result;}
@@ -607,7 +618,7 @@ class Routing {
     }
   
   static function is(t:Type, name:String)
-    return Context.getType(name).unifiesWith(t);//This is odd ... https://github.com/haxetink/tink_web/issues/69
+    return t.unifiesWith(Context.getType(name));
     
   static function bodyParser(payload:ComplexType, route:Route) {
     var cases:Array<Case> = [],

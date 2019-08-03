@@ -68,6 +68,9 @@ class DispatchTest {
      req('/merged?foo=foo', GET, [new HeaderField('x-bar', 'bar')], '{"baz":"baz"}'))
   @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
   @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
+  @:variant('foo',                        req('/streaming', POST, 'foo'))
+  @:variant('foo',                        req('/buffered', POST, 'foo'))
+  @:variant('foo',                        req('/textual', POST, 'foo'))
   @:variant({ accept: 'application/json', bar: 'bar' },
      get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json'), new tink.http.Header.HeaderField('x-bar', 'bar')]))
   @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, 

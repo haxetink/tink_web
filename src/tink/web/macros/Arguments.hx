@@ -24,7 +24,7 @@ class Arguments {
           AKSingle(ATContext);
         case ['user', _] if(a.name == 'user'):
           AKSingle(ATUser(a.t));
-        case ['body', _.getID() => 'haxe.io.Bytes' | 'String']:
+        case ['body', _.getID() => 'haxe.io.Bytes' | 'String' | 'tink.io.Source']:
           AKSingle(ATParam(PKBody(None)));
         case ['query' | 'header' | 'body', t = TAnonymous(_)]:
           anon(t, function(name) return ATParam(Parameters.LOCATION_FACTORY[a.name](name)));
