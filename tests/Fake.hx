@@ -52,6 +52,12 @@ class Fake {
   @:post public function textual(body:String)
     return body;
     
+  @:get public function promiseString():Promise<String>
+    return 'foo';
+    
+  @:get public function promiseBytes():Promise<Bytes>
+    return Bytes.ofString('foo');
+    
   @:statusCode(201)
   @:post public function statusCode()
     return 'Done';

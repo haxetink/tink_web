@@ -448,15 +448,15 @@ class Routing {
               
             case ROpaque(ORaw(t)):
               var ct = t.toComplex();
+              function is(name:String) {
+                var type = Context.getType(name);
+                return t.unifiesWith(type) && type.unifiesWith(t);
+              }
               var e = 
-                if(t.unifiesWith(Context.getType('String')))
-                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofString($result));
-                else if(t.unifiesWith(Context.getType('haxe.io.Bytes')))
-                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofBytes($result));
-                else if(t.unifiesWith(Context.getType('tink.io.Source.RealSource')))
-                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofRealSource($result));
-                else if(t.unifiesWith(Context.getType('tink.io.Source.IdealSource')))
-                  macro @:pos(pos) Promise.resolve(tink.web.routing.Response.ofIdealSource($result));
+                if(is('tink.io.Source.RealSource'))
+                  macro @:pos(pos) tink.core.Promise.resolve(tink.web.routing.Response.ofRealSource($result));
+                else if(is('tink.io.Source.IdealSource'))
+                  macro @:pos(pos) tink.core.Promise.resolve(tink.web.routing.Response.ofIdealSource($result));
                 else
                   macro @:pos(pos) tink.core.Promise.lift($result)
                     .next(function (v:$ct):tink.web.routing.Response return v);

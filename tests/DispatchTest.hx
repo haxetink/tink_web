@@ -71,6 +71,8 @@ class DispatchTest {
   @:variant('foo',                        req('/streaming', POST, 'foo'))
   @:variant('foo',                        req('/buffered', POST, 'foo'))
   @:variant('foo',                        req('/textual', POST, 'foo'))
+  @:variant('foo',                        req('/promiseString', GET))
+  @:variant('foo',                        req('/promiseBytes', GET))
   @:variant({ accept: 'application/json', bar: 'bar' },
      get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json'), new tink.http.Header.HeaderField('x-bar', 'bar')]))
   @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ }, 

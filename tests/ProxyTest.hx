@@ -183,4 +183,26 @@ class ProxyTest {
       .handle(asserts.handle);
     return asserts;
   }
+  
+  public function promiseString() {
+    proxy.promiseString()
+      .next(function (o) return o.body.all())
+      .next(function(chunk) {
+        asserts.assert(chunk.toString() == 'foo');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function promiseBytes() {
+    proxy.promiseBytes()
+      .next(function (o) return o.body.all())
+      .next(function(chunk) {
+        asserts.assert(chunk.toString() == 'foo');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
 }
