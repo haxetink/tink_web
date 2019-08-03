@@ -95,7 +95,22 @@ class Proxify {
                 
                 var payload = f.payload;
                 
+                var streaming = false;
                 var body = switch payload.toTypes().body {
+                  case Flat(Plain(name), type) if(Context.getType('tink.io.Source.RealSource').unifiesWith(type)):
+                    streaming = true;
+                    macro $i{name}.idealize(_ -> tink.io.Source.EMPTY);
+                    
+                  case Flat(Plain(name), type) if(Context.getType('tink.io.Source.IdealSource').unifiesWith(type)):
+                    streaming = true;
+                    macro $i{name};
+                    
+                  case Flat(Plain(name), type) if(Context.getType('haxe.io.Bytes').unifiesWith(type)):
+                    macro $i{name};
+                    
+                  case Flat(Plain(name), type) if(Context.getType('String').unifiesWith(type)):
+                    macro $i{name};
+                    
                   case Flat(Plain(name), type):
                     var w = MimeType.writers.get(f.consumes, type, f.field.pos);
                     contentType = Some(w.type);
@@ -120,15 +135,14 @@ class Proxify {
                 
                 switch contentType {
                   case Some(v):
-                    endPoint = macro $endPoint.sub({ headers: [
-                      new tink.http.Header.HeaderField('content-type', $v{v}),
-                      new tink.http.Header.HeaderField('content-length', __body__.length),
-                    ]});
+                    var headers = [macro new tink.http.Header.HeaderField('content-type', $v{v})];
+                    if(!streaming) headers.push(macro new tink.http.Header.HeaderField('content-length', (__body__:tink.Chunk).length));
+                    endPoint = macro $endPoint.sub({ headers: $a{headers} });
                   case None:
                 }
                 
                 macro @:pos(f.field.pos) {
-                  var __body__:tink.Chunk = $body;
+                  var __body__ = $body;
                   return $endPoint.request(
                     this.client, 
                     cast $v{method}, 

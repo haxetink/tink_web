@@ -10,6 +10,7 @@ import tink.http.containers.*;
 import tink.url.Host;
 import tink.web.proxy.Remote;
 import tink.unit.Assert.assert;
+import haxe.io.Bytes;
 
 using tink.CoreApi;
 
@@ -144,6 +145,39 @@ class ProxyTest {
       .next(function (o) {
         asserts.assert(o.accept == 'application/json');
         asserts.assert(o.bar == 'bar');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function string() {
+    proxy.textual('foo')
+      .next(function (o) return o.body.all())
+      .next(function(chunk) {
+        asserts.assert(chunk.toString() == 'foo');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function bytes() {
+    proxy.buffered(Bytes.ofString('foo'))
+      .next(function (o) return o.body.all())
+      .next(function(chunk) {
+        asserts.assert(chunk.toString() == 'foo');
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+  
+  public function source() {
+    proxy.streaming('foo')
+      .next(function (o) return o.body.all())
+      .next(function(chunk) {
+        asserts.assert(chunk.toString() == 'foo');
         return Noise;
       })
       .handle(asserts.handle);
