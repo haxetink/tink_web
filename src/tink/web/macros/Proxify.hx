@@ -99,7 +99,7 @@ class Proxify {
                 var body = switch payload.toTypes().body {
                   case Flat(Plain(name), type) if(Context.getType('tink.io.Source.RealSource').unifiesWith(type)):
                     streaming = true;
-                    macro $i{name}.idealize(_ -> tink.io.Source.EMPTY);
+                    macro $i{name}.idealize(function(_) return tink.io.Source.EMPTY);
                     
                   case Flat(Plain(name), type) if(Context.getType('tink.io.Source.IdealSource').unifiesWith(type)):
                     streaming = true;

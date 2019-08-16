@@ -17,7 +17,7 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
     return binary('application/octet-stream', b);
   
   @:from static function ofRealSource(source:RealSource):Response 
-    return new OutgoingResponse(new ResponseHeader(OK, OK, [new HeaderField(CONTENT_TYPE, 'application/octet-stream')]), source.idealize(_ -> Source.EMPTY));
+    return new OutgoingResponse(new ResponseHeader(OK, OK, [new HeaderField(CONTENT_TYPE, 'application/octet-stream')]), source.idealize(function(_) return Source.EMPTY));
     
   @:from static function ofIdealSource(source:IdealSource):Response 
     return new OutgoingResponse(new ResponseHeader(OK, OK, [new HeaderField(CONTENT_TYPE, 'application/octet-stream')]), source);
