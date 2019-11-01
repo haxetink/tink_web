@@ -13,8 +13,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"releasenote": "Various fixes",
-	"version": "0.1.5",
+	"releasenote": "Tons of changes",
+	"version": "0.2.0",
 	"url": "https://github.com/haxetink/tink_web/",
 	"dependencies": {
 		"tink_http": "",
