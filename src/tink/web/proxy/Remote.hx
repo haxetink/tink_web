@@ -52,14 +52,9 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
 
 	public function request<A>(client:Client, method, body, reader:ResponseReader<A>):Promise<A> {
 		var scheme = ~/:443$/.match(this.host) ? 'https' : 'http';
-		return client.request(new OutgoingRequest(new OutgoingRequestHeader(method, scheme + '://' + this.host + uri(),
-			this.headers),
-			body))
+		return client.request(new OutgoingRequest(new OutgoingRequestHeader(method, scheme + '://' + this.host + uri(), this.headers), body))
 			.next(function(response) return reader.withHeader(response.header)(response.body));
 	}
-
-	@:from public static inline function fromHost(host:Host):RemoteEndpoint
-		return new RemoteEndpoint(host);
 }
 
 abstract ResponseReader<A>(ResponseHeader->RealSource->Promise<A>) from ResponseHeader->RealSource->Promise<A> {
@@ -89,7 +84,7 @@ abstract QueryParams(Array<NamedWith<Portion, Portion>>) to Array<NamedWith<Port
 		return this;
 	}
 
-	@:to public inline function flush():QueryParams
+	@:to public function flush():QueryParams
 		return this;
 
 	@:to public function toString()
@@ -101,23 +96,6 @@ abstract QueryParams(Array<NamedWith<Portion, Portion>>) to Array<NamedWith<Port
 					ret.add(p.name, p.value);
 				'?$ret';
 		}
-}
-
-@:forward
-abstract HeaderParams(Headers) to Headers from Headers {
-	public inline function new()
-		this = [];
-
-	public inline function add(name:HeaderName, value:HeaderValue):HeaderParams {
-		this.push(new HeaderField(name, value));
-		return this;
-	}
-
-	@:to public inline function flush():HeaderParams
-		return this;
-
-	@:to public function toString()
-		return new Header(this).toString();
 }
 
 class RemoteBase<T> {
