@@ -51,14 +51,15 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
       case v: Path.normalize(v.join('/'));
     }) + this.query;
   
-  public function request<A>(client:Client, method, body, reader:ResponseReader<A>):Promise<A>
-    return 
-      client.request(
-        new OutgoingRequest(
-          new OutgoingRequestHeader(method, '//' + this.host + uri(), this.headers),//TODO: consider putting protocol here
+  public function request<A>(client:Client, method, body, reader:ResponseReader<A>):Promise<A>{
+    var scheme = ~/:443$/.match(this.host) ? 'https' : 'http';
+    return client.request(
+      new OutgoingRequest(
+          new OutgoingRequestHeader(method, scheme + '://' + this.host + uri(), this.headers),//TODO: consider putting protocol here
           body
-        )
-      ).next(function (response) return reader.withHeader(response.header)(response.body));
+      )
+    ).next(function (response) return reader.withHeader(response.header)(response.body));
+  }
       
   @:from public static inline function fromHost(host:Host):RemoteEndpoint
     return new RemoteEndpoint(host);
