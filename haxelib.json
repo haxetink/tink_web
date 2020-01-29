@@ -19,6 +19,7 @@
 	"dependencies": {
 		"tink_http": "",
 		"tink_json": "",
+		"tink_xml": "",
 		"tink_querystring": ""
 	}
 }

@@ -1,5 +1,6 @@
 tests.hxml
 -lib tink_web
+-lib tink_xml
 -lib travix
 -lib hxnodejs
 -js bin/node/tests.js
