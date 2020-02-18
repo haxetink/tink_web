@@ -33,6 +33,7 @@ class Arguments {
             name: field.name,
             type: field.type,
             target: getArgTarget(paths, params, Drill(name, field.name), a.opt, pos),
+            meta: field.meta
           }]);
         case [name, _]:
           AKSingle(getArgTarget(paths, params, Plain(name), a.opt, pos));
