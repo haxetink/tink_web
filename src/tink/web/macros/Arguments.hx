@@ -101,7 +101,7 @@ enum ArgAccess {
 
 enum ArgKind {
   AKSingle(target:ArgTarget);
-  AKObject(fields:Array<{name:String, type:Type, target:ArgTarget, meta:haxe.macro.Type.MetaAccess}>);
+  AKObject(fields:Array<{name:String, type:Type, target:ArgTarget, ?meta:haxe.macro.Type.MetaAccess}>);
 }
 
 enum ArgTarget {

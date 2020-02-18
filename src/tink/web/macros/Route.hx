@@ -95,7 +95,7 @@ class Route {
             for(field in fields)
               switch field.target {
                 case ATParam(kind):
-                  arr.push({id: id++, access: Drill(arg.name, field.name), type: field.type, kind: kind});
+                  arr.push({id: id++, access: Drill(arg.name, field.name), type: field.type, kind: kind, meta: field.meta});
                 case _: // skip
               }
           case _: // skip
