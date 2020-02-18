@@ -187,7 +187,7 @@ abstract Payload(Pair < Position, Array < {
 			function add(to:Array<Field>, name:String) {
 				var meta:Array<haxe.macro.Expr.MetadataEntry> = [];
 				inline function fallback(metaName) {
-					if (!item.meta.has(metaName)) {
+					if (item.meta && !item.meta.has(metaName)) {
 						meta.push({name: metaName, params: [macro $v{name}], pos: pos});
 					}
 				}
