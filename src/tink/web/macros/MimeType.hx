@@ -52,12 +52,21 @@ abstract MimeType(String) from String to String {
         }
         
     }
-  
+    #if tink_xml
+    static function xmlReader(type:Type, pos:Position) {
+      var ct = type.toComplex({direct: true});
+      return macro @:pos(pos) str -> tink.core.Outcome.OutcomeTools.sure(new tink.xml.Structure<$ct>().read(str));
+    }
+    #end
+
   static public var readers(default, null) = new Registry('reader', [
     'application/json' => function (type:Type, pos:Position) {
       var ct = type.toComplex({ direct: true });
       return macro @:pos(pos) new tink.json.Parser<$ct>().tryParse;
-    },
+    }
+    #if tink_xml
+		, 'text/xml' => xmlReader, 'application/xml' => xmlReader
+		#end
   ]);
   static public var writers(default, null) = new Registry('writer', [
     'application/json' => function (type:Type, pos:Position) {

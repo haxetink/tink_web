@@ -150,7 +150,7 @@ enum RoutePayload {
 }
 
 
-abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind}>>) {
+abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind, ?meta:haxe.macro.Type.MetaAccess}>>) {
   public inline function new(pos, arr) this = new Pair(pos, arr);
   
   public function toTypes() {
@@ -158,23 +158,46 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
     var body:Array<Field> = [];
     var query:Array<Field> = [];
     var header:Array<Field> = [];
-    
+
     var pos = this.a;
     var arr = this.b;
-    
-    for(item in arr) {
-      function add(to:Array<Field>, name:String) {
+
+    for (item in arr) {
+    	function add(to:Array<Field>, name:String) {
+        var meta:Array<haxe.macro.Expr.MetadataEntry> = [];
+        inline function fallback(metaName) {
+        	if (!item.meta.has(metaName)) {
+            meta.push({name: metaName, params: [macro $v{name}], pos: pos});
+        	}
+        }
+        fallback(":json");
+        fallback(":formField");
+        var needXmlFallbackMeta = true;
+        var xmlMeta = [":attr", ":tag", ":content"];
+        for (xMeta in xmlMeta) {
+        	if (item.meta.has(xMeta)) {
+            var metaEntry = item.meta.extract(xMeta);
+            switch metaEntry[0] {
+            	case entry:
+                var params = $v{entry.params};
+                if (params.length == 0) {
+                	entry.params.push(macro $v{name});
+                }
+                needXmlFallbackMeta = false;
+                meta.push(entry);
+            }
+        	}
+        }
+        if (needXmlFallbackMeta)
+        	fallback(":tag");
         to.push({
-          name: '_${item.id}',
-          access: [],
-          meta: [
-            {name: ':json', params: [macro $v{name}], pos: pos},
-            {name: ':formField', params: [macro $v{name}], pos: pos},
-          ],
-          kind: FVar(item.type.toComplex(), null),
-          pos: pos,
+        	name: '_${item.id}',
+        	access: [],
+        	meta: meta,
+        	kind: FVar(item.type.toComplex(), null),
+        	pos: pos,
         });
-      }
+    	}
         
       switch item.kind {
         case PKBody(None):
