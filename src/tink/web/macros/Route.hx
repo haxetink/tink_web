@@ -16,7 +16,8 @@ using tink.MacroApi;
 class Route {
 	public static var metas = {
 		var ret = [
-			for (m in [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]) ':$m'.toLowerCase() => Some(m)
+			for (m in [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE])
+				':$m'.toLowerCase() => Some(m)
 		];
 		ret[':all'] = None;
 		ret;
@@ -187,7 +188,7 @@ abstract Payload(Pair < Position, Array < {
 			function add(to:Array<Field>, name:String) {
 				var meta:Array<haxe.macro.Expr.MetadataEntry> = [];
 				inline function fallback(metaName) {
-					if (item.meta != null && !item.meta.has(metaName)) {
+					if (item.meta == null || !item.meta.has(metaName)) {
 						meta.push({name: metaName, params: [macro $v{name}], pos: pos});
 					}
 				}
