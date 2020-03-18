@@ -5,6 +5,18 @@ In a HTTP request, parameters usually appear in three places:
 1. in the path section of the URL
 1. in the query section of the URL
 1. in the request body
+1. in the http header
+
+In a nutshell, the supported syntaxes are as follow:
+
+```haxe
+@:<http_method>('/path/$param')
+@:params(<ident> in <query|header|body>)
+@:params(<ident> = <query|header|body>)
+@:params(<ident> = <query|header|body>["native"])
+@:params(<ident.field> in <query|header|body>)
+@:params(<ident.field> = <query|header|body>["native"]));
+```
 
 ## Path Parameters
 
