@@ -114,7 +114,6 @@ Behavior of the metadata is as follow:
 In some cases the `@:restrict` metadata is not sufficient, we can ask the router to inject the `User` into the route,
 using a specially-named argument `user`.
 
-
 ```haxe
 @:get
 public function dashboard(user:User) {
@@ -131,3 +130,4 @@ public function dashboard(user:User) {
 - If it is `User`, the router will return `401 Unauthorized` if there is no user in the current context.
 - If it is `Option<User>`, the router will inject the `None` value to the route if there is no user in the current context, otherwise it would be `Some(user)`.
 
+If you use this approach and have a interface defined for your API with `tink.web.proxy.Remote`, the interface methods must also have the `user` argument; on the client-side the `user` parameter is removed on the Remote.
