@@ -1,6 +1,6 @@
 # Parameters
 
-In a HTTP request, parameters usually appear in three places:
+In a HTTP request, parameters usually appear in four places:
 
 1. in the path section of the URL
 1. in the query section of the URL
