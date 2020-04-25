@@ -206,8 +206,14 @@ class ProxyTest {
     return asserts;
   }
 
-  @:include public function issue79() {
+  public function issue79() {
     var remote = new tink.web.proxy.Remote<Issue79>(null, null); // fails
+    return asserts.done();
+  }
+
+  public function issue47() {
+    var r = new tink.web.routing.Router<Issue47>(null);
+    var r = new tink.web.proxy.Remote<Issue47>(null, null);
     return asserts.done();
   }
 }
@@ -217,3 +223,8 @@ interface Issue79Base<T> {
   function get():Promise<T>;
 }
 interface Issue79 extends Issue79Base<{foo:String}> {}
+
+interface Issue47 {
+  @:post
+  public function post(body:{issue47:String}):Promise<{var issue47(default, never):String;}>;
+}
