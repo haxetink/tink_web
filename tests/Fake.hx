@@ -53,6 +53,16 @@ class Fake {
   @:post public function textual(body:String)
     return body;
 
+  @:produces('foo')
+  @:post public function streamingFoo(body:RealSource)
+    return body;
+  @:produces('foo')
+  @:post public function bufferedFoo(body:Bytes)
+    return body;
+  @:produces('foo')
+  @:post public function textualFoo(body:String)
+    return body;
+
   @:get public function promiseString():Promise<String>
     return 'foo';
 

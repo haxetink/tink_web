@@ -453,14 +453,28 @@ class Routing {
                 var type = Context.getType(name);
                 return t.unifiesWith(type) && type.unifiesWith(t);
               }
+
+              var contentType =
+                switch route.field.meta.extract(':produces') {
+                  case []: macro null;
+                  case [{ params: [v] }]: v;
+                  case [m], _[1] => m:
+                    m.pos.error('For opaque routes, @:produces must define exactly one constant content type');
+                }
+
               var e =
-                if(is('tink.io.Source.RealSource'))
-                  macro @:pos(pos) tink.core.Promise.resolve(tink.web.routing.Response.ofRealSource($result));
+                if (is('tink.io.Source.RealSource'))
+                  macro @:pos(pos) tink.core.Promise.resolve(tink.web.routing.Response.ofRealSource($result, $contentType));
                 else if(is('tink.io.Source.IdealSource'))
-                  macro @:pos(pos) tink.core.Promise.resolve(tink.web.routing.Response.ofIdealSource($result));
-                else
+                  macro @:pos(pos) tink.core.Promise.resolve(tink.web.routing.Response.ofIdealSource($result, $contentType));
+                else {
+                  var ret =
+                    if (is('tink.Chunk')) macro tink.web.routing.Response.ofChunk(v, $contentType);
+                    else macro (v : tink.web.routing.Response);
+
                   macro @:pos(pos) tink.core.Promise.lift($result)
-                    .next(function (v:$ct):tink.web.routing.Response return v);
+                    .next(function (v:$ct) return $ret);
+                }
               switch [statusCode, headers] {
                 case [macro 200, []]:
                   e;

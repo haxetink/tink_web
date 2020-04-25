@@ -85,6 +85,16 @@ class DispatchTest {
   public function dispatchError(code:ErrorCode, req, ?session)
     return shouldFail(code, req, session);
 
+  @:variant(req('/streamingFoo', POST, 'foo'))
+  @:variant(req('/bufferedFoo', POST, 'foo'))
+  @:variant(req('/textualFoo', POST, 'foo'))
+  public function issue92(req) {
+    return
+      exec(req).next(
+        function (o)
+          return assert(o.header.contentType().map(function (c) return c.raw).match(Success('foo')))
+      );
+  }
 
   function multipartReq()
     return req('/upload', POST, [
