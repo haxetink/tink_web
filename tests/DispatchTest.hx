@@ -74,9 +74,8 @@ class DispatchTest {
      get('/sub/1/2/test/yo?c=3&d=4'))
   @:variant({ foo: ([ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ]:Array<Dynamic>) },
      get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
-  @:include public function dispatch(value:Dynamic, req, ?session)
+  public function dispatch(value:Dynamic, req, ?session)
     return expect(value, req, session);
-
 
   @:variant(UnprocessableEntity, get('/count/foo'))
   @:variant(UnprocessableEntity, get('/sub/1/2/test/yo'))
