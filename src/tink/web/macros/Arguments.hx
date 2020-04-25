@@ -13,7 +13,7 @@ using Lambda;
 class Arguments {
   var list:Array<RouteArg> = [];
   static var CONTEXT:Lazy<Type> = Context.getType.bind('tink.web.routing.Context');
-  
+
   public function new(args:Array<{t:Type, opt:Bool, name:String}>, paths:Paths, params:Parameters, pos:Position) {
     for(a in args) list.push({
       name: a.name,
@@ -39,9 +39,9 @@ class Arguments {
       }
     });
   }
-  
+
   public inline function iterator() return list.iterator();
-  
+
   static function getArgTarget(paths:Paths, params:Parameters, access:ArgAccess, optional:Bool, pos:Position) {
     return switch [paths.hasCapture(access), params.get(access)] {
       case [true, Some(param)]:
@@ -52,24 +52,21 @@ class Arguments {
         ATCapture;
       case [false, None]:
         if(!optional) {
-          // trace(access);
-          // for(p in params) trace(p.source.toString(), p.access, p.kind);
-          // for(p in paths) trace(p.parts);
           pos.error('`${stringifyArgAccess(access)}` is not used. Please specify its use with the @:params metadata or capture it in the route paths');
         } else {
           ATCapture;
         }
     }
   }
-  
+
   static function stringifyArgAccess(access:ArgAccess) {
     return switch access {
       case Plain(name): name;
       case Drill(name, field): '$name.$field';
     }
   }
-  
-  
+
+
   static function anon(type:Type, factory:String->ArgTarget):ArgKind {
     return switch type {
       case TAnonymous(_.get() => {fields: fields}):
