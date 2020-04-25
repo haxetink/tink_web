@@ -14,13 +14,13 @@ using tink.CoreApi;
 using tink.MacroApi;
 
 class Route {
-  
+
   public static var metas = {
     var ret = [for (m in [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]) ':$m'.toLowerCase() => Some(m)];
     ret[':all'] = None;
     ret;
-  }  
-  
+  }
+
   public var field(default, null):ClassField;
   public var kind(default, null):RouteKind;
   public var signature(default, null):Signature;
@@ -28,18 +28,18 @@ class Route {
   public var produces(default, null):Array<MimeType>;
   public var restricts(default, null):Array<Expr>;
   public var payload(get, null):Payload;
-  
+
   static var id:Int = 0; // use global id counter to dodge https://github.com/haxetink/tink_macro/issues/25, but renders BuildCache useless
-  
-  public function new(f, consumes, produces) {
+
+  public function new(f, consumes, produces, type) {
     field = f;
-    signature = new Signature(f);
+    signature = new Signature(f, type);
     switch [hasCall(f), hasSub(f)] {
       case [false, false]:
         f.pos.error('No routes on this field'); // should not happen actually
       case [true, false]:
         kind = KCall({
-          statusCode: 
+          statusCode:
             switch field.meta.extract(':statusCode') {
               case []:
                 macro 200;
@@ -59,7 +59,7 @@ class Route {
                   meta.pos.error('@:header must have two arguments exactly');
               }
             ],
-          html: 
+          html:
             switch field.meta.extract(':html') {
               case []:
                 None;
@@ -78,11 +78,11 @@ class Route {
     }
     this.consumes = MimeType.fromMeta(f.meta, 'consumes', consumes);
     this.produces = MimeType.fromMeta(f.meta, 'produces', produces);
-    
+
     restricts = getRestricts([field.meta]);
   }
-  
-  
+
+
   function get_payload():Payload {
     if(payload == null) {
       var arr = [];
@@ -105,20 +105,21 @@ class Route {
     }
     return payload;
   }
-  
+
   public static function hasWebMeta(f:ClassField) {
     return hasSub(f) || hasCall(f);
   }
-  
+
   public static function hasCall(f:ClassField) {
-    for (m in metas.keys()) if (f.meta.has(m)) return true;
+    for (m in metas.keys())
+       if (f.meta.has(m)) return true;
     return false;
   }
-  
+
   public static function hasSub(f:ClassField) {
     return f.meta.has(':sub');
   }
-  
+
   // TODO: move this to somewhere
   public static function getRestricts(meta:Array<MetaAccess>):Array<Expr> {
     return [for(meta in meta) for (m in meta.extract(':restrict'))
@@ -152,16 +153,16 @@ enum RoutePayload {
 
 abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind}>>) {
   public inline function new(pos, arr) this = new Pair(pos, arr);
-  
+
   public function toTypes() {
     var flat = null;
     var body:Array<Field> = [];
     var query:Array<Field> = [];
     var header:Array<Field> = [];
-    
+
     var pos = this.a;
     var arr = this.b;
-    
+
     for(item in arr) {
       function add(to:Array<Field>, name:String) {
         to.push({
@@ -175,7 +176,7 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
           pos: pos,
         });
       }
-        
+
       switch item.kind {
         case PKBody(None):
           if(body.length > 0) pos.error('Body appeared more than once');
@@ -189,22 +190,22 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
           add(header, name);
       }
     }
-    
+
     return {
       body: flat != null ? Flat(flat.a, flat.b) : Object(TAnonymous(body)),
       query: TAnonymous(query),
       header: TAnonymous(header),
     }
   }
-    
+
   public function toObjectDecls() {
     var body = []; var bodyObj = EObjectDecl(body);
     var query = []; var queryObj = EObjectDecl(query);
     var header = []; var headerObj = EObjectDecl(header);
-    
+
     var pos = this.a;
     var arr = this.b;
-    
+
     for(item in arr) {
       function add(to, expr) {
         EObjectDecl(to); // type inference
@@ -226,14 +227,14 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
           add(header, macro $p{[name, field]});
       }
     }
-    
+
     return {
       body: bodyObj,
       query: queryObj,
       header: headerObj,
     }
   }
-  
+
   public inline function iterator() return this.b.iterator();
 }
 
