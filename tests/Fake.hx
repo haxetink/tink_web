@@ -35,7 +35,7 @@ class Fake {
 
   @:get public var yo(default, null):String = 'yo';
 
-  @:html(u -> '<html><body>Yo</body></html>')
+  @:html(function (u) return '<html><body>Yo</body></html>')
   @:params(bar in query)
   @:get public function complex(query: Complex, ?bar:String)
     return query;
