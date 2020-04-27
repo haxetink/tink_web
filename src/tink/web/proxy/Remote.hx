@@ -8,10 +8,18 @@ import tink.http.Header;
 import tink.http.Request;
 import tink.http.Response;
 
+#if macro
+import haxe.macro.Context;
+import haxe.macro.Expr;
+using tink.MacroApi;
+#end
+
 using tink.io.Source;
 using tink.CoreApi;
 
+#if !macro
 @:genericBuild(tink.web.macros.Proxify.remote())
+#end
 class Remote<T> { }
 
 private typedef RemoteEndpointData = {
@@ -27,6 +35,36 @@ private typedef Sub = {
 }
 
 abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
+
+  public var host(get, never):Host;
+    inline function get_host()
+      return this.host;
+
+  public var pathSuffix(get, never):String;
+    inline function get_pathSuffix()
+      return this.pathSuffix;
+
+  public var headers(get, never):Iterable<HeaderField>;
+    inline function get_headers()
+      return switch this.headers {
+        case null: NO_HEADERS;
+        case v: v;
+      }
+
+    static var NO_HEADERS = [];
+
+  public var path(get, never):Iterable<Portion>;
+    inline function get_path()
+      return switch this.path {
+        case null: NO_PATH;
+        case v: v;
+      }
+
+    static var NO_PATH = [];
+
+  public var query(get, never):QueryParams;
+    inline function get_query()
+      return this.query;
 
   public function new(host, ?pathSuffix)
     this = { host: host, pathSuffix: switch pathSuffix {
@@ -66,6 +104,69 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
 
   @:from public static inline function fromHost(host:Host):RemoteEndpoint
     return new RemoteEndpoint(host);
+
+  @:from static public function ofUrl(u:Url)
+    return new RemoteEndpoint(u.host, u.hash).sub({
+      headers: switch u.auth {
+        case null: null;
+        case v: [new HeaderField(AUTHORIZATION, HeaderValue.basicAuth(v.user, v.password))];
+      },
+      path: u.path.parts(),
+      query: [for (p in u.query) new NamedWith((p.name:Portion), p.value)],
+    });
+
+  @:from static public macro function ofStringLiteral(e:ExprOf<String>)
+    return switch e.getString() {
+      default:
+        return macro @:pos(e.pos) tink.web.proxy.Remote.RemoteEndpoint.ofUrl($e);
+      case Success(s):
+        var url = tink.Url.parse(s, function (v) {
+          e.pos.error(v);
+        });
+
+        function interp(s:String)
+          return
+            if (s == null) macro null;
+            else haxe.macro.MacroStringTools.formatString(s, e.pos);//todo: try to adjust position
+
+        var fields = new Array<ObjectField>(),
+            ret = @:pos(e.pos) macro new tink.web.proxy.Remote.RemoteEndpoint(new tink.url.Host(${interp(url.host)}), ${interp(url.hash)});
+
+        function add(field, expr)
+          fields.push({ field: field, expr: expr });
+
+        switch url.auth {
+          case null:
+          case v:
+            add('headers', macro @:pos(e.pos) [
+              new tink.http.Header.HeaderField(
+                AUTHORIZATION,
+                tink.http.Header.HeaderValue.basicAuth(${interp(v.user)}, ${interp(v.password)})
+              )
+            ]);
+        }
+
+        switch url.path {
+          case null:
+          case v:
+            add('path', [for (p in v.parts()) macro new tink.url.Portion(${interp(p.raw)})].toArray());
+        }
+
+        switch url.query {
+          case null:
+          case v:
+            add('query', [for (p in v) macro new tink.core.Named.NamedWith(
+              new tink.url.Portion(${interp((p.name:Portion).raw)}),
+              new tink.url.Portion(${interp(p.value.raw)})
+            )].toArray());
+        }
+
+        if (fields.length != null)
+          ret = macro @:pos(e.pos) $ret.sub(${EObjectDecl(fields).at(e.pos)});
+
+        return ret;
+    }
+
 }
 
 abstract ResponseReader<A>(ResponseHeader->RealSource->Promise<A>) from ResponseHeader->RealSource->Promise<A> {
