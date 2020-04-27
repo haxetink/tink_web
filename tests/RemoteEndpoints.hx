@@ -13,7 +13,7 @@ class RemoteEndpoints {
     for (r in mk([
       'http://example.com/foo/bar%20bar?gl%26rgh=123%65',
       'http://$example.com/foo/bar%20bar?gl%26rgh=123%65',
-      RemoteEndpoint.ofStringLiteral('http://$example.com/foo/bar%20bar?gl%26rgh=123%65'),
+      RemoteEndpoint.ofString('http://$example.com/foo/bar%20bar?gl%26rgh=123%65'),
     ])) {
 
       asserts.assert(Lambda.count(r.headers) == 0);
@@ -39,7 +39,7 @@ class RemoteEndpoints {
     for (r in mk([
       'http://spaceballs:12345@example.com/foo/bar?glargh',
       'http://spaceballs:12345@$example.com/foo/bar?glargh',
-      RemoteEndpoint.ofStringLiteral('http://spaceballs:12345@$example.com/foo/bar?glargh'),
+      RemoteEndpoint.ofString('http://spaceballs:12345@$example.com/foo/bar?glargh'),
     ])) {
       asserts.assert(r.host == 'example.com');
 
@@ -54,7 +54,7 @@ class RemoteEndpoints {
     for (r in mk([
       'http://spaceballs:12345@example.com/foo/bar?glargh=123#.json',
       'http://spaceballs:12345@$example.com/foo/bar?glargh=123#.json',
-      RemoteEndpoint.ofStringLiteral('http://spaceballs:12345@$example.com/foo/bar?glargh=${123}#.json'),
+      RemoteEndpoint.ofString('http://spaceballs:12345@$example.com/foo/bar?glargh=${123}#.json'),
     ])) {
       asserts.assert(r.pathSuffix == '.json');
     }

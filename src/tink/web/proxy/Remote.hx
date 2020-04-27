@@ -115,7 +115,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
       query: [for (p in u.query) new NamedWith((p.name:Portion), p.value)],
     });
 
-  @:from static public macro function ofStringLiteral(e:ExprOf<String>)
+  @:from static public macro function ofString(e:ExprOf<String>)
     return switch e.getString() {
       default:
         return macro @:pos(e.pos) tink.web.proxy.Remote.RemoteEndpoint.ofUrl($e);
