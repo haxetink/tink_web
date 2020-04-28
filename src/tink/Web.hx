@@ -37,6 +37,6 @@ class Web {
         }
 
         macro @:pos(e.pos) new tink.web.proxy.Remote<$t>($client, $endpoint);
-      default: e.pos.error('Expected (url:Type) or new Type(url)');
+      default: e.pos.error('Expected `(url:Type)` or `new Type(url)`');
     }
 }
