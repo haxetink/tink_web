@@ -1,4 +1,4 @@
--D tink_typecrawler=0.6.2
-# @install: lix --silent download "gh://github.com/haxetink/tink_typecrawler#80dcc2b33b9874d7bc7bbbf35c2ed980d7915243" into tink_typecrawler/0.6.2/github/80dcc2b33b9874d7bc7bbbf35c2ed980d7915243
+# @install: lix --silent download "haxelib:/tink_typecrawler#0.6.4" into tink_typecrawler/0.6.4/haxelib
 -lib tink_macro
--cp ${HAXE_LIBCACHE}/tink_typecrawler/0.6.2/github/80dcc2b33b9874d7bc7bbbf35c2ed980d7915243/src
+-cp ${HAXE_LIBCACHE}/tink_typecrawler/0.6.4/haxelib/src
+-D tink_typecrawler=0.6.4
