@@ -74,6 +74,9 @@ class DispatchTest {
      get('/sub/1/2/test/yo?c=3&d=4'))
   @:variant({ foo: ([ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ]:Array<Dynamic>) },
      get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
+   @:variant('{"bar":null}',                        req('/optional', POST, [], '{"foo":"baz"}'))
+   @:variant('{"bar":null}',                        req('/optional', POST, [], '{"foo":"baz","bar":null}'))
+   @:variant('{"bar":1}',                        req('/optional', POST, [], '{"foo":"baz","bar":1}'))
   public function dispatch(value:Dynamic, req, ?session)
     return expect(value, req, session);
 

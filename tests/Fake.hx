@@ -163,6 +163,9 @@ class Fake {
 
   @:post public function post(body: { foo:String, bar: Int })
     return body;
+  
+  @:post public function optional(body: { foo:String, ?bar: Int })
+    return {bar:body.bar};
 
   @:restrict(user.id == a)
   @:sub('/sub/$a/$b')

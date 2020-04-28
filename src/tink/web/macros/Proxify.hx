@@ -76,7 +76,7 @@ class Proxify {
         name: f.field.name,
         kind: FFun({
           args: [for (arg in f.signature.args) switch arg.kind {
-            case AKSingle(ATUser(_) | ATContext): continue;
+            case AKSingle(_, ATUser(_) | ATContext): continue;
             case _: { name: arg.name, type: arg.type.toComplex(), opt: arg.optional };
           }],
           expr: {
