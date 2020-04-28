@@ -89,13 +89,13 @@ class Route {
       // var id = 0; // see https://github.com/haxetink/tink_macro/issues/25
       for(arg in signature.args) {
         switch arg.kind {
-          case AKSingle(ATParam(kind)):
-            arr.push({id: id++, access: Plain(arg.name), type: arg.type, kind: kind});
-          case AKObject(fields):
+          case AKSingle(optional, ATParam(kind)):
+            arr.push({id: id++, access: Plain(arg.name), type: arg.type, optional: optional, kind: kind});
+          case AKObject(optional, fields):
             for(field in fields)
               switch field.target {
                 case ATParam(kind):
-                  arr.push({id: id++, access: Drill(arg.name, field.name), type: field.type, kind: kind});
+                  arr.push({id: id++, access: Drill(arg.name, field.name), type: field.type, optional: optional || field.optional, kind: kind});
                 case _: // skip
               }
           case _: // skip
@@ -151,7 +151,7 @@ enum RoutePayload {
 }
 
 
-abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind:ParamKind}>>) {
+abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, optional:Bool, kind:ParamKind}>>) {
   public inline function new(pos, arr) this = new Pair(pos, arr);
 
   public function toTypes() {
@@ -165,13 +165,18 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, kind
 
     for(item in arr) {
       function add(to:Array<Field>, name:String) {
+        var meta = [
+          {name: ':json', params: [macro $v{name}], pos: pos},
+          {name: ':formField', params: [macro $v{name}], pos: pos},
+        ];
+        
+        if(item.optional)
+          meta.push({name: ':optional', params: [], pos: pos});
+        
         to.push({
           name: '_${item.id}',
           access: [],
-          meta: [
-            {name: ':json', params: [macro $v{name}], pos: pos},
-            {name: ':formField', params: [macro $v{name}], pos: pos},
-          ],
+          meta: meta,
           kind: FVar(item.type.toComplex(), null),
           pos: pos,
         });

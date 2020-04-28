@@ -21,21 +21,25 @@ class Arguments {
       optional: a.opt,
       kind: switch [a.name, a.t.reduce()] {
         case [_, _] if(a.t.unifiesWith(CONTEXT)):
-          AKSingle(ATContext);
+          AKSingle(a.opt, ATContext);
         case ['user', _] if(a.name == 'user'):
-          AKSingle(ATUser(a.t));
+          AKSingle(a.opt, ATUser(a.t));
         case ['body', _.getID() => 'haxe.io.Bytes' | 'String' | 'tink.io.Source']:
-          AKSingle(ATParam(PKBody(None)));
+          AKSingle(a.opt, ATParam(PKBody(None)));
         case ['query' | 'header' | 'body', t = TAnonymous(_)]:
-          anon(t, function(name) return ATParam(Parameters.LOCATION_FACTORY[a.name](name)));
+          anon(a.opt, t, function(name) return ATParam(Parameters.LOCATION_FACTORY[a.name](name)));
         case [name, TAnonymous(_.get() => {fields: fields})]:
-          AKObject([for(field in fields) {
+          AKObject(a.opt, [for(field in fields) {
             name: field.name,
             type: field.type,
+            optional: field.meta.has(':optional'),
             target: getArgTarget(paths, params, Drill(name, field.name), a.opt, pos),
           }]);
         case [name, _]:
-          AKSingle(getArgTarget(paths, params, Plain(name), a.opt, pos));
+          AKSingle(
+            a.opt,
+            getArgTarget(paths, params, Plain(name), a.opt, pos)
+          );
       }
     });
   }
@@ -67,12 +71,13 @@ class Arguments {
   }
 
 
-  static function anon(type:Type, factory:String->ArgTarget):ArgKind {
+  static function anon(optional:Bool, type:Type, factory:String->ArgTarget):ArgKind {
     return switch type {
       case TAnonymous(_.get() => {fields: fields}):
-        AKObject([for(field in fields) {
+        AKObject(optional, [for(field in fields) {
           name: field.name,
           type: field.type,
+          optional: field.meta.has(':optional'),
           target: factory(Parameters.getParamName(field)),
         }]);
       case _:
@@ -95,8 +100,8 @@ enum ArgAccess {
 }
 
 enum ArgKind {
-  AKSingle(target:ArgTarget);
-  AKObject(fields:Array<{name:String, type:Type, target:ArgTarget}>);
+  AKSingle(optional:Bool, target:ArgTarget);
+  AKObject(optional:Bool, fields:Array<{name:String, type:Type, optional:Bool, target:ArgTarget}>);
 }
 
 enum ArgTarget {

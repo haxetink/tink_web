@@ -238,7 +238,7 @@ class Routing {
       var argExpr = arg.name.resolve();
 
       switch arg.kind {
-        case AKSingle(ATCapture):
+        case AKSingle(_, ATCapture):
 
           var expected = arg.type.toComplex();
           var enumAbstract = switch arg.type {
@@ -303,7 +303,7 @@ class Routing {
         //     kind: FVar(t.toComplex()),
         //   });
 
-        case AKSingle(ATUser(u)):
+        case AKSingle(_, ATUser(u)):
 
           beforeBody.push(function (e:Expr) {
 
@@ -318,7 +318,7 @@ class Routing {
 
             return macro @:pos(e.pos) ctx.user.get().next(function (user) return $e);
           });
-        case AKSingle(ATContext):
+        case AKSingle(_, ATContext):
           var name = arg.name;
           beforeBody.push(function (e:Expr) return macro @:pos(e.pos) {
             var $name = ctx;
