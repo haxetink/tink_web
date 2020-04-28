@@ -11,6 +11,7 @@ class Web {
         var options = switch options {
           case null | macro null: new Map();
           case { expr: EObjectDecl(fields) }:
+            // TODO: make sure to maintain display support
             (macro @:pos(options.pos) ($options:tink.web.proxy.ConnectOptions)).typeof().sure();
             [for (f in fields) f.field => f.expr];
           case v:
@@ -18,8 +19,15 @@ class Web {
         }
 
         var client = switch options['client'] {
-          case null: macro @:privateAccess tink.http.Fetch.getClient(Default, true);//not sure how adequate this is
-          case v: v;
+          case null:
+            var isSecure = switch url.getString() {
+              case Success(v):
+                macro $v{tink.Url.parse(v, _ -> {}).scheme != 'http'};
+              default:
+                macro tink.Url.parse($url, _ -> {}).scheme != 'http';
+            }
+            macro @:privateAccess tink.http.Fetch.getClient(Default, true);//not sure how adequate this is
+          case v: macro @:pos(v.pos) ($v:tink.http.Client);
         }
 
         switch options['augment'] {
@@ -33,7 +41,7 @@ class Web {
         switch options['headers'] {
           case null:
           case v:
-            endpoint = macro @:pos(v.pos) endpoint.sub({ headers: $v });
+            endpoint = macro @:pos(v.pos) $endpoint.sub({ headers: $v });
         }
 
         macro @:pos(e.pos) new tink.web.proxy.Remote<$t>($client, $endpoint);
