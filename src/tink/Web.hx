@@ -44,6 +44,7 @@ class Web {
             endpoint = macro @:pos(v.pos) $endpoint.sub({ headers: $v });
         }
 
+        //TODO: if t is already a RemoteBase, don't wrap it
         macro @:pos(e.pos) new tink.web.proxy.Remote<$t>($client, $endpoint);
       default: e.pos.error('Expected `(url:Type)` or `new Type(url)`');
     }
