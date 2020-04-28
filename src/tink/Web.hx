@@ -22,6 +22,12 @@ class Web {
           case v: v;
         }
 
+        switch options['augment'] {
+          case null:
+          case v:
+            client = macro @:pos(v.pos) $client.augment($v);
+        }
+
         var endpoint = macro @:pos(url.pos) tink.web.proxy.Remote.RemoteEndpoint.ofString($url);
 
         switch options['headers'] {
