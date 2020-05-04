@@ -13,7 +13,7 @@ using Lambda;
 class Arguments {
   var list:Array<RouteArg> = [];
   static var CONTEXT:Lazy<Type> = Context.getType.bind('tink.web.routing.Context');
-  
+
   public function new(args:Array<{t:Type, opt:Bool, name:String}>, paths:Paths, params:Parameters, pos:Position) {
     for(a in args) list.push({
       name: a.name,
@@ -21,27 +21,31 @@ class Arguments {
       optional: a.opt,
       kind: switch [a.name, a.t.reduce()] {
         case [_, _] if(a.t.unifiesWith(CONTEXT)):
-          AKSingle(ATContext);
+          AKSingle(a.opt, ATContext);
         case ['user', _] if(a.name == 'user'):
-          AKSingle(ATUser(a.t));
+          AKSingle(a.opt, ATUser(a.t));
         case ['body', _.getID() => 'haxe.io.Bytes' | 'String' | 'tink.io.Source']:
-          AKSingle(ATParam(PKBody(None)));
+          AKSingle(a.opt, ATParam(PKBody(None)));
         case ['query' | 'header' | 'body', t = TAnonymous(_)]:
-          anon(t, function(name) return ATParam(Parameters.LOCATION_FACTORY[a.name](name)));
+          anon(a.opt, t, function(name) return ATParam(Parameters.LOCATION_FACTORY[a.name](name)));
         case [name, TAnonymous(_.get() => {fields: fields})]:
-          AKObject([for(field in fields) {
+          AKObject(a.opt, [for(field in fields) {
             name: field.name,
             type: field.type,
+            optional: field.meta.has(':optional'),
             target: getArgTarget(paths, params, Drill(name, field.name), a.opt, pos),
           }]);
         case [name, _]:
-          AKSingle(getArgTarget(paths, params, Plain(name), a.opt, pos));
+          AKSingle(
+            a.opt,
+            getArgTarget(paths, params, Plain(name), a.opt, pos)
+          );
       }
     });
   }
-  
+
   public inline function iterator() return list.iterator();
-  
+
   static function getArgTarget(paths:Paths, params:Parameters, access:ArgAccess, optional:Bool, pos:Position) {
     return switch [paths.hasCapture(access), params.get(access)] {
       case [true, Some(param)]:
@@ -52,30 +56,28 @@ class Arguments {
         ATCapture;
       case [false, None]:
         if(!optional) {
-          // trace(access);
-          // for(p in params) trace(p.source.toString(), p.access, p.kind);
-          // for(p in paths) trace(p.parts);
           pos.error('`${stringifyArgAccess(access)}` is not used. Please specify its use with the @:params metadata or capture it in the route paths');
         } else {
           ATCapture;
         }
     }
   }
-  
+
   static function stringifyArgAccess(access:ArgAccess) {
     return switch access {
       case Plain(name): name;
       case Drill(name, field): '$name.$field';
     }
   }
-  
-  
-  static function anon(type:Type, factory:String->ArgTarget):ArgKind {
+
+
+  static function anon(optional:Bool, type:Type, factory:String->ArgTarget):ArgKind {
     return switch type {
       case TAnonymous(_.get() => {fields: fields}):
-        AKObject([for(field in fields) {
+        AKObject(optional, [for(field in fields) {
           name: field.name,
           type: field.type,
+          optional: field.meta.has(':optional'),
           target: factory(Parameters.getParamName(field)),
         }]);
       case _:
@@ -98,8 +100,8 @@ enum ArgAccess {
 }
 
 enum ArgKind {
-  AKSingle(target:ArgTarget);
-  AKObject(fields:Array<{name:String, type:Type, target:ArgTarget}>);
+  AKSingle(optional:Bool, target:ArgTarget);
+  AKObject(optional:Bool, fields:Array<{name:String, type:Type, optional:Bool, target:ArgTarget}>);
 }
 
 enum ArgTarget {

@@ -13,15 +13,15 @@ os:
   # - osx
 
 env:
-  - HAXE_VERSION=3.4.7
+
   - HAXE_VERSION=latest
-  # - HAXE_VERSION=nightly
-  
+  - HAXE_VERSION=nightly
+
 install:
-  - npm i -g lix@15.3.13
+  - npm i -g lix@15.8.17
   - lix install haxe $HAXE_VERSION
   - lix download
-  
+
 script:
   - lix run travix node
   - lix run travix php

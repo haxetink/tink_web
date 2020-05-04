@@ -1,6 +1,17 @@
 {
 	"name": "tink_web",
-	"license": "MIT",
+	"classPath": "src",
+	"dependencies": {
+		"tink_querystring": "",
+		"tink_http": "",
+		"tink_json": ""
+	},
+	"url": "https://github.com/haxetink/tink_web/",
+	"contributors": [
+		"back2dos"
+	],
+	"version": "0.2.1",
+	"releasenote": "Improve content type negotation and handling of type parameters and optional arguments. Add facade for remoting.",
 	"tags": [
 		"tink",
 		"http",
@@ -9,16 +20,5 @@
 		"api",
 		"rest"
 	],
-	"classPath": "src",
-	"contributors": [
-		"back2dos"
-	],
-	"releasenote": "Tons of changes",
-	"version": "0.2.0",
-	"url": "https://github.com/haxetink/tink_web/",
-	"dependencies": {
-		"tink_http": "",
-		"tink_json": "",
-		"tink_querystring": ""
-	}
+	"license": "MIT"
 }
