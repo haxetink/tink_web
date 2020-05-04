@@ -29,7 +29,7 @@ class ProxyTest {
     container.run(function (req:IncomingRequest) {
       return DispatchTest.exec(req).recover(OutgoingResponse.reportError);
     });
-    proxy = new Remote<Fake>(client, new RemoteEndpoint(new Host('localhost', 80)));
+    proxy = new Remote<Fake>(client, new RemoteEndpoint(null));
   }
   
   public function complex() {
