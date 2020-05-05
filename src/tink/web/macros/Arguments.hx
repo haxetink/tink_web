@@ -55,12 +55,23 @@ class Arguments {
       case [true, None]:
         ATCapture;
       case [false, None]:
-        if(!optional) {
-          pos.error('`${stringifyArgAccess(access)}` is not used. Please specify its use with the @:params metadata or capture it in the route paths');
-        } else {
+        if(!optional)
+          tryQuery(paths, access, pos);
+        else
           ATCapture;
-        }
     }
+  }
+
+  static function tryQuery(paths:Paths, access:ArgAccess, pos:Position) {
+    var access = stringifyArgAccess(access);
+    for (p in paths)
+      if (!Lambda.exists(p.query, v -> switch v {
+        case PCapture(v): stringifyArgAccess(v) == access;
+        case PConst(_): false;
+      }))
+        p.pos.error('${p.expr.toString()} does not capture required parameter `$access`. Please specify its use with the @:params metadata or capture it.');
+
+    return ATCapture;
   }
 
   static function stringifyArgAccess(access:ArgAccess) {

@@ -53,6 +53,10 @@ class Fake {
   @:post public function textual(body:String)
     return body;
 
+  @:get('/queryParam?param=$value')
+  public function queryParam(value:String)
+    return { value: value };
+
   @:produces('foo')
   @:post public function streamingFoo(body:RealSource)
     return body;
@@ -163,7 +167,7 @@ class Fake {
 
   @:post public function post(body: { foo:String, bar: Int })
     return body;
-  
+
   @:post public function optional(body: { foo:String, ?bar: Int })
     return {bar:body.bar};
 

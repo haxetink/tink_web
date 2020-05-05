@@ -216,6 +216,12 @@ class ProxyTest {
     var r = new tink.web.proxy.Remote<Issue47>(null, null);
     return asserts.done();
   }
+
+  public function issue109()
+    return
+      proxy.queryParam('foobar').next(
+        recv -> assert(recv.value == 'foobar')
+      );
 }
 
 interface Issue79Base<T> {
