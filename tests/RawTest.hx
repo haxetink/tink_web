@@ -44,7 +44,7 @@ class RawTest {
   }
 
   public function issue114() {
-    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/issue1000', []), ''))
+    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/issue114', []), ''))
       .next(function(res) {
         asserts.assert(res.header.byName('tink').match(Success('web')));
         asserts.assert(res.header.byName('tink_web').match(Success('foobar')));
@@ -53,7 +53,7 @@ class RawTest {
   }
 
   public function issue114_2() {
-    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/issue1000_2', []), ''))
+    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/issue114_2', []), ''))
       .next(function(res) {
         asserts.assert(res.header.byName('tink').match(Success('web')));
         asserts.assert(res.header.byName('tink_web').match(Success('foobar')));
