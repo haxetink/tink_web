@@ -42,6 +42,24 @@ class RawTest {
         return asserts.done();
       });
   }
+
+  public function issue114() {
+    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/issue1000', []), ''))
+      .next(function(res) {
+        asserts.assert(res.header.byName('tink').match(Success('web')));
+        asserts.assert(res.header.byName('tink_web').match(Success('foobar')));
+        return asserts.done();
+      });
+  }
+
+  public function issue114_2() {
+    return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/issue1000_2', []), ''))
+      .next(function(res) {
+        asserts.assert(res.header.byName('tink').match(Success('web')));
+        asserts.assert(res.header.byName('tink_web').match(Success('foobar')));
+        return asserts.done();
+      });
+  }
   
   public function noise() {
     return client.request(new OutgoingRequest(new OutgoingRequestHeader(GET, '/noise', []), ''))
