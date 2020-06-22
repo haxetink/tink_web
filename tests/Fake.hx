@@ -89,6 +89,7 @@ class Fake {
 
   @:header('tink', 'web')
   @:header('tink_web', 'foobar')
+  @:statusCode(418)
   @:get public function issue114_2():Promise<Noise>
     return Promise.NOISE;
 

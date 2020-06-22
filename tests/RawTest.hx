@@ -48,6 +48,7 @@ class RawTest {
       .next(function(res) {
         asserts.assert(res.header.byName('tink').match(Success('web')));
         asserts.assert(res.header.byName('tink_web').match(Success('foobar')));
+        asserts.assert(res.header.statusCode == 200);
         return asserts.done();
       });
   }
@@ -57,6 +58,7 @@ class RawTest {
       .next(function(res) {
         asserts.assert(res.header.byName('tink').match(Success('web')));
         asserts.assert(res.header.byName('tink_web').match(Success('foobar')));
+        asserts.assert(res.header.statusCode == 418);
         return asserts.done();
       });
   }
