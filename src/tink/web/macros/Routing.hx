@@ -380,8 +380,8 @@ class Routing {
               macro @:pos(pos) tink.core.Promise.lift($result).next(
                 function (_):tink.core.Promise<tink.web.routing.Response> {
                   return new tink.http.Response.OutgoingResponse(
-                    new ResponseHeader(
-                        $statusCode, $statusCode, 
+                    new tink.http.Response.ResponseHeader(
+                        $statusCode,
                         [new tink.http.Header.HeaderField(CONTENT_LENGTH, '0')].concat(${macro $a{headers}})
                     ),
                     Chunk.EMPTY
