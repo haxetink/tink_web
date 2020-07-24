@@ -25,7 +25,7 @@ class Remote<T> { }
 private typedef RemoteEndpointData = {
   >Sub,
   host:Host,
-  pathSuffix:String,
+  ?pathSuffix:String,
 }
 
 private typedef Sub = {
@@ -42,7 +42,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
 
   public var pathSuffix(get, never):String;
     inline function get_pathSuffix()
-      return this.pathSuffix;
+      return this.pathSuffix == null ? '' : this.pathSuffix;
 
   public var headers(get, never):Iterable<HeaderField>;
     inline function get_headers()
@@ -67,10 +67,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
       return this.query;
 
   public function new(host, ?pathSuffix)
-    this = { host: host, pathSuffix: switch pathSuffix {
-      case null: '';
-      case v: v;
-    } };
+    this = { host: host, pathSuffix: pathSuffix };
 
   static function concat<E>(a:Array<E>, b:Array<E>)
     return switch [a, b] {
@@ -91,7 +88,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     return '/' + (switch this.path {
       case null: '';
       case v: Path.normalize(v.join('/'));
-    }) + this.pathSuffix + this.query;
+    }) + pathSuffix + this.query;
 
   public function request<A>(client:Client, method, body, reader:ResponseReader<A>):Promise<A>
     return
