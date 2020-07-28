@@ -1,7 +1,7 @@
--D tink_http=0.9.1
-# @install: lix --silent download "haxelib:/tink_http#0.9.1" into tink_http/0.9.1/haxelib
+# @install: lix --silent download "gh://github.com/haxetink/tink_http#a584df3011311c1601bd6e5cd2dd32a771f4e949" into tink_http/0.9.1/github/a584df3011311c1601bd6e5cd2dd32a771f4e949
 -lib http-status
 -lib tink_anon
 -lib tink_io
 -lib tink_url
--cp ${HAXE_LIBCACHE}/tink_http/0.9.1/haxelib/src
+-cp ${HAXE_LIBCACHE}/tink_http/0.9.1/github/a584df3011311c1601bd6e5cd2dd32a771f4e949/src
+-D tink_http=0.9.1

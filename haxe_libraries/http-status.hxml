@@ -1,3 +1,3 @@
--D http-status=1.3.1
-# @install: lix --silent download "haxelib:/http-status#1.3.1" into http-status/1.3.1/haxelib
--cp ${HAXE_LIBCACHE}/http-status/1.3.1/haxelib/src
+# @install: lix --silent download "gh://github.com/kevinresol/http-status#33c5ea57d8117bdb64ac01e66766e917eacec8c4" into http-status/1.3.2/github/33c5ea57d8117bdb64ac01e66766e917eacec8c4
+-cp ${HAXE_LIBCACHE}/http-status/1.3.2/github/33c5ea57d8117bdb64ac01e66766e917eacec8c4/src
+-D http-status=1.3.2

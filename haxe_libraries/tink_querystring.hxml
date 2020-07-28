@@ -1,5 +1,5 @@
--D tink_querystring=0.6.0
-# @install: lix --silent download "gh://github.com/haxetink/tink_querystring#f1710c07d8ed5d01521c3db10288f7c9733c0411" into tink_querystring/0.6.0/github/f1710c07d8ed5d01521c3db10288f7c9733c0411
--lib tink_url
+# @install: lix --silent download "gh://github.com/haxetink/tink_querystring#8eee7f83e2f60606415ff09062423117ff839056" into tink_querystring/0.6.0/github/8eee7f83e2f60606415ff09062423117ff839056
 -lib tink_typecrawler
--cp ${HAXE_LIBCACHE}/tink_querystring/0.6.0/github/f1710c07d8ed5d01521c3db10288f7c9733c0411/src
+-lib tink_url
+-cp ${HAXE_LIBCACHE}/tink_querystring/0.6.0/github/8eee7f83e2f60606415ff09062423117ff839056/src
+-D tink_querystring=0.6.0
