@@ -24,10 +24,10 @@ class Arguments {
           AKSingle(a.opt, ATContext);
         case ['user', _] if(a.name == 'user'):
           AKSingle(a.opt, ATUser(a.t));
-        case ['body', _.getID() => 'haxe.io.Bytes' | 'String' | 'tink.io.Source']:
-          AKSingle(a.opt, ATParam(PKBody(None)));
         case ['query' | 'header' | 'body', t = TAnonymous(_)]:
           anon(a.opt, t, function(name) return ATParam(Parameters.LOCATION_FACTORY[a.name](name)));
+        case ['body', _]:
+          AKSingle(a.opt, ATParam(PKBody(None)));
         case [name, TAnonymous(_.get() => {fields: fields})]:
           AKObject(a.opt, [for(field in fields) {
             name: field.name,

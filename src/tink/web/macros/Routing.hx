@@ -572,6 +572,13 @@ class Routing {
         case Flat(Plain(name), t) if(is(t, 'tink.io.Source')):
           macro @:pos(pos) {var $name = ctx.rawBody; $result;}
 
+        case Flat(Plain(name), t):
+          for(type in route.consumes)
+            if(type != 'application/json')
+              route.field.pos.error('Non-object body type only supports JSON encoding. Please add @:consumes("application/json") to this route.');
+          
+          macro @:pos(pos) return ${bodyParser(t.toComplex(), route)}.next(function ($name) return $result);
+
         case Object(t = TAnonymous([])):
           result;
 

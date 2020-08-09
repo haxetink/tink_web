@@ -206,6 +206,26 @@ class ProxyTest {
     return asserts;
   }
 
+  public function array() {
+    proxy.array([1,2,3])
+      .next(function (o) {
+        for(i in 0...3) asserts.assert(o[i] == i + 1);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+
+  public function int() {
+    proxy.int(1)
+      .next(function (o) {
+        o == 1;
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+
   public function issue79() {
     var remote = new tink.web.proxy.Remote<Issue79>(null, null); // fails
     return asserts.done();

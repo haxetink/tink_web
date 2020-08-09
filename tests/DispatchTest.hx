@@ -66,6 +66,8 @@ class DispatchTest {
   @:variant('foo',                        req('/streaming', POST, 'foo'))
   @:variant('foo',                        req('/buffered', POST, 'foo'))
   @:variant('foo',                        req('/textual', POST, 'foo'))
+  @:variant([1,2,3],                      req('/array', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '[1,2,3]'))
+  @:variant(1,                            req('/int', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '1'))
   @:variant('foo',                        req('/promiseString', GET))
   @:variant('foo',                        req('/promiseBytes', GET))
   @:variant({ accept: 'application/json; charset=UTF-8', bar: 'bar' },

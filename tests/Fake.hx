@@ -116,6 +116,14 @@ class Fake {
   @:post public function enm(body:{ field: Either<String, String> })
     return 'ok';
 
+  @:consumes('application/json')
+  @:post public function array(body:Array<Int>)
+    return body;
+
+  @:consumes('application/json')
+  @:post public function int(body:Int)
+    return body;
+
   @:params(v in query)
   @:get public function enumAbstractStringInQuery(v:EStr):EStr
     return v;
