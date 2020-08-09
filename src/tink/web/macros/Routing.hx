@@ -575,7 +575,7 @@ class Routing {
         case Flat(Plain(name), t):
           for(type in route.consumes)
             if(type != 'application/json')
-              route.field.pos.error('Non-object body type only supports JSON encoding. Please add @:consumes("application/json") to this route.');
+              route.field.pos.error('Non-object body type only supports JSON encoding. Please add @:consumes("application/json") to this route and remove any other @:consumes metadata.');
           
           macro @:pos(pos) return ${bodyParser(t.toComplex(), route)}.next(function ($name) return $result);
 
