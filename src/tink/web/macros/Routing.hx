@@ -546,7 +546,7 @@ class Routing {
       for(key in objects.keys()) {
         vars.push({
           name: key,
-          type: null,
+          type: route.signature.args.find(v -> v.name == key).type.toComplex(),
           expr: EObjectDecl(objects[key]).at(),
         });
       }
