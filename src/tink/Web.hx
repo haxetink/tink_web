@@ -26,7 +26,7 @@ class Web {
               default:
                 macro tink.Url.parse($url, _ -> {}).scheme != 'http';
             }
-            macro @:privateAccess tink.http.Fetch.getClient(Default, true);//not sure how adequate this is
+            macro @:privateAccess tink.http.Fetch.getClient(Default);//not sure how adequate this is
           case v: macro @:pos(v.pos) ($v:tink.http.Client);
         }
 
