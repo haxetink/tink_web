@@ -25,6 +25,7 @@ class Remote<T> { }
 private typedef RemoteEndpointData = {
   >Sub,
   host:Host,
+  scheme:String,
   ?pathSuffix:String,
 }
 
@@ -51,7 +52,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
         case v: v;
       }
 
-    static var NO_HEADERS = [];
+  static var NO_HEADERS = [];
 
   public var path(get, never):Iterable<Portion>;
     inline function get_path()
@@ -60,14 +61,23 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
         case v: v;
       }
 
-    static var NO_PATH = [];
+  static var NO_PATH = [];
 
   public var query(get, never):QueryParams;
     inline function get_query()
       return this.query;
 
-  public function new(host, ?pathSuffix)
-    this = { host: host, pathSuffix: pathSuffix };
+  public function new(host, ?pathSuffix, ?scheme)
+    this = {
+      host: host,
+      pathSuffix: pathSuffix,
+      scheme: switch scheme {
+        case null | '': '';
+        case v:
+          if (StringTools.endsWith(v, ':')) v;
+          else '$v:';
+      }
+    };
 
   static function concat<E>(a:Array<E>, b:Array<E>)
     return switch [a, b] {
@@ -78,6 +88,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
   public function sub(options:Sub):RemoteEndpoint
     return {
       host: this.host,
+      scheme: this.scheme,
       pathSuffix: this.pathSuffix,
       headers: concat(this.headers, options.headers),
       query: concat(this.query, options.query),
@@ -94,7 +105,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     return
       client.request(
         new OutgoingRequest(
-          new OutgoingRequestHeader(method, '//' + this.host + uri(), this.headers),//TODO: consider putting protocol here
+          new OutgoingRequestHeader(method, '${this.scheme}//${this.host}' + uri(), this.headers),
           body
         )
       ).next(function (response) return reader.withHeader(response.header)(response.body));
@@ -102,8 +113,9 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
   @:from public static inline function fromHost(host:Host):RemoteEndpoint
     return new RemoteEndpoint(host);
 
-  @:from static public function ofUrl(u:Url)
-    return new RemoteEndpoint(u.host, u.hash).sub({
+  @:from static public function ofUrl(u:Url) {
+    trace(u);
+    return new RemoteEndpoint(u.host, u.hash, u.scheme).sub({
       headers: switch u.auth {
         case null: null;
         case v: [new HeaderField(AUTHORIZATION, HeaderValue.basicAuth(v.user, v.password))];
@@ -111,12 +123,14 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
       path: u.path.parts(),
       query: [for (p in u.query) new NamedWith((p.name:Portion), p.value)],
     });
+  }
 
   @:from static public macro function ofString(e:ExprOf<String>)
     return switch e.getString() {
       default:
         return macro @:pos(e.pos) tink.web.proxy.Remote.RemoteEndpoint.ofUrl($e);
       case Success(s):
+
         var url = tink.Url.parse(s, function (v) {
           e.pos.error(v);
         });
@@ -127,7 +141,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
             else haxe.macro.MacroStringTools.formatString(s, e.pos);//todo: try to adjust position
 
         var fields = new Array<ObjectField>(),
-            ret = @:pos(e.pos) macro new tink.web.proxy.Remote.RemoteEndpoint(new tink.url.Host(${interp(url.host)}), ${interp(url.hash)});
+            ret = @:pos(e.pos) macro new tink.web.proxy.Remote.RemoteEndpoint(new tink.url.Host(${interp(url.host)}), ${interp(url.hash)}, ${interp(url.scheme)});
 
         function add(field, expr)
           fields.push({ field: field, expr: expr });
