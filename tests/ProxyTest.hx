@@ -153,7 +153,10 @@ class ProxyTest {
 
   public function string() {
     proxy.textual('foo')
-      .next(function (o) return o.body.all())
+      .next(function (o) {
+        asserts.assert(o.header.contentType().match(Success({ fullType: 'text/plain' })));
+        return o.body.all();
+      })
       .next(function(chunk) {
         asserts.assert(chunk.toString() == 'foo');
         return Noise;

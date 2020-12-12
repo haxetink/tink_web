@@ -475,7 +475,7 @@ class Routing {
                   macro @:pos(pos) tink.core.Promise.resolve(tink.web.routing.Response.ofIdealSource($result, $contentType));
                 else {
                   var ret =
-                    if (is('tink.Chunk')) macro tink.web.routing.Response.ofChunk(v, $contentType);
+                    if (is('tink.Chunk') && !contentType.expr.match(EConst(CIdent('null')))) macro tink.web.routing.Response.ofChunk(v, $contentType);
                     else macro (v : tink.web.routing.Response);
 
                   macro @:pos(pos) tink.core.Promise.lift($result)
@@ -576,7 +576,7 @@ class Routing {
           for(type in route.consumes)
             if(type != 'application/json')
               route.field.pos.error('Non-object body type only supports JSON encoding. Please add @:consumes("application/json") to this route and remove any other @:consumes metadata.');
-          
+
           macro @:pos(pos) return ${bodyParser(t.toComplex(), route)}.next(function ($name) return $result);
 
         case Object(t = TAnonymous([])):
