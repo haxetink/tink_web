@@ -25,8 +25,21 @@ class Remote<T> { }
 private typedef RemoteEndpointData = {
   >Sub,
   host:Host,
-  scheme:String,
+  scheme:Scheme,
   ?pathSuffix:String,
+}
+
+private abstract Scheme(String) to String {
+  inline function new(s) this = s;
+  @:from static function fromString(s:String)
+    return new Scheme(switch s {
+      case null: '';
+      case v:
+        switch v.indexOf(':') {
+          case -1: v;
+          case i: v.substr(0, i);
+        }
+    });
 }
 
 private typedef Sub = {
@@ -71,12 +84,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     this = {
       host: host,
       pathSuffix: pathSuffix,
-      scheme: switch scheme {
-        case null | '': '';
-        case v:
-          if (StringTools.endsWith(v, ':')) v;
-          else '$v:';
-      }
+      scheme: scheme,
     };
 
   static function concat<E>(a:Array<E>, b:Array<E>)
@@ -105,7 +113,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     return
       client.request(
         new OutgoingRequest(
-          new OutgoingRequestHeader(method, '${this.scheme}//${this.host}' + uri(), this.headers),
+          new OutgoingRequestHeader(method, '${this.scheme}://${this.host}' + uri(), this.headers),
           body
         )
       ).next(function (response) return reader.withHeader(response.header)(response.body));
