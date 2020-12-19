@@ -1,5 +1,6 @@
 package tink.web.macros;
 
+#if macro
 import haxe.macro.Type;
 import haxe.macro.Context;
 
@@ -7,13 +8,13 @@ using tink.CoreApi;
 using tink.MacroApi;
 
 class Result {
-  
+
   var call:Lazy<CallResponse>;
   var type:Type;
-  
+
   static var RAW_RESPONSE:Lazy<Type> = Context.getType.bind('tink.web.routing.Response');
   static var PARSED_RESPONSE:Lazy<Type> = Context.getType.bind('tink.web.Response');
-  
+
   public function new(type:Type) {
     this.type = type;
     this.call = function() return
@@ -30,7 +31,7 @@ class Result {
       else
         RData(type);
   }
-  
+
   public inline function asSubTarget() return type;
   public inline function asCallResponse() return call.get();
 }
@@ -45,3 +46,4 @@ enum OpaqueResponse {
   OParsed(response:Type, data:Type);
   ORaw(response:Type);
 }
+#end

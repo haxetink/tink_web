@@ -1,5 +1,6 @@
 package tink.web.macros;
 
+#if macro
 import tink.http.Method;
 import tink.web.macros.Variant;
 import tink.web.macros.Signature;
@@ -241,3 +242,4 @@ enum BodyType {
   Flat(access:ArgAccess, type:Type);
   Object(type:ComplexType);
 }
+#end

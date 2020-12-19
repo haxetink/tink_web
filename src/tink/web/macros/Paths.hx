@@ -1,5 +1,6 @@
 package tink.web.macros;
 
+#if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.Type;
@@ -186,3 +187,4 @@ enum PathPart {
   PCapture(access:ArgAccess);
   // PMixed(arr:Array<PathPart>); // TODO: support some kind of mixed/advanced capture, see https://github.com/haxetink/tink_web/issues/26
 }
+#end

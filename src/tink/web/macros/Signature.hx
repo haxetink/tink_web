@@ -1,5 +1,6 @@
 package tink.web.macros;
 
+#if macro
 import haxe.macro.Expr;
 import haxe.macro.Type;
 import haxe.macro.Context;
@@ -41,11 +42,4 @@ class Signature {
   }
 
 }
-
-
-
-
-
-
-
-
+#end

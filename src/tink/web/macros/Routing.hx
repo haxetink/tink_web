@@ -1,6 +1,6 @@
 package tink.web.macros;
 
-import haxe.ds.Option;
+#if macro
 import haxe.macro.Context;
 import haxe.macro.Type;
 import haxe.macro.Expr;
@@ -749,3 +749,4 @@ class Routing {
   }
 
 }
+#end
