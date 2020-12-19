@@ -40,6 +40,9 @@ class Fake {
   @:get public function complex(query: Complex, ?bar:String)
     return query;
 
+  @:delete('/remove/$id') public function delete(id:Int)
+    return { deleted: true };
+
   @:params(bar.foo in query)
   @:get public function temp(bar:{foo:String})
     return bar;

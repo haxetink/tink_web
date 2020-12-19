@@ -140,6 +140,15 @@ class ProxyTest {
     return asserts;
   }
 
+  public function delete() {
+    proxy.delete(42)
+      .handle(o -> {
+        asserts.assert(o.match(Success({ deleted: true })));
+        asserts.handle(o);
+      });
+    return asserts;
+  }
+
   public function header() {
     proxy.headers({accept: 'application/json', bar: 'bar'})
       .next(function (o) {
