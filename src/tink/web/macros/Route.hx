@@ -15,12 +15,6 @@ using tink.MacroApi;
 
 class Route {
 
-  public static var metas = {
-    var ret = [for (m in [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]) ':$m'.toLowerCase() => Some(m)];
-    ret[':all'] = None;
-    ret;
-  }
-
   public var field(default, null):ClassField;
   public var kind(default, null):RouteKind;
   public var signature(default, null):Signature;
@@ -111,7 +105,7 @@ class Route {
   }
 
   public static function hasCall(f:ClassField) {
-    for (m in metas.keys())
+    for (m in Paths.metas.keys())
        if (f.meta.has(m)) return true;
     return false;
   }
@@ -169,10 +163,10 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, opti
           {name: ':json', params: [macro $v{name}], pos: pos},
           {name: ':formField', params: [macro $v{name}], pos: pos},
         ];
-        
+
         if(item.optional)
           meta.push({name: ':optional', params: [], pos: pos});
-        
+
         to.push({
           name: '_${item.id}',
           access: [],
