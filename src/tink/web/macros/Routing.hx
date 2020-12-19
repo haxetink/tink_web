@@ -1,22 +1,8 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Context;
-import haxe.macro.Type;
-import haxe.macro.Expr;
 import tink.macro.BuildCache;
-import tink.http.Method;
-import tink.web.macros.Route;
 import tink.web.macros.Paths;
-import tink.web.macros.RouteCollection;
-import tink.web.macros.Signature;
-import tink.web.macros.Variant;
-import tink.web.macros.MimeType;
-import tink.web.routing.Response;
-
-using tink.MacroApi;
-using tink.CoreApi;
-using Lambda;
 
 class Routing {
 

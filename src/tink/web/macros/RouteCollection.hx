@@ -1,12 +1,6 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Expr;
-import haxe.macro.Type;
-
-using haxe.macro.Tools;
-using tink.MacroApi;
-
 class RouteCollection {
 
   public var routes(default, null):Array<Route> = [];

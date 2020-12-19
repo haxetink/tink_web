@@ -1,20 +1,10 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Expr;
-import haxe.macro.Type;
-import haxe.macro.Context;
 import tink.macro.BuildCache;
 import tink.http.Method;
 import tink.url.Portion;
-import tink.web.macros.Route;
 import tink.web.macros.Paths;
-import tink.web.macros.Variant;
-import tink.web.macros.MimeType;
-import tink.web.macros.Signature;
-
-using tink.CoreApi;
-using tink.MacroApi;
 
 class Proxify {
   static function makeEndpoint(from:Path, route:Route, ?headers):Expr {

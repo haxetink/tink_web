@@ -1,14 +1,7 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Expr;
-import haxe.macro.Type;
-import haxe.macro.Context;
 import tink.web.macros.Parameters;
-
-using tink.CoreApi;
-using tink.MacroApi;
-using Lambda;
 
 // hold information extracted from the function argument list
 class Arguments {

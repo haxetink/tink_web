@@ -1,14 +1,6 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Expr;
-import haxe.macro.Type;
-import haxe.macro.Context;
-
-using tink.CoreApi;
-using tink.MacroApi;
-using Lambda;
-
 class Signature {
 
   static var CONTEXT:Lazy<Type> = Context.getType.bind('tink.web.routing.Context');

@@ -1,18 +1,8 @@
 package tink.web.macros;
 
 #if macro
-import tink.http.Method;
-import tink.web.macros.Variant;
-import tink.web.macros.Signature;
 import tink.web.macros.Arguments;
 import tink.web.macros.Parameters;
-import tink.web.macros.Result;
-import haxe.ds.Option;
-import haxe.macro.Type;
-import haxe.macro.Expr;
-
-using tink.CoreApi;
-using tink.MacroApi;
 
 class Route {
 

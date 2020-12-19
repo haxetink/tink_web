@@ -1,12 +1,8 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Expr;
 import tink.http.Method;
 import tink.web.macros.Paths;
-
-using tink.CoreApi;
-using tink.MacroApi;
 
 @:structInit
 class Variant {

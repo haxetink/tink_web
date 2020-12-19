@@ -1,12 +1,6 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Context;
-import haxe.macro.Expr;
-import haxe.macro.Type;
-
-using tink.MacroApi;
-
 abstract MimeType(String) from String to String {
 
   static function typedString(e:Expr)

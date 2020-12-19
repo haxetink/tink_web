@@ -1,15 +1,9 @@
 package tink.web.macros;
 
 #if macro
-import haxe.macro.Context;
-import haxe.macro.Expr;
-import haxe.macro.Type;
 import tink.http.Method;
 import tink.url.Portion;
 import tink.web.macros.Arguments;
-
-using tink.CoreApi;
-using tink.MacroApi;
 
 class Paths {
 
