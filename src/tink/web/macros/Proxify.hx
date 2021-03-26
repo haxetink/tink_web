@@ -145,7 +145,7 @@ class Proxify {
                   }
 
                   if (!streaming)
-                    add(macro CONTENT_LENGTH, macro (__body__:tink.Chunk).length);
+                    add(macro CONTENT_LENGTH, macro __body__.length);
 
                   switch reader {
                     case Some(v):
@@ -156,9 +156,10 @@ class Proxify {
                   ret;
                 }
                 var endPoint = makeEndpoint(path, f, headers);
+                var bodyCt = streaming ? macro:tink.io.IdealSource : macro:tink.Chunk;
 
                 macro @:pos(f.field.pos) {
-                  var __body__ = $body;
+                  var __body__:$bodyCt = $body;
                   return $endPoint.request(
                     this.client,
                     cast $v{method},
