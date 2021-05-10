@@ -143,12 +143,6 @@ typedef ParamMapping = {
   kind:ParamKind,
 }
 
-enum ParamTarget {
-  PTQuery(name:String);
-  PTHeader(name:String);
-  PTBody(name:Option<String>); // None means the entire body
-}
-
 enum ParamKind {
   PKQuery(name:String);
   PKHeader(name:String);
