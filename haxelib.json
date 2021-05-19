@@ -10,8 +10,8 @@
 	"contributors": [
 		"back2dos"
 	],
-	"version": "0.2.1",
-	"releasenote": "Improve content type negotation and handling of type parameters and optional arguments. Add facade for remoting.",
+	"version": "0.3.0",
+	"releasenote": "Various updates.",
 	"tags": [
 		"tink",
 		"http",
