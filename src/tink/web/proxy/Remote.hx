@@ -36,8 +36,8 @@ private abstract Scheme(String) to String {
       case null: '';
       case v:
         switch v.indexOf(':') {
-          case -1: v;
-          case i: v.substr(0, i);
+          case -1: v + ':';
+          case i: v.substr(0, i + 1);
         }
     });
 }
@@ -48,6 +48,7 @@ private typedef Sub = {
   ?query: QueryParams
 }
 
+@:forward(scheme)
 abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
 
   public var host(get, never):Host;
@@ -80,7 +81,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     inline function get_query()
       return this.query;
 
-  public function new(host, ?pathSuffix, ?scheme)
+  public function new(host, ?pathSuffix, ?scheme:String)
     this = {
       host: host,
       pathSuffix: pathSuffix,
@@ -113,7 +114,7 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     return
       client.request(
         new OutgoingRequest(
-          new OutgoingRequestHeader(method, '${this.scheme}://${this.host}' + uri(), this.headers),
+          new OutgoingRequestHeader(method, '${this.scheme}//${this.host}' + uri(), this.headers),
           body
         )
       ).next(function (response) return reader.withHeader(response.header)(response.body));
