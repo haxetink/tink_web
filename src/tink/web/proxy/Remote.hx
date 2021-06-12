@@ -123,7 +123,6 @@ abstract RemoteEndpoint(RemoteEndpointData) from RemoteEndpointData {
     return new RemoteEndpoint(host);
 
   @:from static public function ofUrl(u:Url) {
-    trace(u);
     return new RemoteEndpoint(u.host, u.hash, u.scheme).sub({
       headers: switch u.auth {
         case null: null;
