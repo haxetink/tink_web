@@ -208,7 +208,7 @@ class Proxify {
         }),
         access: [APublic],
       }],
-      kind: TDClass('tink.web.proxy.Remote.RemoteBase'.asTypePath([TPType(ctx.type.toComplex())]), ['tink.web.proxy.RemoteInterface'.asTypePath([TPType(ctx.type.toComplex())])]),
+      kind: TDClass('tink.web.proxy.Remote.RemoteBase'.asTypePath([TPType(ctx.type.toComplex())])),
     }
   }
 
