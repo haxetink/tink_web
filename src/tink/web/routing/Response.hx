@@ -36,8 +36,12 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   @:from static function fromIdealSource(source:IdealSource):Response
     return ofIdealSource(source);
 
+  #if tink_htmlstring
+  @:from static function ofHtml(h:tink.HtmlString)
+    return textual('text/html', h);
+  #end
   #if tink_template
-  @:from static function ofHtml(h:tink.template.Html)
+  @:from static function ofTemplate(h:tink.template.Html)
     return textual('text/html', h);
   #end
 
