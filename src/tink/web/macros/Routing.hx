@@ -528,22 +528,20 @@ class Routing {
         case [Drill(name, field), PKHeader(_)]:
           drill(name, field, macro __header__);
       }
-
-      for(key in objects.keys()) {
-        vars.push({
-          name: key,
-          type: route.signature.args.find(v -> v.name == key).type.toComplex(),
-          expr: EObjectDecl(objects[key]).at(),
-        });
-      }
-
-      result = macro {
-        ${EVars(vars).at()}
-        $result;
-      }
-
     }
 
+    for(key in objects.keys()) {
+      vars.push({
+        name: key,
+        type: route.signature.args.find(v -> v.name == key).type.toComplex(),
+        expr: EObjectDecl(objects[key]).at(),
+      });
+    }
+
+    result = macro {
+      ${EVars(vars).at()}
+      $result;
+    }
 
     // parse params
       var types = payload.toTypes();
