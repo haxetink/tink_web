@@ -3,3 +3,5 @@ bin
 bin/node/tests.js
 node_modules
 /travix.n
+.haxelib/**
+.vscode/**

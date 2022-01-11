@@ -65,6 +65,7 @@ class Proxify {
       fields: [for (f in routes) {
         pos: f.field.pos,
         name: f.field.name,
+        meta: f.field.meta.get(),
         kind: FFun({
           args: [for (arg in f.signature.args) switch arg.kind {
             case AKSingle(_, ATUser(_) | ATContext): continue;
@@ -156,7 +157,7 @@ class Proxify {
                   ret;
                 }
                 var endPoint = makeEndpoint(path, f, headers);
-                var bodyCt = streaming ? macro:tink.io.IdealSource : macro:tink.Chunk;
+                var bodyCt = streaming ? macro:tink.io.Source.IdealSource : macro:tink.Chunk;
 
                 macro @:pos(f.field.pos) {
                   var __body__:$bodyCt = $body;
