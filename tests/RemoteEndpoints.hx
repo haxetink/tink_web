@@ -66,7 +66,7 @@ class RemoteEndpoints {
   public function issue123() @:privateAccess {
     final endpoint:Dynamic = new RemoteEndpoint(new tink.url.Host("127.0.0.1", 8081));
     
-    asserts.assert(endpoint.scheme == null);
+    asserts.assert(endpoint.scheme == '');
     return asserts.done();
   }
 }
