@@ -15,6 +15,10 @@ abstract Response(OutgoingResponse) from OutgoingResponse to OutgoingResponse {
   static public function ofChunk(c:Chunk, ?contentType:String = BINARY)
     return binary(null, contentType, c);
 
+  @:from static function fromIncomingresponse(r:IncomingResponse):Response
+		return new OutgoingResponse(new ResponseHeader(r.header.statusCode, r.header.statusCode, @:privateAccess r.header.fields.map(header ->
+			new HeaderField(header.name, header.value))), r.body.idealize(function(_) return Source.EMPTY));
+
   @:from static function ofString(s:String):Response
     return textual('text/plain', s);
 
