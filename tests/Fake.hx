@@ -193,8 +193,13 @@ class Fake {
   @:post public function optional(body: { foo:String, ?bar: Int })
     return {bar:body.bar};
 
+  
+
+  @:post public function nullableQuery1(?query: { foo:String })
+    return {foo: query == null ? null : query.foo};
+  
   @:params(nullableValue = query)
-  @:post public function optionalQuery(?nullableValue: { foo:String })
+  @:post public function nullableQuery2(?nullableValue: { foo:String })
     return {foo: nullableValue == null ? null : nullableValue.foo};
   
   @:restrict(user.id == a)
