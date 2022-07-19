@@ -80,7 +80,7 @@ class Route {
             for(field in fields)
               switch field.target {
                 case ATParam(kind):
-                  arr.push({id: id++, access: Drill(arg.name, field.name), type: field.type, optional: optional || field.optional, kind: kind});
+                  arr.push({id: id++, access: Drill({name: arg.name, nullable: arg.optional}, field.name), type: field.type, optional: optional || field.optional, kind: kind});
                 case _: // skip
               }
           case _: // skip
@@ -209,12 +209,15 @@ abstract Payload(Pair<Position, Array<{id:Int, access:ArgAccess, type:Type, opti
           add(query, macro $i{name});
         case [Plain(name), PKHeader(_)]:
           add(header, macro $i{name});
-        case [Drill(name, field), PKBody(Some(_))]:
-          add(body, macro $p{[name, field]});
-        case [Drill(name, field), PKQuery(_)]:
-          add(query, macro $p{[name, field]});
-        case [Drill(name, field), PKHeader(_)]:
-          add(header, macro $p{[name, field]});
+        case [Drill({name: name, nullable: nullable}, field), PKBody(Some(_))]:
+          final access = macro $p{[name, field]};
+          add(body, nullable ? macro ($i{name} == null ? null : $access) : access);
+        case [Drill({name: name, nullable: nullable}, field), PKQuery(_)]:
+          final access = macro $p{[name, field]};
+          add(query, nullable ? macro ($i{name} == null ? null : $access) : access);
+        case [Drill({name: name, nullable: nullable}, field), PKHeader(_)]:
+          final access = macro $p{[name, field]};
+          add(header, nullable ? macro ($i{name} == null ? null : $access) : access);
       }
     }
 

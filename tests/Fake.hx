@@ -193,6 +193,10 @@ class Fake {
   @:post public function optional(body: { foo:String, ?bar: Int })
     return {bar:body.bar};
 
+  @:params(nullableValue = query)
+  @:post public function optionalQuery(?nullableValue: { foo:String })
+    return {foo: nullableValue == null ? null : nullableValue.foo};
+  
   @:restrict(user.id == a)
   @:sub('/sub/$a/$b')
   public function sub(a, b) {
