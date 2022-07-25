@@ -16,7 +16,7 @@ class Proxify {
     function val(p:PathPart)
       return switch p {
         case PCapture(Plain(name)): macro (($i{name} : tink.Stringly) : tink.url.Portion);
-        case PCapture(Drill(name, field)): throw 'TODO';
+        case PCapture(Drill({name: name}, field)): throw 'TODO';
         case PConst(s): macro $s;
       }
 
@@ -110,7 +110,7 @@ class Proxify {
                     var writer = w.generator;
                     macro ${writer}($i{name});
 
-                  case Flat(Drill(name, field), type):
+                  case Flat(Drill({name: name}, field), type):
                     throw "TODO";
 
                   case Object(TAnonymous([])):

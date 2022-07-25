@@ -158,7 +158,7 @@ class Path {
     for(part in parts)
       switch [access, part] {
         case [Plain(n1), PCapture(Plain(n2))] if(n1 == n2): return Some(part);
-        case [Drill(n1, f1), PCapture(Drill(n2, f2))] if(n1 == n2 && f1 == f2): return Some(part);
+        case [Drill({name: n1}, f1), PCapture(Drill({name: n2}, f2))] if(n1 == n2 && f1 == f2): return Some(part);
         case _:
       }
     return None;

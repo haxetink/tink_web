@@ -27,7 +27,7 @@ class Arguments {
             name: field.name,
             type: field.type,
             optional: field.meta.has(':optional'),
-            target: getArgTarget(paths, params, Drill(name, field.name), a.opt, pos),
+            target: getArgTarget(paths, params, Drill({name: name, nullable: field.meta.has(':optional')}, field.name), a.opt, pos),
           }]);
         case [name, _]:
           AKSingle(
@@ -71,7 +71,7 @@ class Arguments {
   static function stringifyArgAccess(access:ArgAccess) {
     return switch access {
       case Plain(name): name;
-      case Drill(name, field): '$name.$field';
+      case Drill({name: name}, field): '$name.$field';
     }
   }
 
@@ -101,7 +101,7 @@ typedef RouteArg = {
 
 enum ArgAccess {
   Plain(name:String);
-  Drill(name:String, field:String);
+  Drill(object:{name:String, nullable:Bool}, field:String);
 }
 
 enum ArgKind {

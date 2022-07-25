@@ -231,7 +231,27 @@ class ProxyTest {
   public function int() {
     proxy.int(1)
       .next(function (o) {
-        o == 1;
+        asserts.assert(o == 1);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+
+  public function nullableQuery1() {
+    proxy.nullableQuery1()
+      .next(function (o) {
+        asserts.assert(o.foo == null);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+
+  public function nullableQuery2() {
+    proxy.nullableQuery2()
+      .next(function (o) {
+        asserts.assert(o.foo == null);
         return Noise;
       })
       .handle(asserts.handle);

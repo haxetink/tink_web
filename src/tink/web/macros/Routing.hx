@@ -91,7 +91,7 @@ class Routing {
         case PCapture(Plain(name)):
           captured[name] = true;
           macro $i{name};
-        case PCapture(Drill(name, field)):
+        case PCapture(Drill({name: name}, field)):
           throw "TODO";
       }
 
@@ -519,13 +519,13 @@ class Routing {
           plain(name, macro __query__);
         case [Plain(name), PKHeader(_)]:
           plain(name, macro __header__);
-        case [Drill(name, field), PKBody(None)]:
+        case [Drill({name: name}, field), PKBody(None)]:
           drill(name, field, macro __body__, true);
-        case [Drill(name, field), PKBody(Some(_))]:
+        case [Drill({name: name}, field), PKBody(Some(_))]:
           drill(name, field, macro __body__);
-        case [Drill(name, field), PKQuery(_)]:
+        case [Drill({name: name}, field), PKQuery(_)]:
           drill(name, field, macro __query__);
-        case [Drill(name, field), PKHeader(_)]:
+        case [Drill({name: name}, field), PKHeader(_)]:
           drill(name, field, macro __header__);
       }
     }
