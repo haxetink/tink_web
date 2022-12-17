@@ -51,6 +51,7 @@ class Parameters {
 
           case macro $i{name} = $i{pos = 'query' | 'header' | 'body'}[$v{(native:String)}]:
             validate(name);
+            if(pos == 'header') native = native.toLowerCase(); // TODO: I think we should make the parser case-insensitive instead
             add(Plain(name), LOCATION_FACTORY[pos](native));
 
           case macro $i{name}.$field in $i{pos = 'query' | 'header' | 'body'}:
@@ -60,6 +61,7 @@ class Parameters {
 
           case macro $i{name}.$field = $i{pos = 'query' | 'header' | 'body'}[$v{(native:String)}]:
             validate(name);
+            if(pos == 'header') native = native.toLowerCase(); // TODO: I think we should make the parser case-insensitive instead
             if(!hasField(types[name], field)) p.reject('`$name` does not has field "$field"');
             add(Drill({name: name, nullable: isNullable(name)}, field), LOCATION_FACTORY[pos](native));
 

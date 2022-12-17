@@ -146,7 +146,7 @@ class Fake {
   }
 
   @:params(obj.foo = query['foo'])
-  @:params(obj.bar = header['x-bar'])
+  @:params(obj.bar = header['X-Bar'])
   @:params(obj.baz = body['baz'])
   @:get public function merged(obj:{foo:String, bar:String,baz:String}):{foo:String, bar:String, baz:String} {
     return obj;
