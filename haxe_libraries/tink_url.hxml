@@ -1,4 +1,4 @@
-# @install: lix --silent download "gh://github.com/haxetink/tink_url#aa9999fdaeaab8c032a22ead37f30c0a2171afe6" into tink_url/0.5.0/github/aa9999fdaeaab8c032a22ead37f30c0a2171afe6
+# @install: lix --silent download "gh://github.com/haxetink/tink_url#4f53997c488e0ac33545a096968da6274bd7b064" into tink_url/0.5.0/github/4f53997c488e0ac33545a096968da6274bd7b064
 -lib tink_stringly
--cp ${HAXE_LIBCACHE}/tink_url/0.5.0/github/aa9999fdaeaab8c032a22ead37f30c0a2171afe6/src
+-cp ${HAXE_LIBCACHE}/tink_url/0.5.0/github/4f53997c488e0ac33545a096968da6274bd7b064/src
 -D tink_url=0.5.0

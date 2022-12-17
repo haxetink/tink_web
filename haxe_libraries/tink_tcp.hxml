@@ -1,5 +1,4 @@
-# @install: lix --silent download https://github.com/haxetink/tink_tcp/archive/ac14755cb449955ca0d2191aeda5c82ab2ba662c.tar.gz into tink_tcp/0.1.1/github/ac14755cb449955ca0d2191aeda5c82ab2ba662c
--D tink_tcp=0.1.1
--cp ${HAXESHIM_LIBCACHE}/tink_tcp/0.1.1/github/ac14755cb449955ca0d2191aeda5c82ab2ba662c/src
-
+# @install: lix --silent download "gh://github.com/haxetink/tink_tcp#b0961db4db515d6f695a23b09234412dbbbd09f7" into tink_tcp/0.1.1/github/b0961db4db515d6f695a23b09234412dbbbd09f7
 -lib tink_io
+-cp ${HAXE_LIBCACHE}/tink_tcp/0.1.1/github/b0961db4db515d6f695a23b09234412dbbbd09f7/src
+-D tink_tcp=0.1.1
