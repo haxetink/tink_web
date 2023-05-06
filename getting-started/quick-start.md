@@ -79,7 +79,7 @@ import tink.url.Host;
 
 class Client {
 	static function main() {
-		var remote = new Remote<Root>(new NodeClient(), new RemoteEndpoint(new Host('httpbin.org', 80)));
+		var remote = new Remote<Root>(new NodeClient(), new RemoteEndpoint(new Host('httpbin.org', 80),"","http"));
 		remote.json().handle(function(o) switch o {
 			case Success(result): trace(result);
 			case Failure(e): trace(e);
