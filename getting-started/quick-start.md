@@ -25,6 +25,10 @@ class Server {
 		container.run(function(req) {
 			return router.route(Context.ofRequest(req))
 				.recover(OutgoingResponse.reportError);
+		}).handle(function(result) switch result {
+			case Running(_): trace('Running');
+			case Failed(error): trace(error);
+			case Shutdown: trace('Shutdown');
 		});
 	}
 }
