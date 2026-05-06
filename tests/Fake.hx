@@ -56,6 +56,10 @@ class Fake {
   @:post public function textual(body:String)
     return body;
 
+  @:params(of in query)
+  @:get public function letters(of:String):tink.streams.RealStream<{ letter: String }>
+    return tink.streams.Stream.ofIterator(of.split('').map(letter -> { letter: letter }).iterator());
+
   @:get('/queryParam?param=$value')
   public function queryParam(value:String)
     return { value: value };

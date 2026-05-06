@@ -16,12 +16,12 @@ class Signature {
         this.paths = new Paths(f.name, args, f.meta);
         this.params = new Parameters(f.meta, [for(a in args) a.name => a.t]);
         this.args = new Arguments(args, paths, params, f.pos);
-        this.result = new Result(lift(ret, f.pos));
+        this.result = new Result(lift(ret, f.pos), f.pos);
       case t:
         this.paths = new Paths(f.name, [], f.meta);
         this.params = new Parameters(f.meta, new Map());
         this.args = new Arguments([], paths, params, f.pos);
-        this.result = new Result(lift(t, f.pos));
+        this.result = new Result(lift(t, f.pos), f.pos);
     }
   }
 

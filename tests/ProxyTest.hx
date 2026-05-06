@@ -37,6 +37,15 @@ class ProxyTest {
     return proxy.complex(c).map(function (o) return assert(compare(c, o.sure())));
   }
 
+  public function events() {
+    final message = 'foobar';
+    var pos = 0;
+    return proxy.letters(message).forEach(function (o) {
+      asserts.assert(o.letter == message.charAt(pos++));
+      return tink.streams.Stream.Handled.Resume;
+    }).next(_ -> asserts.done());
+  }
+
   public function typed() {
     return proxy.typed()
       .next(function (o) {

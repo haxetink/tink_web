@@ -486,6 +486,30 @@ class Routing {
                     res.body
                   ));
               }
+            case REvents(t):
+              final ct = t.toComplex();
+              
+              switch html {
+                case Some(v): v.reject('@:html cannot be used with events');
+                case None:
+              }
+
+              macro tink.core.Promise.lift($result).next(
+                function (__data__) {
+                  final __data__:tink.streams.RealStream<$ct> = __data__; 
+                  final __writer__ = new tink.json.Writer<$ct>();
+                  return new tink.http.Response.OutgoingResponse(
+                    new tink.http.Response.ResponseHeader(
+                      $statusCode,
+                      [new tink.http.Header.HeaderField(CONTENT_TYPE, 'text/event-stream')].concat(${macro $a{headers}})
+                    ),
+                    tink.http.Sse.SseStream.encode(
+                      __data__.map(v -> ({ data: __writer__.write(v) }:tink.http.Sse))
+                      .idealize(e -> tink.streams.Stream.single(({ event: 'error', data: e.message }:tink.http.Sse)))
+                     )
+                  );
+                }
+              );
           }
       }
 

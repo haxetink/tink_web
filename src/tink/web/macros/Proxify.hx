@@ -158,7 +158,7 @@ class Proxify {
                 var endPoint = makeEndpoint(path, f, headers);
                 var bodyCt = streaming ? macro:tink.io.IdealSource : macro:tink.Chunk;
 
-                macro @:pos(f.field.pos) {
+                final ret = macro @:pos(f.field.pos) {
                   var __body__:$bodyCt = $body;
                   return $endPoint.request(
                     this.client,
@@ -192,9 +192,14 @@ class Proxify {
                         else
                           macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
 
+                      case REvents(_.toComplex() => t):
+                        macro function (header, body) return tink.web.proxy.SseParser.parse(body, new tink.json.Parser<$t>().tryParse);
                     }}
                   );
                 };
+
+                if (response.match(REvents(_))) macro @:pos(ret.pos) return tink.streams.RealStream.promiseOfRealStream((() -> $ret)());// ew
+                else ret;
 
               case KSub:
 
