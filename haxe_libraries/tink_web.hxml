@@ -1,6 +1,5 @@
-# @install: lix --silent download "gh://github.com/haxetink/tink_web#2a209424c24002aa45dad77b8c85d3af943246f5" into tink_web/0.3.0/github/2a209424c24002aa45dad77b8c85d3af943246f5
 -lib tink_http
 -lib tink_json
 -lib tink_querystring
--cp ${HAXE_LIBCACHE}/tink_web/0.3.0/github/2a209424c24002aa45dad77b8c85d3af943246f5/src
+-cp src
 -D tink_web=0.3.0

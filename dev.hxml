@@ -1,4 +1,5 @@
 tests.hxml
+-D no-deprecation-warnings
 -lib tink_web
 -lib travix
 -lib hxnodejs
