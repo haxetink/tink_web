@@ -46,6 +46,15 @@ class ProxyTest {
     }).next(_ -> asserts.done());
   }
 
+  public function colon() {
+    return proxy.colon(true, 420.69)
+      .next(function (o) {
+        asserts.assert(o.foo == true);
+        asserts.assert(o.bar == 420.69);
+        return asserts.done();
+      });
+  }
+
   public function typed() {
     return proxy.typed()
       .next(function (o) {

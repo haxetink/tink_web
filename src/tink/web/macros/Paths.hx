@@ -1,6 +1,7 @@
 package tink.web.macros;
 
 #if macro
+import haxe.macro.MacroStringTools;
 import tink.http.Method;
 import tink.url.Portion;
 import tink.web.macros.Arguments;
@@ -109,14 +110,33 @@ class Path {
         //   }
         // }
 
-        function part(of:Portion)
+        function part(of:Portion) {
           // TODO: support drilled ('/${obj.foo}') and mixed ('/$obj:patch')
-          return switch of {
-            case _.raw.split('$') => ['', name]:
-              PCapture(Plain(name));
-            default:
-              PConst(of);
+          return switch MacroStringTools.formatString(of.raw, v.pos) {
+            case { expr: EConst(CString(_)) }: PConst(of);
+            case macro "" + $i{name}: PCapture(Plain(name));
+            case e: 
+              final fragments = [],
+                    captures = [];
+
+              function parse(e:Expr) {
+                switch e {
+                  case macro $a + $b:
+                    parse(a);
+                    parse(b);
+                  case macro $v{(s:String)}: fragments.push(s);
+                  case macro $i{name}: captures.push(Plain(name));
+                  default: e.reject('complex interpolation not supported: $e');
+                }
+              }
+
+              parse(e);
+
+              if (fragments.length == captures.length) fragments.push('');
+
+              PMixed(fragments, captures);
           }
+        }
 
         var parts = [for (p in parts) part(p)],
             query = [for (q in url.query) q.name => part(q.value)];
@@ -157,6 +177,11 @@ class Path {
   public function getCapture(access:ArgAccess):Option<PathPart> {
     for(part in parts)
       switch [access, part] {
+        case [Plain(n1), PMixed(fragments, captures)]: 
+          for (c in captures) switch c { 
+            case Plain(n2): if(n1 == n2) return Some(part);
+            default:
+          }
         case [Plain(n1), PCapture(Plain(n2))] if(n1 == n2): return Some(part);
         case [Drill({name: n1}, f1), PCapture(Drill({name: n2}, f2))] if(n1 == n2 && f1 == f2): return Some(part);
         case _:
@@ -179,6 +204,6 @@ enum PathRest {
 enum PathPart {
   PConst(s:Portion);
   PCapture(access:ArgAccess);
-  // PMixed(arr:Array<PathPart>); // TODO: support some kind of mixed/advanced capture, see https://github.com/haxetink/tink_web/issues/26
+  PMixed(fragments:Array<String>, captures:Array<ArgAccess>);
 }
 #end

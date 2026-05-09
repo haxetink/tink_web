@@ -84,13 +84,23 @@ class Routing {
 
     var captured = new Map();
 
+    function capture(name:String):Expr {
+      captured[name] = true;
+      return macro $i{name};
+    }
+
     function part(p)
       return switch p {
         case PConst(v):
           macro $v{v.toString()};
         case PCapture(Plain(name)):
-          captured[name] = true;
-          macro $i{name};
+          capture(name);
+        case PMixed(fragments, captures):
+          var captured = [for (c in captures) capture(switch c {
+            case Plain(name): name;
+            default: throw 'TODO';
+          })].toArray();
+          macro tink.web.routing.Context.Path.fragments(_, $v{fragments}) => $captured;
         case PCapture(Drill({name: name}, field)):
           throw "TODO";
       }

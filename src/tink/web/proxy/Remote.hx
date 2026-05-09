@@ -273,4 +273,11 @@ class RemoteBase<T> {
       default: parser(e.data);
     }));
   }
+
+  function __mergeFragments(fragments:Array<String>, captures:Array<Portion>):String {
+    return [for (i => f in fragments) f + switch captures[i] {
+      case null: '';
+      case v: v.raw;
+    }].join('');
+  }
 }

@@ -18,6 +18,11 @@ using tink.CoreApi;
 abstract Path(Array<Portion>) from Array<Portion> to Array<Portion> {
   @:to public function toString():String
     return '/'+[for (p in this) (p:String)].join('/');
+
+  static public function fragments(path:String, parts:Array<String>):Array<tink.Stringly> {
+    final ereg = new EReg('^${parts.join('(.*)')}$', '');
+    return if (ereg.match(path)) [for (i in 1...parts.length) ereg.matched(i)] else [];
+  }
 }
 
 class Context {

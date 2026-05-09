@@ -61,7 +61,7 @@ class Arguments {
     for (p in paths)
       if (!Lambda.exists(p.query, v -> switch v {
         case PCapture(v): stringifyArgAccess(v) == access;
-        case PConst(_): false;
+        default: false;
       }))
         p.pos.error('${p.expr.toString()} does not capture required parameter `$access`. Please specify its use with the @:params metadata or capture it.');
 

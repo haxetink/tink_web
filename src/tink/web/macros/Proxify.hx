@@ -13,10 +13,20 @@ class Proxify {
 
     var sig = route.signature;
 
+    function capture(name:String):Expr {
+      return macro @:pos(from.expr.pos) (($i{name} : tink.Stringly) : tink.url.Portion);
+    }
+
     function val(p:PathPart)
       return switch p {
-        case PCapture(Plain(name)): macro (($i{name} : tink.Stringly) : tink.url.Portion);
+        case PCapture(Plain(name)): capture(name);
         case PCapture(Drill({name: name}, field)): throw 'TODO';
+        case PMixed(fragments, captures): 
+          final captures = [for (c in captures) capture(switch c {
+            case Plain(name): name;
+            default: throw 'TODO';
+          })].toArray();
+          macro this.__mergeFragments($v{fragments}, $captures);
         case PConst(s): macro $s;
       }
 

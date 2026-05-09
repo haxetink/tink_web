@@ -80,6 +80,10 @@ class Fake {
   @:get public function promiseBytes():Promise<Bytes>
     return Bytes.ofString('foo');
 
+  @:get('/colon/$foo:$bar')
+  public function colon(foo:Bool, bar:Float)
+    return { foo: foo, bar: bar };
+
   @:statusCode(201)
   @:post public function statusCode()
     return 'Done';
