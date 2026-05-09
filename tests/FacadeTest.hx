@@ -16,7 +16,7 @@ class FacadeTest {
     asserts.assert(Type.getClass(p1) == Type.getClass(p3));
 
     function getEndpoint(r:RemoteBase<Fake>)
-      return Std.string(@:privateAccess r.endpoint);
+      return Std.string(@:privateAccess r.__tink_endpoint);
 
     asserts.assert(getEndpoint(p1) == getEndpoint(p2));
     asserts.assert(getEndpoint(p1) == getEndpoint(p3));

@@ -1,9 +1,11 @@
 package tink.web.proxy;
 
+import tink.streams.RealStream;
 import haxe.io.Bytes;
 import tink.url.*;
 import tink.querystring.*;
 import tink.http.*;
+import tink.http.Sse;
 import tink.http.Header;
 import tink.http.Request;
 import tink.http.Response;
@@ -257,12 +259,18 @@ abstract HeaderParams(Headers) to Headers from Headers {
 
 class RemoteBase<T> {
 
-  var client:tink.http.Client;
-  var endpoint:RemoteEndpoint;
+  final __tink_client:tink.http.Client;
+  final __tink_endpoint:RemoteEndpoint;
 
   public function new(client, endpoint) {
-    this.client = client;
-    this.endpoint = endpoint;
+    this.__tink_client = client;
+    this.__tink_endpoint = endpoint;
   }
 
+  function __parseSse<T>(body:RealSource, parser:String->Outcome<T, Error>):RealStream<T> {
+    return SseStream.decode(body).map((e:Sse) -> Promise.lift(switch e.event {
+      case 'error': new Error(e.data);
+      default: parser(e.data);
+    }));
+  }
 }

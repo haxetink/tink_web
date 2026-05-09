@@ -48,7 +48,7 @@ class Proxify {
           .stringify(${decls.header.at()});
     }
 
-    return macro this.endpoint.sub({
+    return macro this.__tink_endpoint.sub({
       path: $a{path},
       query: $query,
       headers: [$a{headers}].concat($paramHeaders)
@@ -161,7 +161,7 @@ class Proxify {
                 final ret = macro @:pos(f.field.pos) {
                   var __body__:$bodyCt = $body;
                   return $endPoint.request(
-                    this.client,
+                    this.__tink_client,
                     cast $v{method},
                     __body__,
                     ${switch response {
@@ -193,7 +193,7 @@ class Proxify {
                           macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
 
                       case REvents(_.toComplex() => t):
-                        macro function (header, body) return tink.web.proxy.SseParser.parse(body, new tink.json.Parser<$t>().tryParse);
+                        macro function (header, body) return this.__parseSse(body, new tink.json.Parser<$t>().tryParse);
                     }}
                   );
                 };
@@ -206,7 +206,7 @@ class Proxify {
                 var target = f.signature.result.asSubTarget().toComplex(),
                     path = Variant.seek(f.signature.paths, f.field.pos);
 
-                macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.client, ${makeEndpoint(path, f)});
+                macro @:pos(f.field.pos) return new tink.web.proxy.Remote<$target>(this.__tink_client, ${makeEndpoint(path, f)});
             }
           },
           ret: null,
