@@ -38,7 +38,7 @@ class DispatchTest {
 
   static var f = new Fake();
 
-  public static function exec(req, ?session):Promise<OutgoingResponse> {
+  public static function exec(req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>):Promise<OutgoingResponse> {
 
     if (session == null)
       session = loggedin(true);
@@ -50,50 +50,50 @@ class DispatchTest {
 
   public function new() {}
 
-  @:variant({ flag: true },               get('/flag/'))
-  @:variant({ number: 123 },              get('/count/'))
-  @:variant({ number: 321 },              get('/count/321'))
-  @:variant({ hello: 'world' },           get('/'))
-  @:variant('<p>Hello world</p>',         get('/', []))
-  @:variant({ hello: 'haxe' },            get('/haxe'))
-  @:variant("yo",                         get('/yo'))
+  @:variant({ flag: true },               Helpers.get('/flag/'))
+  @:variant({ number: 123 },              Helpers.get('/count/'))
+  @:variant({ number: 321 },              Helpers.get('/count/321'))
+  @:variant({ hello: 'world' },           Helpers.get('/'))
+  @:variant('<p>Hello world</p>',         Helpers.get('/', []))
+  @:variant({ hello: 'haxe' },            Helpers.get('/haxe'))
+  @:variant("yo",                         Helpers.get('/yo'))
   @:variant({ foo: 'f', baz: 'b', query: 'foo=f&baz=b'},
-     get('/alias?foo=f&baz=b'))
+     Helpers.get('/alias?foo=f&baz=b'))
   @:variant({ foo: 'foo', bar: 'bar', baz: 'baz'},
-     req('/merged?foo=foo', GET, [new HeaderField('x-bar', 'bar')], '{"baz":"baz"}'))
-  @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
-  @:variant({ foo: 'hey', bar: 4 },       req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
-  @:variant('foo',                        req('/streaming', POST, 'foo'))
-  @:variant('foo',                        req('/buffered', POST, 'foo'))
-  @:variant('foo',                        req('/textual', POST, 'foo'))
-  @:variant([1,2,3],                      req('/array', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '[1,2,3]'))
-  @:variant(1,                            req('/int', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '1'))
-  @:variant('foo',                        req('/promiseString', GET))
-  @:variant('foo',                        req('/promiseBytes', GET))
+     Helpers.req('/merged?foo=foo', GET, [new tink.http.Header.HeaderField('x-bar', 'bar')], '{"baz":"baz"}'))
+  @:variant({ foo: 'hey', bar: 4 },       Helpers.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
+  @:variant({ foo: 'hey', bar: 4 },       Helpers.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
+  @:variant('foo',                        Helpers.req('/streaming', POST, 'foo'))
+  @:variant('foo',                        Helpers.req('/buffered', POST, 'foo'))
+  @:variant('foo',                        Helpers.req('/textual', POST, 'foo'))
+  @:variant([1,2,3],                      Helpers.req('/array', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '[1,2,3]'))
+  @:variant(1,                            Helpers.req('/int', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '1'))
+  @:variant('foo',                        Helpers.req('/promiseString', GET))
+  @:variant('foo',                        Helpers.req('/promiseBytes', GET))
   @:variant({ accept: 'application/json; charset=UTF-8', bar: 'bar' },
-     get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json; charset=UTF-8'), new tink.http.Header.HeaderField('x-bar', 'bar')]))
+     Helpers.get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json; charset=UTF-8'), new tink.http.Header.HeaderField('x-bar', 'bar')]))
   @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ },
-     get('/sub/1/2/test/yo?c=3&d=4'))
+     Helpers.get('/sub/1/2/test/yo?c=3&d=4'))
   @:variant({ foo: ([ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ]:Array<Dynamic>) },
-     get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
-   @:variant('{"bar":null}',                        req('/optional', POST, [], '{"foo":"baz"}'))
-   @:variant('{"bar":null}',                        req('/optional', POST, [], '{"foo":"baz","bar":null}'))
-   @:variant('{"bar":1}',                        req('/optional', POST, [], '{"foo":"baz","bar":1}'))
-  public function dispatch(value:Dynamic, req, ?session)
+     Helpers.get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
+   @:variant('{"bar":null}',                        Helpers.req('/optional', POST, [], '{"foo":"baz"}'))
+   @:variant('{"bar":null}',                        Helpers.req('/optional', POST, [], '{"foo":"baz","bar":null}'))
+   @:variant('{"bar":1}',                        Helpers.req('/optional', POST, [], '{"foo":"baz","bar":1}'))
+  public function dispatch(value:Dynamic, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>)
     return expect(value, req, session);
 
-  @:variant(UnprocessableEntity, get('/count/foo'))
-  @:variant(UnprocessableEntity, get('/sub/1/2/test/yo'))
-  @:variant(UnprocessableEntity, req('/post', POST, [], 'bar=4'))
-  @:variant(UnprocessableEntity, req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'))
-  @:variant(UnprocessableEntity, req('/post', POST, [], 'bar=5&foo=hey'))
-  public function dispatchError(code:ErrorCode, req, ?session)
+  @:variant(UnprocessableEntity, Helpers.get('/count/foo'))
+  @:variant(UnprocessableEntity, Helpers.get('/sub/1/2/test/yo'))
+  @:variant(UnprocessableEntity, Helpers.req('/post', POST, [], 'bar=4'))
+  @:variant(UnprocessableEntity, Helpers.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'))
+  @:variant(UnprocessableEntity, Helpers.req('/post', POST, [], 'bar=5&foo=hey'))
+  public function dispatchError(code:ErrorCode, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>)
     return shouldFail(code, req, session);
 
-  @:variant(req('/streamingFoo', POST, 'foo'))
-  @:variant(req('/bufferedFoo', POST, 'foo'))
-  @:variant(req('/textualFoo', POST, 'foo'))
-  public function issue92(req) {
+  @:variant(Helpers.req('/streamingFoo', POST, 'foo'))
+  @:variant(Helpers.req('/bufferedFoo', POST, 'foo'))
+  @:variant(Helpers.req('/textualFoo', POST, 'foo'))
+  public function issue92(req:IncomingRequest) {
     return
       exec(req).next(
         function (o)
@@ -102,7 +102,7 @@ class DispatchTest {
   }
 
   function multipartReq()
-    return req('/upload', POST, [
+    return Helpers.req('/upload', POST, [
       new HeaderField('Content-Type', 'multipart/form-data; boundary=----------287032381131322'),
       new HeaderField('Content-Length', 514),
     ],
@@ -121,26 +121,26 @@ class DispatchTest {
     return shouldFail(NotAcceptable, multipartReq());
   #end
 
-  @:variant({ foo: 'bar' },     get('/sub/1/2/whatever')                                    )
-  @:variant({ id: -1 },         get('/anonOrNot'),          DispatchTest.anon               )
-  @:variant({ id: 1 },          get('/anonOrNot')                                           )
-  @:variant({ id: 4 },          get('/anonOrNot'),          DispatchTest.loggedin(true, 4)  )
-  @:variant({ admin: true },    get('/withUser')                                            )
-  @:variant({ admin: false },   get('/withUser'),           DispatchTest.loggedin(false, 2) )
-  public function auth(value:Dynamic, req, ?session)
+  @:variant({ foo: 'bar' },     Helpers.get('/sub/1/2/whatever')                                    )
+  @:variant({ id: -1 },         Helpers.get('/anonOrNot'),          DispatchTest.anon               )
+  @:variant({ id: 1 },          Helpers.get('/anonOrNot')                                           )
+  @:variant({ id: 4 },          Helpers.get('/anonOrNot'),          DispatchTest.loggedin(true, 4)  )
+  @:variant({ admin: true },    Helpers.get('/withUser')                                            )
+  @:variant({ admin: false },   Helpers.get('/withUser'),           DispatchTest.loggedin(false, 2) )
+  public function auth(value:Dynamic, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>)
     return expect(value, req, session);
 
-  @:variant(Unauthorized, get('/withUser'),          DispatchTest.anon)
-  @:variant(Unauthorized, get('/'),                  DispatchTest.anon)
-  @:variant(Unauthorized, get('/haxe'),              DispatchTest.anon)
-  @:variant(Forbidden,    get('/noaccess')                            )
-  @:variant(Forbidden,    get('/sub/2/2/')                            )
-  @:variant(Forbidden,    get('/sub/1/1/whatever')                    )
-  public function authError(code:ErrorCode, req, ?session)
+  @:variant(Unauthorized, Helpers.get('/withUser'),          DispatchTest.anon)
+  @:variant(Unauthorized, Helpers.get('/'),                  DispatchTest.anon)
+  @:variant(Unauthorized, Helpers.get('/haxe'),              DispatchTest.anon)
+  @:variant(Forbidden,    Helpers.get('/noaccess')                            )
+  @:variant(Forbidden,    Helpers.get('/sub/2/2/')                            )
+  @:variant(Forbidden,    Helpers.get('/sub/1/1/whatever')                    )
+  public function authError(code:ErrorCode, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>)
     return shouldFail(code, req, session);
 
 
-  static function expect(value:Dynamic, req, ?session, ?pos:PosInfos) {
+  static function expect(value:Dynamic, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>, ?pos:PosInfos) {
     return exec(req, session).next(function (o):Promise<Assertion>
       return if (o.header.statusCode != 200)
         new Assertion(false, 'Request to ${req.header.url} failed because ${o.header.reason} (${o.header.statusCode.toInt()})');
@@ -154,7 +154,7 @@ class DispatchTest {
     );
   }
 
-  static function shouldFail(code, req, ?session, ?pos:PosInfos) {
+  static function shouldFail(code:ErrorCode, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>, ?pos:PosInfos) {
     return exec(req, session)
       .map(function(o) return switch o {
         case Success(_): new Assertion(false, 'Expected Failure but got Success', pos);

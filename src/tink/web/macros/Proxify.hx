@@ -166,7 +166,7 @@ class Proxify {
                   ret;
                 }
                 var endPoint = makeEndpoint(path, f, headers);
-                var bodyCt = streaming ? macro:tink.io.IdealSource : macro:tink.Chunk;
+                var bodyCt = streaming ? macro:tink.io.Source.IdealSource : macro:tink.Chunk;
 
                 final ret = macro @:pos(f.field.pos) {
                   var __body__:$bodyCt = $body;
@@ -176,7 +176,10 @@ class Proxify {
                     __body__,
                     ${switch response {
                       case RNoise:
-                        macro function(header, body):tink.core.Promise<tink.core.Noise> {
+                        // Explicit param/return types: Haxe 4.3+/5 do not bind request<A>
+                        // from unannotated reader lambdas (A stays Unknown).
+                        // Use full module-subtype paths (Haxe 5 resolves ComplexTypes strictly).
+                        macro function(header:tink.http.Response.ResponseHeader, body:tink.io.Source.RealSource):tink.core.Promise<tink.core.Noise> {
                           return
                             if(header.statusCode >= 400)
                               tink.io.Source.RealSourceTools.all(body)
@@ -189,10 +192,7 @@ class Proxify {
 
                       case ROpaque(OParsed(res, t)):
                         var ct = res.toComplex();
-                        // Explicit return type required: Haxe 4.3+ does not propagate the
-                        // inner `: $ct` annotation through ResponseReader<A> / request<A>,
-                        // leaving A as Unknown.
-                        macro function(header, body):tink.core.Promise<$ct>
+                        macro function(header:tink.http.Response.ResponseHeader, body:tink.io.Source.RealSource):tink.core.Promise<$ct>
                           return tink.io.Source.RealSourceTools.all(body)
                             .next(function(chunk) return ${reader.force().generator}(chunk))
                             .next(function(parsed):$ct return new tink.web.Response(header, parsed));
@@ -200,16 +200,16 @@ class Proxify {
                       case ROpaque(ORaw(t)):
                         if (Context.getType('tink.http.Response.IncomingResponse').unifiesWith(t)) {
                           var ct = t.toComplex();
-                          macro function (header, body):tink.core.Promise<$ct> return (new tink.http.Response.IncomingResponse(header, body):$ct);
+                          macro function(header:tink.http.Response.ResponseHeader, body:tink.io.Source.RealSource):tink.core.Promise<$ct>
+                            return (new tink.http.Response.IncomingResponse(header, body):$ct);
                         }
                         else
-                          // Same Haxe 4.3+ inference issue as OParsed: without an explicit
-                          // Promise return type, request<A> leaves A as Unknown.
-                          macro function (header, body):tink.core.Promise<tink.http.Response.IncomingResponse>
+                          macro function(header:tink.http.Response.ResponseHeader, body:tink.io.Source.RealSource):tink.core.Promise<tink.http.Response.IncomingResponse>
                             return new tink.http.Response.IncomingResponse(header, body);
 
                       case REvents(_.toComplex() => t):
-                        macro function (header, body) return this.__parseSse(body, new tink.json.Parser<$t>().tryParse);
+                        macro function(header:tink.http.Response.ResponseHeader, body:tink.io.Source.RealSource)
+                          return this.__parseSse(body, new tink.json.Parser<$t>().tryParse);
                     }}
                   );
                 };
