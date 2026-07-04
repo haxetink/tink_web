@@ -1,6 +1,7 @@
 package tink.web.macros;
 
 #if macro
+import tink.http.Method;
 import tink.macro.BuildCache;
 import tink.web.macros.Paths;
 
@@ -11,6 +12,7 @@ class Routing {
 
   var cases:Array<Case> = [];
   var fields:Array<Field> = [];
+  var fallbackGroups:Map<String, { pattern:Array<Expr>, methods:Array<String>, specificity:Int }> = new Map();
 
   var depth:Int = 0;
   var named:Array<String> = [];
@@ -62,16 +64,8 @@ class Routing {
 
   }
 
-  function makeCase(field:String, funcArgs:Array<FunctionArg>, path:Path):Case {
-    if (path.deviation.missing.length > 0)
-      path.pos.error('Route does not capture all required variables. See warnings.');
-
-    var pattern = [
-      switch path.kind {
-        case Call(Some(m)): macro $i{m};
-        case _: IGNORE;
-      },
-    ];
+  function makePattern(path:Path, methodSlot:Expr, bindCaptures = true):{ pattern:Array<Expr>, captured:Map<String, Bool> } {
+    var pattern = [methodSlot];
 
     for (i in 0...depth * 2 + named.length * 2 + 1)
       pattern.push(IGNORE);
@@ -85,6 +79,8 @@ class Routing {
     var captured = new Map();
 
     function capture(name:String):Expr {
+      if (!bindCaptures)
+        return IGNORE;
       captured[name] = true;
       return macro $i{name};
     }
@@ -96,6 +92,8 @@ class Routing {
         case PCapture(Plain(name)):
           capture(name);
         case PMixed(fragments, captures):
+          if (!bindCaptures)
+            return macro tink.web.routing.Context.Path.fragments(_, $v{fragments}) => _;
           var captured = [for (c in captures) capture(switch c {
             case Plain(name): name;
             default: throw 'TODO';
@@ -115,6 +113,58 @@ class Routing {
       pattern[2 + index + depth * 2] = macro true;
       pattern[2 + index + depth * 2 + named.length] = part(path.query[name]);
     }
+
+    return { pattern: pattern, captured: captured };
+  }
+
+  function pathShapeKey(path:Path):String {
+    var parts = [for (p in path.parts) switch p {
+      case PConst(v): 'c:' + (v.raw : String);
+      case PCapture(_): 'v';
+      case PMixed(fragments, _): 'm:' + fragments.join('\x01');
+    }];
+    var query = [for (name in path.query.keys()) name];
+    query.sort(Reflect.compare);
+    return parts.join('/') + (path.rest == RNotAllowed ? '.' : '*') + '#' + query.join(',');
+  }
+
+  function pathSpecificity(path:Path):Int {
+    var score = 0;
+    for (p in path.parts) switch p {
+      case PConst(_): score += 100;
+      case PMixed(fragments, captures): score += fragments.length * 10 - captures.length;
+      case PCapture(_):
+    }
+    for (_ in path.query.keys()) score += 5;
+    if (path.rest == RNotAllowed) score += 1;
+    return score;
+  }
+
+  function registerFallback(path:Path, method:Method) {
+    var key = pathShapeKey(path);
+    if (!fallbackGroups.exists(key))
+      fallbackGroups[key] = {
+        pattern: makePattern(path, IGNORE, false).pattern,
+        methods: [],
+        specificity: pathSpecificity(path),
+      };
+    var m:String = method;
+    if (fallbackGroups[key].methods.indexOf(m) == -1)
+      fallbackGroups[key].methods.push(m);
+  }
+
+  function makeCase(field:String, funcArgs:Array<FunctionArg>, path:Path):Case {
+    if (path.deviation.missing.length > 0)
+      path.pos.error('Route does not capture all required variables. See warnings.');
+
+    var methodSlot = switch path.kind {
+      case Call(Some(m)): macro $i{m};
+      case _: IGNORE;
+    };
+
+    var built = makePattern(path, methodSlot);
+    var pattern = built.pattern;
+    var captured = built.captured;
 
     var callArgs = [for (a in funcArgs)
       switch a.name {
@@ -183,12 +233,30 @@ class Routing {
 
     secondPass();
 
+    var notFound = macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.url.pathWithQuery);
 
-    var theSwitch = ESwitch(
-      switchTarget(),
-      cases,
-      macro @:pos(pos) new tink.core.Error(NotFound, 'Not Found: [' + ctx.header.method + '] ' + ctx.header.url.pathWithQuery)
-    ).at(pos);
+    var methodFallback = {
+      var groups = [for (g in fallbackGroups) g];
+      groups.sort(function(a, b) return b.specificity - a.specificity);
+      switch groups {
+        case []: notFound;
+        case _:
+          var fallbackCases = [for (g in groups) {
+            g.methods.sort(Reflect.compare);
+            {
+              values: [g.pattern.toArray(pos)],
+              expr: macro @:pos(pos) tink.core.Error.withData(
+                MethodNotAllowed,
+                'Method Not Allowed: [' + ctx.header.method + '] ' + ctx.header.url.pathWithQuery,
+                { allow: $v{g.methods} }
+              )
+            }
+          }];
+          ESwitch(switchTarget(), fallbackCases, notFound).at(pos);
+      }
+    }
+
+    var theSwitch = ESwitch(switchTarget(), cases, methodFallback).at(pos);
 
     theSwitch = restrict(routes.restricts, theSwitch);
 
@@ -648,8 +716,13 @@ class Routing {
   function secondPass()
     for (route in routes) {
       var args = routeMethod(route);
-      for (path in route.signature.paths)
+      for (path in route.signature.paths) {
         cases.push(makeCase(route.field.name, args, path));
+        switch path.kind {
+          case Call(Some(m)): registerFallback(path, m);
+          case _:
+        }
+      }
     }
 
   static var IGNORE = macro _;

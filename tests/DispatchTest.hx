@@ -87,6 +87,10 @@ class DispatchTest {
   @:variant(UnprocessableEntity, Helpers.req('/post', POST, [], 'bar=4'))
   @:variant(UnprocessableEntity, Helpers.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=bar&foo=hey'))
   @:variant(UnprocessableEntity, Helpers.req('/post', POST, [], 'bar=5&foo=hey'))
+  @:variant(MethodNotAllowed, Helpers.req('/onlyGet', POST))
+  @:variant(MethodNotAllowed, Helpers.req('/multiMethod', DELETE))
+  @:variant(MethodNotAllowed, Helpers.req('/sub/1/2/test/yo', POST))
+  @:variant(NotFound, Helpers.get('/this/route/does/not/exist'))
   public function dispatchError(code:ErrorCode, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>)
     return shouldFail(code, req, session);
 

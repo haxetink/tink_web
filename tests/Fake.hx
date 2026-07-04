@@ -33,6 +33,11 @@ class Fake {
 
   @:restrict(false) @:get public function noaccess() return 'nope';
 
+  @:get('/onlyGet') public function onlyGet() return 'ok';
+
+  @:get('/multiMethod') public function multiMethodGet() return 'get';
+  @:post('/multiMethod') public function multiMethodPost() return 'post';
+
   @:get public var yo(default, null):String = 'yo';
 
   @:html(function (u) return '<html><body>Yo</body></html>')
