@@ -189,7 +189,10 @@ class Proxify {
 
                       case ROpaque(OParsed(res, t)):
                         var ct = res.toComplex();
-                        macro function(header, body)
+                        // Explicit return type required: Haxe 4.3+ does not propagate the
+                        // inner `: $ct` annotation through ResponseReader<A> / request<A>,
+                        // leaving A as Unknown.
+                        macro function(header, body):tink.core.Promise<$ct>
                           return tink.io.Source.RealSourceTools.all(body)
                             .next(function(chunk) return ${reader.force().generator}(chunk))
                             .next(function(parsed):$ct return new tink.web.Response(header, parsed));
@@ -200,7 +203,10 @@ class Proxify {
                           macro function (header, body):tink.core.Promise<$ct> return (new tink.http.Response.IncomingResponse(header, body):$ct);
                         }
                         else
-                          macro function (header, body) return new tink.http.Response.IncomingResponse(header, body);
+                          // Same Haxe 4.3+ inference issue as OParsed: without an explicit
+                          // Promise return type, request<A> leaves A as Unknown.
+                          macro function (header, body):tink.core.Promise<tink.http.Response.IncomingResponse>
+                            return new tink.http.Response.IncomingResponse(header, body);
 
                       case REvents(_.toComplex() => t):
                         macro function (header, body) return this.__parseSse(body, new tink.json.Parser<$t>().tryParse);
