@@ -79,6 +79,10 @@ class DispatchTest {
    @:variant('{"bar":null}',                        Helpers.req('/optional', POST, [], '{"foo":"baz"}'))
    @:variant('{"bar":null}',                        Helpers.req('/optional', POST, [], '{"foo":"baz","bar":null}'))
    @:variant('{"bar":1}',                        Helpers.req('/optional', POST, [], '{"foo":"baz","bar":1}'))
+   @:variant({country: 'a'}, Helpers.req('/enumAbstractStringInBody', POST, [new HeaderField('content-type', 'application/json')], '{"country":"a"}'))
+  @:variant({country: 'a'}, Helpers.req('/enumAbstractStringInBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'country=a'))
+  @:variant({value: 1}, Helpers.req('/enumAbstractIntInBody', POST, [new HeaderField('content-type', 'application/json')], '{"value":1}'))
+  @:variant({value: 1}, Helpers.req('/enumAbstractIntInBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'value=1'))
   public function dispatch(value:Dynamic, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>)
     return expect(value, req, session);
 
@@ -91,6 +95,10 @@ class DispatchTest {
   @:variant(MethodNotAllowed, Helpers.req('/multiMethod', DELETE))
   @:variant(MethodNotAllowed, Helpers.req('/sub/1/2/test/yo', POST))
   @:variant(NotFound, Helpers.get('/this/route/does/not/exist'))
+  @:variant(UnprocessableEntity, Helpers.req('/enumAbstractStringInBody', POST, [new HeaderField('content-type', 'application/json')], '{"country":"invalid"}'))
+  @:variant(UnprocessableEntity, Helpers.req('/enumAbstractStringInBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'country=invalid'))
+  @:variant(UnprocessableEntity, Helpers.req('/enumAbstractIntInBody', POST, [new HeaderField('content-type', 'application/json')], '{"value":99}'))
+  @:variant(UnprocessableEntity, Helpers.req('/enumAbstractIntInBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'value=99'))
   public function dispatchError(code:ErrorCode, req:IncomingRequest, ?session:Session<{ admin: Bool, id:Int }>)
     return shouldFail(code, req, session);
 

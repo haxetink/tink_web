@@ -171,6 +171,12 @@ class Fake {
   @:get('enum_abs_int/$v') public function enumAbstractIntInPath(v:EInt):EInt
     return v;
 
+  @:post public function enumAbstractStringInBody(body:{country:EStr})
+    return {country: body.country};
+
+  @:post public function enumAbstractIntInBody(body:{value:EInt})
+    return {value: body.value};
+
   @:get('/flag/$flag')
   @:get('/flag/')
   public function flag(?flag:Bool = true)

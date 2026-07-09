@@ -134,6 +134,26 @@ class ProxyTest {
     return asserts;
   }
 
+  public function enumAbstractStringInBody() {
+    proxy.enumAbstractStringInBody({country: Fake.EStr.A})
+      .next(function (o) {
+        asserts.assert(o.country == Fake.EStr.A);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+
+  public function enumAbstractIntInBody() {
+    proxy.enumAbstractIntInBody({value: Fake.EInt.A})
+      .next(function (o) {
+        asserts.assert(o.value == Fake.EInt.A);
+        return Noise;
+      })
+      .handle(asserts.handle);
+    return asserts;
+  }
+
   public function alias() {
     proxy.alias('f', {baz: 'b'})
       .next(function (o) {
