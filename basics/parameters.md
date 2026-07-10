@@ -115,11 +115,31 @@ public function types(query:{?int:Int}) {
 
 Also see `tink_querystring`
 
+## Header Parameters
+
+Header parameters are passed via the special `header` argument. Field names are matched case-insensitively against incoming request headers.
+
+```haxe
+@:get
+public function api(header:{ authorization:String, accept:String }) {
+	trace(header.authorization);
+}
+```
+
+Use `@:name` on a struct field when the Haxe field name differs from the HTTP header name:
+
+```haxe
+@:get
+public function api(header:{ var accept:String; @:name('x-api-key') var apiKey:String; }) {
+	return header;
+}
+```
+
 ## Body Parameters
 
 > Sometimes referred as Post Parameters, but is not actually limited to a `POST` request
 
-As the name suggests, body parameters lives in the [request body](#todo-link-to-tink-http).
+As the name suggests, body parameters live in the [request body](request-body.md). See also [`tink_http`](https://haxetink.github.io/tink_http/) for lower-level request handling.
 `tink_web` parses the body in a similar way as query parameters.
 
 ```haxe
@@ -141,35 +161,172 @@ public function createUser(body:{?name:String}) {
 }
 ```
 
-### Content Type
+## `@:params` metadata
 
-!> This section is incomplete, contribute using the button at the bottom of the page
+The `@:params` metadata offers explicit control over where each argument is read from. The supported forms are listed in the introduction above.
 
-By default, parsers are generated for both `application/json` and `application/x-www-form-urlencoded`
+### Scalar binding
 
-Use metadata `@:consumes` to control that. It works on class and function level also:
+Bind a single argument from query, header, or body:
+
+```haxe
+@:params(token in query)
+@:get public function paramsInQuery(?token:String)
+	return {token: token};
+
+@:params(token in header)
+@:get public function paramsInHeader(token:String)
+	return {token: token};
+
+@:params(token in body)
+@:post public function paramsInBody(token:String)
+	return {token: token};
+```
+
+### Object binding
+
+When the argument is an anonymous structure, `@:params(obj in loc)` expands to per-field bindings from that location:
+
+```haxe
+@:params(obj in query)
+@:get public function paramsObjInQuery(obj:{i:Int, s:String})
+	return obj;
+```
+
+`@:params(obj = loc)` binds the whole anonymous object from query, header, or body:
+
+```haxe
+@:params(obj = query)
+@:get public function paramsEqQuery(obj:{foo:String, ?bar:Int})
+	return obj;
+
+@:params(obj = header)
+@:get public function paramsEqHeader(obj:{ var foo:String; @:name('x-bar') var bar:String; })
+	return obj;
+```
+
+### Field and native-name binding
+
+Bind individual fields or map to native parameter names:
+
+```haxe
+@:params(rec.foo in query)
+@:get public function paramsFieldInQuery(rec:{foo:String})
+	return rec;
+
+@:params(alias = query['q'])
+@:get public function paramsNativeQuery(alias:String)
+	return {alias: alias};
+
+@:params(rec.baz = body['b'])
+@:post public function paramsFieldNativeBody(rec:{foo:String, baz:String})
+	return rec;
+```
+
+### Merging parameters from multiple locations
+
+Different fields of the same object can be bound from different places:
+
+```haxe
+@:params(obj.foo = query['foo'])
+@:params(obj.bar = header['X-Bar'])
+@:params(obj.baz = body['baz'])
+@:post public function paramsMerged(obj:{foo:String, bar:String, baz:String})
+	return obj;
+```
+
+Reserved argument names: `user`, `query`, `header`, `body`.
+
+## Content Type
+
+By default, the router accepts these request body formats:
+
+- `application/json`
+- `application/x-www-form-urlencoded`
+- `multipart/form-data` (when compiled with `-D tink_multipart`)
+
+Responses default to `application/json`.
+
+Use `@:consumes` and `@:produces` on a class or individual route to override MIME types:
+
 ```haxe
 @:consumes('application/json')
-public function createUser(body:{?name:String}) {
-	// now `body.name` can be null
+@:produces('application/json', 'text/html')
+class Api {
+	@:post public function create(body:{name:String}) { ... }
 }
 ```
 
+To modify the default list instead of replacing it, use `++` and `--`:
+
+```haxe
+@:consumes('application/json', --'application/x-www-form-urlencoded')
+@:produces(++'text/plain')
+class Api { ... }
+```
+
 #### `application/json`
-Also see `tink_json`
-  
+
+Also see [`tink_json`](https://haxetink.github.io/tink_json/).
+
 #### `application/x-www-form-urlencoded`
-Also see `tink_querystring`
+
+Also see [`tink_querystring`](https://haxetink.github.io/tink_querystring/).
 
 #### `multipart/form-data`
 
-Requires `tink_multipart`
+Requires compiling with `-D tink_multipart`. See [Request Body](request-body.md) for file uploads with `FormFile`.
 
 ## Advanced Data Types
 
-!> This section is incomplete, contribute using the button at the bottom of the page
+Beyond basic scalars, `tink_web` can parse and coerce richer types in path, query, header, and body arguments.
 
-- Array
-- Object
-- Date
-- Enum
+### Arrays and nested objects
+
+```haxe
+@:consumes('application/json')
+@:post public function array(body:Array<Int>)
+	return body;
+
+@:params(bar in query)
+@:get public function complex(query:{ foo: Array<{ ?x: String, ?y: Int, z: Float }> })
+	return query;
+```
+
+Complex query strings with nested arrays are supported, e.g. `?foo[0].z=0&foo[1].x=hey&foo[1].z=1`.
+
+### `Either` types
+
+```haxe
+@:consumes('application/json')
+@:post public function either(body:{ field: Either<String, String> })
+	return 'ok';
+```
+
+### Enum abstracts
+
+Enum abstracts with a `toStringly()` conversion work in path, query, and body:
+
+```haxe
+@:enum abstract Status(String) {
+	var Active = 'active';
+	var Inactive = 'inactive';
+	@:to public inline function toStringly():tink.Stringly return this;
+}
+
+@:get('/status/$v')
+public function statusInPath(v:Status):Status
+	return v;
+
+@:params(v in query)
+@:get public function statusInQuery(v:Status):Status
+	return v;
+```
+
+### Dates
+
+Date values are parsed when the target field type is `Date` (via `tink` string conversion).
+
+### Raw and streaming bodies
+
+For `String`, `Bytes`, or `RealSource` body arguments, see [Request Body](request-body.md).

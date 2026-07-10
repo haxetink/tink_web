@@ -11,6 +11,7 @@
   - [Access Control](advanced/access-control.md)
   - [Middleware](advanced/middleware.md)
   - [Remoting](advanced/remoting.md)
+  - [Streaming](advanced/streaming.md)
   
 - **API Reference**
   - [Router](api-reference/router.md)

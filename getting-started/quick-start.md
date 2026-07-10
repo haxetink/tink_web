@@ -79,10 +79,12 @@ You should now be able to view the site in the domain associated with your serve
 ```haxe
 import tink.http.clients.*;
 import tink.web.proxy.Remote;
+import tink.web.proxy.RemoteEndpoint;
 import tink.url.Host;
 
 class Client {
 	static function main() {
+		// Use NodeClient on Node.js, JsClient in the browser, or another tink_http Client
 		var remote = new Remote<Root>(new NodeClient(), new RemoteEndpoint(new Host('httpbin.org', 80),"","http"));
 		remote.json().handle(function(o) switch o {
 			case Success(result): trace(result);

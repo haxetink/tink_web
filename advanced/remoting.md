@@ -47,6 +47,7 @@ A properly typed [`Promise`](https://haxetink.github.io/tink_core/#/types/promis
 ``` haxe
 import tink.http.clients.*;
 import tink.web.proxy.Remote;
+import tink.web.proxy.RemoteEndpoint;
 import tink.url.Host;
 
 class Client {
@@ -101,3 +102,68 @@ class Client {
 	}
 }
 ```
+
+## `tink.Web.connect`
+
+The `tink.Web.connect` macro is shorthand for constructing a `Remote` with a URL string:
+
+```haxe
+// Equivalent to new Remote<Api>(client, RemoteEndpoint.ofString('http://example.com/'))
+var api = tink.Web.connect(('http://example.com/':Api));
+
+// With options
+var api = tink.Web.connect(('http://example.com/':Api), {
+	client: myClient,
+	headers: [new HeaderField('x-foo', 'bar')],
+	augment: { before: [req -> /* transform request */ req] },
+});
+```
+
+Both `('url':Type)` and `new Type('url')` syntax are supported.
+
+## `RemoteEndpoint`
+
+`RemoteEndpoint` describes the target host, path, query, and headers for a `Remote` client.
+
+### Construction
+
+```haxe
+import tink.web.proxy.RemoteEndpoint;
+import tink.url.Host;
+
+var endpoint = new RemoteEndpoint(new Host('httpbin.org', 80), '', 'http');
+```
+
+### `ofString`
+
+Parse a URL string at compile time, with Haxe interpolation support:
+
+```haxe
+var host = 'example.com';
+var endpoint = RemoteEndpoint.ofString('http://user:pass@$host/api?key=1');
+```
+
+Percent-encoding, basic auth credentials, and path suffixes (hash fragments) are handled automatically.
+
+### `sub`
+
+Override path, query, or headers relative to a base endpoint:
+
+```haxe
+var endpoint = RemoteEndpoint.ofString('http://example.com/')
+	.sub({ path: ['v1'], headers: [new HeaderField('x-token', 'abc')] });
+```
+
+## Typed responses
+
+When a server route returns `tink.web.Response<T>`, the client method returns `Promise<tink.web.Response<T>>` with a typed `.body` field:
+
+```haxe
+proxy.typed().next(function(o) {
+	trace(o.body.message);
+});
+```
+
+## Streaming (SSE)
+
+Routes that return `RealStream<T>` on the server are consumed as streams on the client. See [Streaming](streaming.md).

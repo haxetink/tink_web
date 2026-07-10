@@ -127,3 +127,57 @@ class Foo {
 		
 }
 ```
+
+### Sub-routing with path parameters
+
+`@:sub` paths can include captured parameters:
+
+```haxe
+class Root {
+	@:sub('/recurse/$id')
+	public function recurse(id:String)
+		return new Child(id);
+}
+```
+
+## Advanced path patterns
+
+### Mixed path interpolation
+
+Path strings can mix literal text and captures. Each `$param` binds the next path segment:
+
+```haxe
+@:get('/colon/$foo:$bar')
+public function colon(foo:Bool, bar:Float)
+	return { foo: foo, bar: bar };
+```
+
+A request to `/colon/true:3.14` yields `foo = true` and `bar = 3.14`.
+
+### Query-in-path capture
+
+Query parameters can be captured directly in the route path:
+
+```haxe
+@:get('/queryParam?param=$value')
+public function queryParam(value:String)
+	return { value: value };
+```
+
+## Method mismatch (405)
+
+When a request matches the path shape of a route but uses the wrong HTTP method, the router returns `405 Method Not Allowed` with an `Allow` header listing the permitted methods.
+
+For example, if only `GET /onlyGet` is defined:
+
+```haxe
+@:get('/onlyGet') public function onlyGet()
+	return 'ok';
+```
+
+A `POST /onlyGet` request receives `405` rather than `404`.
+
+## Not found (404)
+
+When no route matches the request path at all, the router returns `404 Not Found`.
+

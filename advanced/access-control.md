@@ -130,4 +130,4 @@ public function dashboard(user:User) {
 - If it is `User`, the router will return `401 Unauthorized` if there is no user in the current context.
 - If it is `Option<User>`, the router will inject the `None` value to the route if there is no user in the current context, otherwise it would be `Some(user)`.
 
-When wrapped by a (Remote)[advanced/remoting], the `user` argument is removed.
+When wrapped by a [Remote](remoting.md), the `user` argument is removed.

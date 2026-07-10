@@ -9,12 +9,14 @@ In simple terms, `tink_web` is a super-charged router for [`tink_http`](https://
 **Basics**
 - [Routing](basics/routing.md) - Learn how to route paths
 - [Parameters](basics/parameters.md) - Learn how to handle parameters
+- [Request Body](basics/request-body.md) - Raw, streaming, and multipart request bodies
 - [Response](basics/response.md) - Learn how to produce various responses
 
 **Advanced**
 - [Access Control](advanced/access-control.md)
 - [Middleware](advanced/middleware.md)
 - [Remoting](advanced/remoting.md)
+- [Streaming](advanced/streaming.md) - Server-Sent Events
 
 **API Reference**
 - [Router](api-reference/router.md)
