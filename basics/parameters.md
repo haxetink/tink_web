@@ -7,17 +7,6 @@ In a HTTP request, parameters usually appear in four places:
 1. in the request body
 1. in the http header
 
-In a nutshell, the supported syntaxes are as follow:
-
-```haxe
-@:<http_method>('/path/$param')
-@:params(<ident> in <query|header|body>)
-@:params(<ident> = <query|header|body>)
-@:params(<ident> = <query|header|body>["native"])
-@:params(<ident.field> in <query|header|body>)
-@:params(<ident.field> = <query|header|body>["native"]));
-```
-
 ## Path Parameters
 
 Path parameters are part of the URL path:
@@ -70,7 +59,7 @@ Here are two examples:
   Query parameter is `v=test`
 - `https://github.com/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue`  
   Query parameter is `utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue`
-  
+
 `tink_web` parses the [query string](https://en.wikipedia.org/wiki/Query_string) into a readily used form,
 and then pass it as a special `query` argument to the handling function.
 
@@ -164,6 +153,17 @@ public function createUser(body:{?name:String}) {
 ## `@:params` metadata
 
 The `@:params` metadata offers explicit control over where each argument is read from. The supported forms are listed in the introduction above.
+
+In a nutshell, the supported syntaxes are as follow:
+
+```haxe
+@:<http_method>('/path/$param')
+@:params(<ident> in <query|header|body>)
+@:params(<ident> = <query|header|body>)
+@:params(<ident> = <query|header|body>["native"])
+@:params(<ident.field> in <query|header|body>)
+@:params(<ident.field> = <query|header|body>["native"]));
+```
 
 ### Scalar binding
 
@@ -305,7 +305,7 @@ Complex query strings with nested arrays are supported, e.g. `?foo[0].z=0&foo[1]
 
 ### Enum abstracts
 
-Enum abstracts with a `toStringly()` conversion work in path, query, and body:
+Enum abstracts with implicit cast to `tink.Stringly` work in path, query, and body:
 
 ```haxe
 @:enum abstract Status(String) {
