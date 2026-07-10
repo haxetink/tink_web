@@ -47,6 +47,10 @@ class ParamsTest {
   @:variant({token: 'json'}, Helpers.req('/paramsInBody', POST, [new HeaderField('content-type', 'application/json')], '{"token":"json"}'))
   @:variant({token: 'form'}, Helpers.req('/paramsInBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'token=form'))
 
+  @:variant({i: 42, s: 'hi'}, Helpers.get('/paramsObjInQuery?i=42&s=hi'))
+  @:variant({i: 42, s: 'hi'}, Helpers.get('/paramsObjInHeader', [new HeaderField('i', '42'), new HeaderField('s', 'hi')]))
+  @:variant({i: 42, s: 'hi'}, Helpers.req('/paramsObjInBody', POST, [new HeaderField('content-type', 'application/json')], '{"i":42,"s":"hi"}'))
+
   @:variant({foo: 'a', bar: 2}, Helpers.get('/paramsEqQuery?foo=a&bar=2'))
   @:variant({foo: 'a', bar: 'b'}, Helpers.get('/paramsEqHeader', [new HeaderField('foo', 'a'), new HeaderField('x-bar', 'b')]))
   @:variant({foo: 'a', bar: 4}, Helpers.req('/paramsEqBody', POST, [new HeaderField('content-type', 'application/json')], '{"foo":"a","bar":4}'))
@@ -98,6 +102,9 @@ class ParamsTest {
   public function paramsRequiredMissing()
     return shouldFail(UnprocessableEntity, Helpers.get('/paramsRequired'));
 
+  public function paramsObjInQueryMissing()
+    return shouldFail(UnprocessableEntity, Helpers.get('/paramsObjInQuery'));
+
   public function paramsTypeErrorInvalid()
     return shouldFail(UnprocessableEntity, Helpers.get('/paramsTypeError?bar=not-a-number'));
 
@@ -113,6 +120,18 @@ class ParamsTest {
 
   public function proxyParamsInBody() {
     return proxy.paramsInBody('val').next(o -> assert(compare({token: 'val'}, o)));
+  }
+
+  public function proxyParamsObjInQuery() {
+    return proxy.paramsObjInQuery({i: 42, s: 'hi'}).next(o -> assert(compare({i: 42, s: 'hi'}, o)));
+  }
+
+  public function proxyParamsObjInHeader() {
+    return proxy.paramsObjInHeader({i: 42, s: 'hi'}).next(o -> assert(compare({i: 42, s: 'hi'}, o)));
+  }
+
+  public function proxyParamsObjInBody() {
+    return proxy.paramsObjInBody({i: 42, s: 'hi'}).next(o -> assert(compare({i: 42, s: 'hi'}, o)));
   }
 
   public function proxyParamsEqQuery() {

@@ -38,7 +38,12 @@ class Parameters {
         switch p {
           case macro $i{name} in $i{pos = 'query' | 'header' | 'body'}:
             validate(name);
-            add(Plain(name), LOCATION_FACTORY[pos](name));
+            switch types[name].reduce() {
+              case TAnonymous(_.get() => {fields: fields}):
+                for(field in fields) add(Drill({name: name, nullable: isNullable(name)}, field.name), LOCATION_FACTORY[pos](getParamName(field)));
+              case _:
+                add(Plain(name), LOCATION_FACTORY[pos](name));
+            }
 
           case macro $i{name} = $i{pos = 'query' | 'header' | 'body'}:
             validate(name);

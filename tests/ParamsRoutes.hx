@@ -67,6 +67,18 @@ class ParamsRoutes {
   @:post public function paramsInBody(token:String)
     return {token: token};
 
+  @:params(obj in query)
+  @:get public function paramsObjInQuery(obj:{i:Int, s:String})
+    return obj;
+
+  @:params(obj in header)
+  @:get public function paramsObjInHeader(obj:{i:Int, s:String})
+    return obj;
+
+  @:params(obj in body)
+  @:post public function paramsObjInBody(obj:{i:Int, s:String})
+    return obj;
+
   // --- ident = <loc> ---
 
   @:params(obj = query)
