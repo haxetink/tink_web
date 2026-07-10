@@ -3,6 +3,7 @@ package;
 import deepequal.DeepEqual.compare;
 import tink.http.Request;
 import tink.http.Response;
+import tink.http.Response.OutgoingResponse;
 import tink.http.Client;
 import tink.http.Container;
 import tink.http.clients.*;
@@ -30,20 +31,6 @@ class ProxyTest {
       return DispatchTest.exec(req).recover(OutgoingResponse.reportError);
     });
     proxy = new Remote<Fake>(client, new RemoteEndpoint(new Host('localhost', 80)));
-  }
-
-  public function complex() {
-    var c:Fake.Complex = { foo: [ { z: 3, x: '5', y: 6 } ] };
-    return proxy.complex(c).map(function (o) return assert(compare(c, o.sure())));
-  }
-
-  public function events() {
-    final message = 'foobar';
-    var pos = 0;
-    return proxy.letters(message).forEach(function (o) {
-      asserts.assert(o.letter == message.charAt(pos++));
-      return tink.streams.Stream.Handled.Resume;
-    }).next(_ -> asserts.done());
   }
 
   public function colon() {
@@ -83,7 +70,7 @@ class ProxyTest {
   }
 
   public function noiseWithError() {
-    proxy.noise(true)
+    proxy.noise({error: true})
       .handle(function (o) switch o {
         case Success(_):
           asserts.fail('Expected Failure(error)');
@@ -94,30 +81,10 @@ class ProxyTest {
     return asserts;
   }
 
-  public function enumAbstractStringInQuery() {
-    proxy.enumAbstractStringInQuery(Fake.EStr.A)
-      .next(function (o) {
-        asserts.assert(o == Fake.EStr.A);
-        return Noise;
-      })
-      .handle(asserts.handle);
-    return asserts;
-  }
-
-  public function enumAbstractIntInQuery() {
-    proxy.enumAbstractIntInQuery(Fake.EInt.A)
-      .next(function (o) {
-        asserts.assert(o == Fake.EInt.A);
-        return Noise;
-      })
-      .handle(asserts.handle);
-    return asserts;
-  }
-
   public function enumAbstractStringInPath() {
-    proxy.enumAbstractStringInPath(Fake.EStr.A)
+    proxy.enumAbstractStringInPath(ParamsRoutes.EStr.A)
       .next(function (o) {
-        asserts.assert(o == Fake.EStr.A);
+        asserts.assert(o == ParamsRoutes.EStr.A);
         return Noise;
       })
       .handle(asserts.handle);
@@ -125,9 +92,9 @@ class ProxyTest {
   }
 
   public function enumAbstractIntInPath() {
-    proxy.enumAbstractIntInPath(Fake.EInt.A)
+    proxy.enumAbstractIntInPath(ParamsRoutes.EInt.A)
       .next(function (o) {
-        asserts.assert(o == Fake.EInt.A);
+        asserts.assert(o == ParamsRoutes.EInt.A);
         return Noise;
       })
       .handle(asserts.handle);
@@ -135,9 +102,9 @@ class ProxyTest {
   }
 
   public function enumAbstractStringInBody() {
-    proxy.enumAbstractStringInBody({country: Fake.EStr.A})
+    proxy.enumAbstractStringInBody({country: ParamsRoutes.EStr.A})
       .next(function (o) {
-        asserts.assert(o.country == Fake.EStr.A);
+        asserts.assert(o.country == ParamsRoutes.EStr.A);
         return Noise;
       })
       .handle(asserts.handle);
@@ -145,33 +112,9 @@ class ProxyTest {
   }
 
   public function enumAbstractIntInBody() {
-    proxy.enumAbstractIntInBody({value: Fake.EInt.A})
+    proxy.enumAbstractIntInBody({value: ParamsRoutes.EInt.A})
       .next(function (o) {
-        asserts.assert(o.value == Fake.EInt.A);
-        return Noise;
-      })
-      .handle(asserts.handle);
-    return asserts;
-  }
-
-  public function alias() {
-    proxy.alias('f', {baz: 'b'})
-      .next(function (o) {
-        asserts.assert(o.foo == 'f');
-        asserts.assert(o.baz == 'b');
-        asserts.assert(o.query == 'foo=f&baz=b');
-        return Noise;
-      })
-      .handle(asserts.handle);
-    return asserts;
-  }
-
-  public function merged() {
-    proxy.merged({foo: 'foo', bar: 'bar', baz: 'baz'})
-      .next(function (o) {
-        asserts.assert(o.foo == 'foo');
-        asserts.assert(o.bar == 'bar');
-        asserts.assert(o.baz == 'baz');
+        asserts.assert(o.value == ParamsRoutes.EInt.A);
         return Noise;
       })
       .handle(asserts.handle);
@@ -278,16 +221,6 @@ class ProxyTest {
 
   public function nullableQuery1() {
     proxy.nullableQuery1()
-      .next(function (o) {
-        asserts.assert(o.foo == null);
-        return Noise;
-      })
-      .handle(asserts.handle);
-    return asserts;
-  }
-
-  public function nullableQuery2() {
-    proxy.nullableQuery2()
       .next(function (o) {
         asserts.assert(o.foo == null);
         return Noise;

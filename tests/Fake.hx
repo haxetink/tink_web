@@ -10,11 +10,6 @@ import tink.web.routing.Context;
 
 using tink.io.Source;
 
-typedef Complex = {
-  foo: Array<{ ?x: String, ?y:Int, z:Float }>
-}
-
-
 class Fake {
 
   public function new() {}
@@ -40,17 +35,8 @@ class Fake {
 
   @:get public var yo(default, null):String = 'yo';
 
-  @:html(function (u) return '<html><body>Yo</body></html>')
-  @:params(bar in query)
-  @:get public function complex(query: Complex, ?bar:String)
-    return query;
-
   @:delete('/remove/$id') public function delete(id:Int)
     return { deleted: true };
-
-  @:params(bar.foo in query)
-  @:get public function temp(bar:{foo:String})
-    return bar;
 
   @:post public function streaming(body:RealSource)
     return body;
@@ -60,10 +46,6 @@ class Fake {
 
   @:post public function textual(body:String)
     return body;
-
-  @:params(of in query)
-  @:get public function letters(of:String):tink.streams.RealStream<{ letter: String }>
-    return tink.streams.Stream.ofIterator(of.split('').map(letter -> { letter: letter }).iterator());
 
   @:get('/queryParam?param=$value')
   public function queryParam(value:String)
@@ -109,9 +91,8 @@ class Fake {
   @:get public function issue114_2():Promise<Noise>
     return Promise.NOISE;
 
-  @:params(error in query)
-  @:get public function noise(?error:Bool):Promise<Noise>
-    return error ? new Error('Errored') : Promise.NOISE;
+  @:get public function noise(?query:{?error:Bool}):Promise<Noise>
+    return query?.error ? new Error('Errored') : Promise.NOISE;
 
   @:statusCode(307)
   @:get('/statusCode') public function redirectStatusCode()
@@ -140,41 +121,16 @@ class Fake {
   @:post public function int(body:Int)
     return body;
 
-  @:params(v in query)
-  @:get public function enumAbstractStringInQuery(v:EStr):EStr
+  @:get('enum_abs_str/$v') public function enumAbstractStringInPath(v:ParamsRoutes.EStr):ParamsRoutes.EStr
     return v;
 
-  @:params(v in query)
-  @:get public function enumAbstractIntInQuery(v:EInt):EInt
+  @:get('enum_abs_int/$v') public function enumAbstractIntInPath(v:ParamsRoutes.EInt):ParamsRoutes.EInt
     return v;
 
-  @:params(notfoo = query['foo'])
-  @:params(bar.baz = query['baz'])
-  @:get public function alias(notfoo:String, bar:{baz:String}, ctx:Context):{foo:String, baz:String, query:String}  {
-    return {
-      foo: notfoo,
-      baz: bar.baz,
-      query: @:privateAccess ctx.request.header.url.query,
-    }
-  }
-
-  @:params(obj.foo = query['foo'])
-  @:params(obj.bar = header['X-Bar'])
-  @:params(obj.baz = body['baz'])
-  @:get public function merged(obj:{foo:String, bar:String,baz:String}):{foo:String, bar:String, baz:String} {
-    return obj;
-  }
-
-  @:get('enum_abs_str/$v') public function enumAbstractStringInPath(v:EStr):EStr
-    return v;
-
-  @:get('enum_abs_int/$v') public function enumAbstractIntInPath(v:EInt):EInt
-    return v;
-
-  @:post public function enumAbstractStringInBody(body:{country:EStr})
+  @:post public function enumAbstractStringInBody(body:{country:ParamsRoutes.EStr})
     return {country: body.country};
 
-  @:post public function enumAbstractIntInBody(body:{value:EInt})
+  @:post public function enumAbstractIntInBody(body:{value:ParamsRoutes.EInt})
     return {value: body.value};
 
   @:get('/flag/$flag')
@@ -212,20 +168,17 @@ class Fake {
   @:post public function optional(body: { foo:String, ?bar: Int })
     return {bar:body.bar};
 
-  
-
   @:post public function nullableQuery1(?query: { foo:String })
     return {foo: query == null ? null : query.foo};
-  
-  @:params(nullableValue = query)
-  @:post public function nullableQuery2(?nullableValue: { foo:String })
-    return {foo: nullableValue == null ? null : nullableValue.foo};
-  
+
   @:restrict(user.id == a)
   @:sub('/sub/$a/$b')
   public function sub(a, b) {
     return new FakeSub(a, b);
   }
+
+  @:sub('/params')
+  public function params() return new ParamsRoutes();
 
 }
 
@@ -256,22 +209,4 @@ class FakeSub {
   @:get public function whatever()
     return { foo: 'bar' }
 
-}
-
-@:enum
-abstract EStr(String) {
-  var A = 'a';
-  var B = 'b';
-
-  @:to
-  public inline function toStringly():tink.Stringly return this;
-}
-
-@:enum
-abstract EInt(Int) {
-  var A = 1;
-  var B = 2;
-
-  @:to
-  public inline function toStringly():tink.Stringly return this;
 }

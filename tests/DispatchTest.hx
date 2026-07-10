@@ -57,10 +57,6 @@ class DispatchTest {
   @:variant('<p>Hello world</p>',         Helpers.get('/', []))
   @:variant({ hello: 'haxe' },            Helpers.get('/haxe'))
   @:variant("yo",                         Helpers.get('/yo'))
-  @:variant({ foo: 'f', baz: 'b', query: 'foo=f&baz=b'},
-     Helpers.get('/alias?foo=f&baz=b'))
-  @:variant({ foo: 'foo', bar: 'bar', baz: 'baz'},
-     Helpers.req('/merged?foo=foo', GET, [new tink.http.Header.HeaderField('x-bar', 'bar')], '{"baz":"baz"}'))
   @:variant({ foo: 'hey', bar: 4 },       Helpers.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'bar=4&foo=hey'))
   @:variant({ foo: 'hey', bar: 4 },       Helpers.req('/post', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], haxe.Json.stringify({ foo: 'hey', bar: 4 })))
   @:variant('foo',                        Helpers.req('/streaming', POST, 'foo'))
@@ -74,8 +70,6 @@ class DispatchTest {
      Helpers.get('/headers', [new tink.http.Header.HeaderField('accept', 'application/json; charset=UTF-8'), new tink.http.Header.HeaderField('x-bar', 'bar')]))
   @:variant({ a: 1, b: 2, c: '3', d: '4', blargh: 'yo', /*path: ['sub', '1', '2', 'test', 'yo']*/ },
      Helpers.get('/sub/1/2/test/yo?c=3&d=4'))
-  @:variant({ foo: ([ { z: .0 }, { x: 'hey', z: .1 }, { y: 4, z: .2 }, { x: 'yo', y: 5, z: .3 } ]:Array<Dynamic>) },
-     Helpers.get('/complex?foo[0].z=.0&foo[1].x=hey&foo[1].z=.1&foo[2].y=4&foo[2].z=.2&foo[3].x=yo&foo[3].y=5&foo[3].z=.3'))
    @:variant('{"bar":null}',                        Helpers.req('/optional', POST, [], '{"foo":"baz"}'))
    @:variant('{"bar":null}',                        Helpers.req('/optional', POST, [], '{"foo":"baz","bar":null}'))
    @:variant('{"bar":1}',                        Helpers.req('/optional', POST, [], '{"foo":"baz","bar":1}'))

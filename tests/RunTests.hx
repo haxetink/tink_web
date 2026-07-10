@@ -10,6 +10,7 @@ class RunTests {
 			new FacadeTest(),
 			new ProxyTest(),
 			new DispatchTest(),
+			new ParamsTest(),
 			new RawTest(),
 			new TestRpc(),
 		])).handle(Runner.exit);
