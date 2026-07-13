@@ -75,6 +75,7 @@ class Proxify {
       fields: [for (f in routes) {
         pos: f.field.pos,
         name: f.field.name,
+        meta: f.field.meta.get(),
         kind: FFun({
           args: [for (arg in f.signature.args) switch arg.kind {
             case AKSingle(_, ATUser(_) | ATContext): continue;
