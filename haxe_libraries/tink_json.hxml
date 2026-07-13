@@ -1,4 +1,4 @@
-# @install: lix --silent download "gh://github.com/haxetink/tink_json#c1328266ea63c1380a193f0953f59fd3506a13d7" into tink_json/0.11.0/github/c1328266ea63c1380a193f0953f59fd3506a13d7
 -lib tink_typecrawler
--cp ${HAXE_LIBCACHE}/tink_json/0.11.0/github/c1328266ea63c1380a193f0953f59fd3506a13d7/src
+-cp ${SCOPE_DIR}/../tink_json/src
 -D tink_json=0.11.0
+--macro Sys.println("haxe_libraries/tink_json.hxml:3: [Warning] Using dev version of library tink_json")
