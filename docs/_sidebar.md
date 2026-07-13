@@ -15,6 +15,7 @@
   
 - **API Reference**
   - [Router](api-reference/router.md)
+  - [OpenApiDocument](api-reference/open-api-document.md)
   - [Context](api-reference/context.md)
   
 - **Miscellaneous**

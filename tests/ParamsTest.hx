@@ -43,33 +43,33 @@ class ParamsTest {
 
   @:variant({token: 'abc'}, Helpers.get('/paramsInQuery?token=abc'))
   @:variant({token: null}, Helpers.get('/paramsInQuery'))
-  @:variant({token: 'hdr'}, Helpers.get('/paramsInHeader', [new HeaderField('token', 'hdr')]))
-  @:variant({token: 'json'}, Helpers.req('/paramsInBody', POST, [new HeaderField('content-type', 'application/json')], '{"token":"json"}'))
-  @:variant({token: 'form'}, Helpers.req('/paramsInBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'token=form'))
+  @:variant({token: 'hdr'}, Helpers.get('/paramsInHeader', [new tink.http.Header.HeaderField('token', 'hdr')]))
+  @:variant({token: 'json'}, Helpers.req('/paramsInBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '{"token":"json"}'))
+  @:variant({token: 'form'}, Helpers.req('/paramsInBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'token=form'))
 
   @:variant({i: 42, s: 'hi'}, Helpers.get('/paramsObjInQuery?i=42&s=hi'))
-  @:variant({i: 42, s: 'hi'}, Helpers.get('/paramsObjInHeader', [new HeaderField('i', '42'), new HeaderField('s', 'hi')]))
-  @:variant({i: 42, s: 'hi'}, Helpers.req('/paramsObjInBody', POST, [new HeaderField('content-type', 'application/json')], '{"i":42,"s":"hi"}'))
+  @:variant({i: 42, s: 'hi'}, Helpers.get('/paramsObjInHeader', [new tink.http.Header.HeaderField('i', '42'), new tink.http.Header.HeaderField('s', 'hi')]))
+  @:variant({i: 42, s: 'hi'}, Helpers.req('/paramsObjInBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '{"i":42,"s":"hi"}'))
 
   @:variant({foo: 'a', bar: 2}, Helpers.get('/paramsEqQuery?foo=a&bar=2'))
-  @:variant({foo: 'a', bar: 'b'}, Helpers.get('/paramsEqHeader', [new HeaderField('foo', 'a'), new HeaderField('x-bar', 'b')]))
-  @:variant({foo: 'a', bar: 4}, Helpers.req('/paramsEqBody', POST, [new HeaderField('content-type', 'application/json')], '{"foo":"a","bar":4}'))
-  @:variant({foo: 'a', bar: 4}, Helpers.req('/paramsEqBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'foo=a&bar=4'))
+  @:variant({foo: 'a', bar: 'b'}, Helpers.get('/paramsEqHeader', [new tink.http.Header.HeaderField('foo', 'a'), new tink.http.Header.HeaderField('x-bar', 'b')]))
+  @:variant({foo: 'a', bar: 4}, Helpers.req('/paramsEqBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '{"foo":"a","bar":4}'))
+  @:variant({foo: 'a', bar: 4}, Helpers.req('/paramsEqBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'foo=a&bar=4'))
 
   @:variant({alias: 'q'}, Helpers.get('/paramsNativeQuery?q=q'))
-  @:variant({alias: 'tok'}, Helpers.get('/paramsNativeHeader', [new HeaderField('x-token', 'tok')]))
-  @:variant({alias: 'json'}, Helpers.req('/paramsNativeBody', POST, [new HeaderField('content-type', 'application/json')], '{"payload":"json"}'))
-  @:variant({alias: 'form'}, Helpers.req('/paramsNativeBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'payload=form'))
+  @:variant({alias: 'tok'}, Helpers.get('/paramsNativeHeader', [new tink.http.Header.HeaderField('x-token', 'tok')]))
+  @:variant({alias: 'json'}, Helpers.req('/paramsNativeBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '{"payload":"json"}'))
+  @:variant({alias: 'form'}, Helpers.req('/paramsNativeBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'payload=form'))
 
   @:variant({foo: 'f'}, Helpers.get('/paramsFieldInQuery?foo=f'))
-  @:variant({foo: 'f'}, Helpers.get('/paramsFieldInHeader', [new HeaderField('foo', 'f')]))
-  @:variant({foo: 'f'}, Helpers.req('/paramsFieldInBody', POST, [new HeaderField('content-type', 'application/json')], '{"foo":"f"}'))
-  @:variant({foo: 'f'}, Helpers.req('/paramsFieldInBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'foo=f'))
+  @:variant({foo: 'f'}, Helpers.get('/paramsFieldInHeader', [new tink.http.Header.HeaderField('foo', 'f')]))
+  @:variant({foo: 'f'}, Helpers.req('/paramsFieldInBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '{"foo":"f"}'))
+  @:variant({foo: 'f'}, Helpers.req('/paramsFieldInBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'foo=f'))
 
   @:variant({foo: 'q'}, Helpers.get('/paramsFieldNativeQuery?q=q'))
-  @:variant({foo: 'f'}, Helpers.get('/paramsFieldNativeHeader', [new HeaderField('x-foo', 'f')]))
-  @:variant({foo: 'a', baz: 'b'}, Helpers.req('/paramsFieldNativeBody', POST, [new HeaderField('content-type', 'application/json')], '{"foo":"a","b":"b"}'))
-  @:variant({foo: 'a', baz: 'b'}, Helpers.req('/paramsFieldNativeBody', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded')], 'foo=a&b=b'))
+  @:variant({foo: 'f'}, Helpers.get('/paramsFieldNativeHeader', [new tink.http.Header.HeaderField('x-foo', 'f')]))
+  @:variant({foo: 'a', baz: 'b'}, Helpers.req('/paramsFieldNativeBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/json')], '{"foo":"a","b":"b"}'))
+  @:variant({foo: 'a', baz: 'b'}, Helpers.req('/paramsFieldNativeBody', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded')], 'foo=a&b=b'))
 
   @:variant({value: null}, Helpers.get('/paramsOptional'))
   @:variant({value: 'x'}, Helpers.get('/paramsOptional?value=x'))
@@ -77,9 +77,9 @@ class ParamsTest {
   @:variant({bar: 42}, Helpers.get('/paramsTypeError?bar=42'))
 
   @:variant({foo: 'foo', bar: 'bar', baz: 'baz'},
-    Helpers.req('/paramsMerged?foo=foo', POST, [new HeaderField('content-type', 'application/json'), new HeaderField('x-bar', 'bar')], '{"baz":"baz"}'))
+    Helpers.req('/paramsMerged?foo=foo', POST, [new tink.http.Header.HeaderField('content-type', 'application/json'), new tink.http.Header.HeaderField('x-bar', 'bar')], '{"baz":"baz"}'))
   @:variant({foo: 'foo', bar: 'bar', baz: 'baz'},
-    Helpers.req('/paramsMerged?foo=foo', POST, [new HeaderField('content-type', 'application/x-www-form-urlencoded'), new HeaderField('x-bar', 'bar')], 'baz=baz'))
+    Helpers.req('/paramsMerged?foo=foo', POST, [new tink.http.Header.HeaderField('content-type', 'application/x-www-form-urlencoded'), new tink.http.Header.HeaderField('x-bar', 'bar')], 'baz=baz'))
 
   @:variant({foo: 'f'}, Helpers.get('/temp?foo=f'))
   @:variant({foo: 'f', baz: 'b', query: 'foo=f&baz=b'}, Helpers.get('/alias?foo=f&baz=b'))

@@ -13,6 +13,7 @@ class RunTests {
 			new ParamsTest(),
 			new RawTest(),
 			new TestRpc(),
+			new OpenApiTest(),
 		])).handle(Runner.exit);
 	}
 }
